@@ -38,8 +38,8 @@ src/
     ├── java/
     │   ├── module-info.java
     │   └── it/r2u/anibus/
-    │       ├── HelloApplication.java      # JavaFX entry point
-    │       ├── HelloController.java       # UI controller (FXML)
+    │       ├── AnibusApplication.java     # JavaFX entry point
+    │       ├── AnibusController.java      # UI controller (FXML)
     │       ├── PortScannerService.java    # Scanning, banner grab, version extraction
     │       └── PortScanResult.java        # Data model (7 fields)
     └── resources/

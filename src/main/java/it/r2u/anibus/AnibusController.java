@@ -27,7 +27,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
-public class HelloController {
+public class AnibusController {
 
     /* ── FXML fields ─────────────────────────────────── */
     @FXML private TextField hostTextField;
@@ -350,39 +350,93 @@ public class HelloController {
         if (scanTask != null && scanTask.isRunning()) scanTask.cancel();
     }
 
-    /* ── Export to CSV ───────────────────────────────── */
+    /* ── Export (CSV or XML) ─────────────────────────── */
     @FXML
     protected void onExportClick() {
         if (results.isEmpty()) return;
 
-        FileChooser fc = new FileChooser();
-        fc.setTitle("Export Scan Results");
-        fc.setInitialFileName("anibus-scan-" +
-                LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")) + ".csv");
-        fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("CSV Files", "*.csv"));
+        // Format selection dialog
+        ButtonType csvBtn = new ButtonType("CSV");
+        ButtonType xmlBtn = new ButtonType("XML");
+        ButtonType cancel = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+        Alert fmt = new Alert(Alert.AlertType.NONE, "Choose export format:", csvBtn, xmlBtn, cancel);
+        fmt.setTitle("Export Format");
+        fmt.setHeaderText(null);
+        DialogPane dp = fmt.getDialogPane();
+        dp.getStylesheets().add(getClass().getResource("ios-style.css").toExternalForm());
+        dp.setStyle("-fx-background-color: white; -fx-background-radius: 16; " +
+                "-fx-effect: dropshadow(gaussian,rgba(0,0,0,0.2),24,0,0,6); " +
+                "-fx-font-family: 'SF Pro Display','Segoe UI',system-ui;");
 
-        File file = fc.showSaveDialog(resultTableView.getScene().getWindow());
-        if (file != null) {
+        fmt.showAndWait().ifPresent(choice -> {
+            if (choice == cancel) return;
+            boolean isCsv = (choice == csvBtn);
+            String stamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"));
+
+            FileChooser fc = new FileChooser();
+            fc.setTitle("Export Scan Results");
+            if (isCsv) {
+                fc.setInitialFileName("anibus-scan-" + stamp + ".csv");
+                fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("CSV Files", "*.csv"));
+            } else {
+                fc.setInitialFileName("anibus-scan-" + stamp + ".xml");
+                fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("XML Files", "*.xml"));
+            }
+
+            File file = fc.showSaveDialog(resultTableView.getScene().getWindow());
+            if (file == null) return;
+
             try (PrintWriter pw = new PrintWriter(new FileWriter(file))) {
-                pw.println("Port,State,Service,Version,Protocol,Latency(ms),Banner");
-                for (PortScanResult r : results) {
-                    pw.printf("%d,\"%s\",\"%s\",\"%s\",\"%s\",%d,\"%s\"%n",
-                            r.getPort(),
-                            esc(r.getState()),
-                            esc(r.getService()),
-                            esc(r.getVersion()),
-                            esc(r.getProtocol()),
-                            r.getLatency(),
-                            esc(r.getBanner()));
+                if (isCsv) {
+                    exportCsv(pw);
+                } else {
+                    exportXml(pw);
                 }
                 setStatus("Exported " + results.size() + " result(s) to " + file.getName());
             } catch (IOException e) {
                 showModernAlert("Export failed", e.getMessage(), Alert.AlertType.ERROR);
             }
+        });
+    }
+
+    private void exportCsv(PrintWriter pw) {
+        pw.println("Port,State,Service,Version,Protocol,Latency(ms),Banner");
+        for (PortScanResult r : results) {
+            pw.printf("%d,\"%s\",\"%s\",\"%s\",\"%s\",%d,\"%s\"%n",
+                    r.getPort(), esc(r.getState()), esc(r.getService()),
+                    esc(r.getVersion()), esc(r.getProtocol()),
+                    r.getLatency(), esc(r.getBanner()));
         }
     }
 
-    private String esc(String s) { return s == null ? "" : s.replace("\"", "\"\""); }
+    private void exportXml(PrintWriter pw) {
+        pw.println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+        pw.println("<scan>");
+        pw.printf("  <meta timestamp=\"%s\" total=\"%d\"/>%n",
+                LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")),
+                results.size());
+        pw.println("  <results>");
+        for (PortScanResult r : results) {
+            pw.println("    <port>");
+            pw.printf("      <number>%d</number>%n",        r.getPort());
+            pw.printf("      <state>%s</state>%n",          xmlEsc(r.getState()));
+            pw.printf("      <service>%s</service>%n",      xmlEsc(r.getService()));
+            pw.printf("      <version>%s</version>%n",      xmlEsc(r.getVersion()));
+            pw.printf("      <protocol>%s</protocol>%n",    xmlEsc(r.getProtocol()));
+            pw.printf("      <latency>%d</latency>%n",      r.getLatency());
+            pw.printf("      <banner>%s</banner>%n",        xmlEsc(r.getBanner()));
+            pw.println("    </port>");
+        }
+        pw.println("  </results>");
+        pw.println("</scan>");
+    }
+
+    private String esc(String s)    { return s == null ? "" : s.replace("\"", "\"\""); }
+    private String xmlEsc(String s) {
+        if (s == null) return "";
+        return s.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;")
+                .replace("\"","&quot;").replace("'","&apos;");
+    }
 
     /* ── Clear results ───────────────────────────────── */
     @FXML

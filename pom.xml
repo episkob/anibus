@@ -44,7 +44,7 @@
                 <artifactId>javafx-maven-plugin</artifactId>
                 <version>0.0.8</version>
                 <configuration>
-                    <mainClass>it.r2u.anibus.HelloApplication</mainClass>
+                    <mainClass>it.r2u.anibus.AnibusApplication</mainClass>
                 </configuration>
                 <executions>
                     <execution>
