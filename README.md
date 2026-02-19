@@ -22,7 +22,7 @@ A modern, iOS 17-inspired desktop port scanning application built with **JavaFX 
 ### UI & Workflow
 - **Host Information panel** — shows IP, hostname, scan time, ports scanned, open ports count, and average latency (live-updated)
 - **7-column results table** — Port, State, Service, Version, Protocol, Latency, Banner
-- **Export to CSV** with all columns
+- **Export to CSV or XML** with all columns
 - **Clear** results with one click
 - **Copy row** or **Copy all** via right-click context menu
 - Auto DNS resolution on focus-out
@@ -39,9 +39,17 @@ src/
     │   ├── module-info.java
     │   └── it/r2u/anibus/
     │       ├── AnibusApplication.java     # JavaFX entry point
-    │       ├── AnibusController.java      # UI controller (FXML)
-    │       ├── PortScannerService.java    # Scanning, banner grab, version extraction
-    │       └── PortScanResult.java        # Data model (7 fields)
+    │       ├── AnibusController.java      # UI controller — wires all services together
+    │       ├── PortScanResult.java        # Data model (7 fields)
+    │       ├── PortScannerService.java    # Thin coordinator: latency probe + port-range parsing
+    │       ├── ScanTask.java              # Background Task<Void> with callbacks
+    │       ├── BannerGrabber.java         # HTTP HEAD / raw greeting banner grabber
+    │       ├── VersionExtractor.java      # Regex-based version extraction from banners
+    │       ├── PortRegistry.java          # Service name & protocol/encryption lookup tables
+    │       ├── ExportService.java         # CSV and XML export with format-selection dialog
+    │       ├── TableConfigurator.java     # TableView column setup and cell factories
+    │       ├── ClipboardService.java      # Clipboard copy utilities
+    │       └── AlertHelper.java           # iOS-styled modal alert dialogs
     └── resources/
         └── it/r2u/anibus/
             ├── hello-view.fxml            # UI layout
@@ -88,7 +96,7 @@ mvnw.cmd javafx:run
 5. The **Host Information** card appears with live stats
 6. Results populate the table as ports are discovered
 7. Click **Stop** to abort the scan at any time
-8. Use **Export** to save results as CSV, or **Clear** to reset
+8. Use **Export** to save results as **CSV or XML**, or **Clear** to reset
 9. Right-click any row to copy a single result or all results
 
 ---

@@ -22,7 +22,7 @@ Un'applicazione desktop moderna in stile iOS 17 per la scansione delle porte, re
 ### Interfaccia e Flusso di Lavoro
 - **Pannello informazioni host** — IP, hostname, tempo di scansione, porte analizzate, porte aperte, latenza media (aggiornamento in tempo reale)
 - **Tabella risultati con 7 colonne** — Porta, Stato, Servizio, Versione, Protocollo, Latenza, Banner
-- **Esportazione in CSV** con tutte le colonne
+- **Esportazione in CSV o XML** con tutte le colonne
 - **Cancellazione** dei risultati con un clic
 - **Copia riga** o **copia tutti** tramite menu contestuale
 - Risoluzione DNS automatica alla perdita del focus
@@ -39,9 +39,17 @@ src/
     │   ├── module-info.java
     │   └── it/r2u/anibus/
     │       ├── AnibusApplication.java     # Punto di ingresso JavaFX
-    │       ├── AnibusController.java      # Controller UI (FXML)
-    │       ├── PortScannerService.java    # Scansione, banner, estrazione versioni
-    │       └── PortScanResult.java        # Modello dati (7 campi)
+    │       ├── AnibusController.java      # Controller UI — collega tutti i servizi
+    │       ├── PortScanResult.java        # Modello dati (7 campi)
+    │       ├── PortScannerService.java    # Coordinatore: sonda latenza e parsing intervallo
+    │       ├── ScanTask.java              # Task<Void> in background con callbacks
+    │       ├── BannerGrabber.java         # Acquisizione banner (HTTP HEAD / greeting raw)
+    │       ├── VersionExtractor.java      # Estrazione versione software dai banner (regex)
+    │       ├── PortRegistry.java          # Tabelle di servizi e protocolli/cifratura
+    │       ├── ExportService.java         # Esportazione CSV e XML con dialogo scelta formato
+    │       ├── TableConfigurator.java     # Configurazione colonne e celle della tabella
+    │       ├── ClipboardService.java      # Utilità copia negli appunti
+    │       └── AlertHelper.java           # Dialoghi di avviso stilizzati (stile iOS)
     └── resources/
         └── it/r2u/anibus/
             ├── hello-view.fxml            # Layout dell'interfaccia
@@ -88,7 +96,7 @@ mvnw.cmd javafx:run
 5. Appare il **pannello informazioni host** con statistiche in tempo reale
 6. I risultati popolano la tabella man mano che le porte vengono scoperte
 7. Cliccare **Stop** per interrompere la scansione in qualsiasi momento
-8. Usare **Export** per salvare in CSV, oppure **Clear** per azzerare
+8. Usare **Export** per salvare in **CSV o XML**, oppure **Clear** per azzerare
 9. Fare clic destro per copiare una riga o tutti i risultati
 
 ---
