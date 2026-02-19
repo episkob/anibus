@@ -1,6 +1,8 @@
 # Anibus — Scanner di Porte
 
-Un'applicazione desktop moderna in stile iOS 17 per la scansione delle porte, realizzata con **JavaFX 22** e **Java 21**.
+Un'applicazione desktop moderna per la scansione delle porte, realizzata con **Anibus Design System**, **JavaFX 21.0.5** e **Java 21**.
+
+> **Versione:** 1.1.0 · **Autore:** Iaroslav Tsymbaliuk · **Ruolo:** Intern (2025–2026) @ r2u
 
 ---
 
@@ -26,7 +28,7 @@ Un'applicazione desktop moderna in stile iOS 17 per la scansione delle porte, re
 - **Cancellazione** dei risultati con un clic
 - **Copia riga** o **copia tutti** tramite menu contestuale
 - Risoluzione DNS automatica alla perdita del focus
-- Design in stile iOS 17: barra di navigazione effetto vetro, pulsanti con gradiente, barre di scorrimento sottili, schede arrotondate, colonna stato colorata
+- **Anibus Design System**: barra di navigazione effetto vetro, pulsanti con gradiente, barre di scorrimento sottili, schede arrotondate, colonna stato colorata
 
 ---
 
@@ -49,11 +51,12 @@ src/
     │       ├── ExportService.java         # Esportazione CSV e XML con dialogo scelta formato
     │       ├── TableConfigurator.java     # Configurazione colonne e celle della tabella
     │       ├── ClipboardService.java      # Utilità copia negli appunti
-    │       └── AlertHelper.java           # Dialoghi di avviso stilizzati (stile iOS)
+            └── AlertHelper.java           # Dialoghi di avviso Anibus Design System
     └── resources/
         └── it/r2u/anibus/
             ├── hello-view.fxml            # Layout dell'interfaccia
-            └── ios-style.css              # Stili iOS 17
+            ├── anibus-style.css           # Foglio di stile Anibus Design System
+            └── app.properties             # Versione runtime filtrata da Maven
 ```
 
 ---
@@ -63,7 +66,7 @@ src/
 | Strumento | Versione |
 |-----------|----------|
 | Java      | 21+      |
-| JavaFX    | 22.0.1   |
+| JavaFX    | 21.0.5   |
 | Maven     | 3.8+     |
 
 ---
@@ -72,7 +75,7 @@ src/
 
 ```bash
 # Clonare il repository
-git clone https://github.com/your-username/anibus.git
+git clone https://github.com/episkob/anibus.git
 cd anibus
 
 # Avvio con Maven
@@ -104,10 +107,10 @@ mvnw.cmd javafx:run
 ## Stack Tecnologico
 
 - **Java 21** — linguaggio di programmazione
-- **JavaFX 22** — framework UI
+- **JavaFX 21.0.5** — framework UI
 - **Maven** — strumento di build
 - **FXML** — layout dichiarativo dell'interfaccia
-- **CSS** — tema in stile iOS 17
+- **CSS** — tema Anibus Design System
 
 ---
 

@@ -1,6 +1,8 @@
 # Anibus — Port Scanner
 
-A modern, iOS 17-inspired desktop port scanning application built with **JavaFX 22** and **Java 21**.
+A modern desktop port scanning application built with the **Anibus Design System**, **JavaFX 21.0.5** and **Java 21**.
+
+> **Version:** 1.1.0 · **Author:** Iaroslav Tsymbaliuk · **Position:** Intern (2025–2026) @ r2u
 
 ---
 
@@ -26,7 +28,7 @@ A modern, iOS 17-inspired desktop port scanning application built with **JavaFX 
 - **Clear** results with one click
 - **Copy row** or **Copy all** via right-click context menu
 - Auto DNS resolution on focus-out
-- iOS 17-style design: frosted-glass navbar, gradient buttons, thin scrollbars, rounded cards, color-coded state column
+- **Anibus Design System**: frosted-glass navbar, gradient buttons, thin scrollbars, rounded cards, color-coded state column
 
 ---
 
@@ -49,11 +51,12 @@ src/
     │       ├── ExportService.java         # CSV and XML export with format-selection dialog
     │       ├── TableConfigurator.java     # TableView column setup and cell factories
     │       ├── ClipboardService.java      # Clipboard copy utilities
-    │       └── AlertHelper.java           # iOS-styled modal alert dialogs
+            └── AlertHelper.java           # Anibus design modal alert dialogs
     └── resources/
         └── it/r2u/anibus/
             ├── hello-view.fxml            # UI layout
-            └── ios-style.css              # iOS 17 stylesheet
+            ├── anibus-style.css           # Anibus Design System stylesheet
+            └── app.properties             # Maven-filtered runtime version
 ```
 
 ---
@@ -63,7 +66,7 @@ src/
 | Tool   | Version |
 |--------|---------|
 | Java   | 21+     |
-| JavaFX | 22.0.1  |
+| JavaFX | 21.0.5  |
 | Maven  | 3.8+    |
 
 ---
@@ -72,7 +75,7 @@ src/
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/anibus.git
+git clone https://github.com/episkob/anibus.git
 cd anibus
 
 # Run with Maven
@@ -104,10 +107,10 @@ mvnw.cmd javafx:run
 ## Tech Stack
 
 - **Java 21** — language
-- **JavaFX 22** — UI framework
+- **JavaFX 21.0.5** — UI framework
 - **Maven** — build tool
 - **FXML** — declarative UI layout
-- **CSS** — iOS 17-style theming
+- **CSS** — Anibus Design System theming
 
 ---
 
