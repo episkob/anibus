@@ -11,6 +11,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Properties;
 
 /**
  * UI controller: handles FXML events and delegates work
@@ -218,8 +219,16 @@ public class AnibusController {
     /* -- About ------------------------------------------------ */
     @FXML
     protected void onAboutClick() {
+        String version = "1.1.0";
+        try (var in = getClass().getResourceAsStream("app.properties")) {
+            if (in != null) {
+                Properties props = new Properties();
+                props.load(in);
+                version = props.getProperty("app.version", version);
+            }
+        } catch (Exception ignored) {}
         AlertHelper.show("About Anibus",
-                "Anibus Design System  ›  Version: 1.0.0\n\nAuthor: Iaroslav Tsymbaliuk\n\nPosition: Intern (2025–2026) @ r2u",
+                "Anibus Design System  \u203a  Version: " + version + "\n\nAuthor: Iaroslav Tsymbaliuk\n\nPosition: Intern (2025\u20132026) @ r2u",
                 Alert.AlertType.INFORMATION, cssUrl());
     }
 

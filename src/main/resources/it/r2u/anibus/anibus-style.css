@@ -207,18 +207,19 @@
 }
 
 .table-view .filler {
-    -fx-background-color: transparent;
+    -fx-background-color: #F0F0F5;
 }
 
 .table-view .column-header-background {
-    -fx-background-color: #FAFAFC;
-    -fx-border-color: transparent transparent #E5E5EA transparent;
-    -fx-border-width: 0 0 0.5 0;
+    -fx-background-color: #F0F0F5;
+    -fx-border-color: transparent transparent #C7C7CC transparent;
+    -fx-border-width: 0 0 1.5 0;
 }
 
 .table-view .column-header {
     -fx-background-color: transparent;
-    -fx-border-color: transparent;
+    -fx-border-color: transparent #E5E5EA transparent transparent;
+    -fx-border-width: 0 0.5 0 0;
     -fx-font-size: 12px;
     -fx-font-weight: 600;
     -fx-text-fill: #636366;
