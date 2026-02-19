@@ -2,7 +2,7 @@ module it.r2u.anibus {
     // Import required JavaFX modules and external libraries
     requires transitive javafx.base;
     requires transitive javafx.graphics;
-    requires javafx.controls;
+    requires transitive javafx.controls;
     requires javafx.fxml;
 
     // Open the it.r2u.anibus package to javafx.fxml.
