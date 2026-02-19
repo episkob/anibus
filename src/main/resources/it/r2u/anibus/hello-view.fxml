@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ProgressBar?>
+<?import javafx.scene.control.ProgressIndicator?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.Spinner?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.Tooltip?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="it.r2u.anibus.HelloController"
+      style="-fx-background-color: #F2F2F7;">
+    <children>
+
+        <!-- ══ Navigation Bar ══ -->
+        <HBox alignment="CENTER" styleClass="nav-bar">
+            <children>
+                <Label text="Anibus" styleClass="nav-title" />
+                <Region HBox.hgrow="ALWAYS" />
+                <Button text="About" onAction="#onAboutClick" styleClass="nav-link" />
+            </children>
+        </HBox>
+
+        <!-- ══ Status Bar ══ -->
+        <HBox alignment="CENTER_LEFT" styleClass="status-bar" spacing="8">
+            <children>
+                <Label fx:id="statusLabel" text="Ready" styleClass="status-label" />
+                <Region HBox.hgrow="ALWAYS" />
+                <ProgressIndicator fx:id="progressIndicator" visible="false" prefWidth="14" prefHeight="14" />
+            </children>
+        </HBox>
+
+        <!-- ══ Scrollable Content ══ -->
+        <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS"
+                    style="-fx-background-color: transparent; -fx-background: transparent;">
+            <content>
+                <VBox spacing="16" style="-fx-padding: 20 24;">
+                    <children>
+
+                        <!-- ── Input Card ── -->
+                        <VBox spacing="18" styleClass="card">
+                            <children>
+                                <Label text="Port Scanner" styleClass="title-label" />
+
+                                <!-- Host -->
+                                <VBox spacing="6">
+                                    <children>
+                                        <Label text="TARGET HOST" styleClass="subtitle-label" />
+                                        <TextField fx:id="hostTextField"
+                                                   promptText="hostname or IP address" />
+                                        <Label fx:id="resolvedHostLabel" text="" styleClass="host-resolved-label" />
+                                    </children>
+                                </VBox>
+
+                                <!-- Port Range -->
+                                <VBox spacing="6">
+                                    <children>
+                                        <Label text="PORT RANGE" styleClass="subtitle-label" />
+                                        <TextField fx:id="portsTextField"
+                                                   promptText="e.g. 1-1024" />
+                                    </children>
+                                </VBox>
+
+                                <!-- Threads -->
+                                <HBox spacing="12" alignment="CENTER_LEFT">
+                                    <children>
+                                        <VBox spacing="6">
+                                            <children>
+                                                <Label text="THREADS" styleClass="subtitle-label" />
+                                                <Spinner fx:id="threadSpinner" prefWidth="100" editable="true">
+                                                    <tooltip>
+                                                        <Tooltip text="Number of concurrent scanning threads" />
+                                                    </tooltip>
+                                                </Spinner>
+                                            </children>
+                                        </VBox>
+                                    </children>
+                                </HBox>
+
+                                <Separator style="-fx-padding: 4 0;" />
+
+                                <!-- Actions -->
+                                <HBox spacing="10" alignment="CENTER_LEFT">
+                                    <children>
+                                        <Button fx:id="scanButton" onAction="#onScanButtonClick"
+                                                text="Start Scan" styleClass="scan-button" />
+                                        <Button fx:id="stopButton" onAction="#onStopButtonClick"
+                                                text="Stop" disable="true" styleClass="stop-button" />
+                                        <Region HBox.hgrow="ALWAYS" />
+                                        <ProgressBar fx:id="progressBar" visible="false"
+                                                     prefWidth="140" prefHeight="6" />
+                                    </children>
+                                </HBox>
+                            </children>
+                        </VBox>
+
+                        <!-- ── Host Info Card ── -->
+                        <VBox fx:id="infoCard" spacing="12" styleClass="card" visible="false" managed="false">
+                            <children>
+                                <Label text="Host Information" styleClass="section-title" />
+                                <HBox spacing="24">
+                                    <children>
+                                        <VBox spacing="4" styleClass="info-item">
+                                            <children>
+                                                <Label text="IP ADDRESS" styleClass="info-key" />
+                                                <Label fx:id="infoIpLabel" text="-" styleClass="info-value" />
+                                            </children>
+                                        </VBox>
+                                        <VBox spacing="4" styleClass="info-item">
+                                            <children>
+                                                <Label text="HOSTNAME" styleClass="info-key" />
+                                                <Label fx:id="infoHostnameLabel" text="-" styleClass="info-value" />
+                                            </children>
+                                        </VBox>
+                                        <VBox spacing="4" styleClass="info-item">
+                                            <children>
+                                                <Label text="SCAN TIME" styleClass="info-key" />
+                                                <Label fx:id="infoScanTimeLabel" text="-" styleClass="info-value" />
+                                            </children>
+                                        </VBox>
+                                        <VBox spacing="4" styleClass="info-item">
+                                            <children>
+                                                <Label text="PORTS SCANNED" styleClass="info-key" />
+                                                <Label fx:id="infoPortsScannedLabel" text="-" styleClass="info-value" />
+                                            </children>
+                                        </VBox>
+                                        <VBox spacing="4" styleClass="info-item">
+                                            <children>
+                                                <Label text="OPEN PORTS" styleClass="info-key" />
+                                                <Label fx:id="infoOpenPortsLabel" text="-" styleClass="info-value" />
+                                            </children>
+                                        </VBox>
+                                        <VBox spacing="4" styleClass="info-item">
+                                            <children>
+                                                <Label text="AVG LATENCY" styleClass="info-key" />
+                                                <Label fx:id="infoAvgLatencyLabel" text="-" styleClass="info-value" />
+                                            </children>
+                                        </VBox>
+                                    </children>
+                                </HBox>
+                            </children>
+                        </VBox>
+
+                        <!-- ── Results Card ── -->
+                        <VBox spacing="14" styleClass="card" VBox.vgrow="ALWAYS">
+                            <children>
+                                <HBox alignment="CENTER_LEFT" spacing="10">
+                                    <children>
+                                        <Label text="Results" styleClass="section-title" />
+                                        <Label fx:id="resultCountLabel" text="No open ports"
+                                               styleClass="counter-label" />
+                                        <Region HBox.hgrow="ALWAYS" />
+                                        <Button fx:id="exportButton" text="Export"
+                                                onAction="#onExportClick"
+                                                styleClass="secondary-button" disable="true" />
+                                        <Button fx:id="clearButton" text="Clear"
+                                                onAction="#onClearClick"
+                                                styleClass="secondary-button" disable="true" />
+                                    </children>
+                                </HBox>
+
+                                <TableView fx:id="resultTableView" VBox.vgrow="ALWAYS"
+                                           prefHeight="380">
+                                    <columns>
+                                        <TableColumn fx:id="portColumn" text="Port" prefWidth="70" />
+                                        <TableColumn fx:id="stateColumn" text="State" prefWidth="80" />
+                                        <TableColumn fx:id="serviceColumn" text="Service" prefWidth="120" />
+                                        <TableColumn fx:id="versionColumn" text="Version" prefWidth="160" />
+                                        <TableColumn fx:id="protocolColumn" text="Protocol" prefWidth="140" />
+                                        <TableColumn fx:id="latencyColumn" text="Latency" prefWidth="70" />
+                                        <TableColumn fx:id="bannerColumn" text="Banner" prefWidth="340" />
+                                    </columns>
+                                </TableView>
+                            </children>
+                        </VBox>
+
+                    </children>
+                </VBox>
+            </content>
+        </ScrollPane>
+
+    </children>
+</VBox>

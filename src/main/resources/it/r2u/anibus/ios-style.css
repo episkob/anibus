@@ -1,0 +1,461 @@
+/* ═══════════════════════════════════════════════════════
+   Anibus — iOS 17 Design System
+   Palette  : Apple Human Interface Guidelines
+   Font     : SF Pro Display → Segoe UI → system-ui
+   ═══════════════════════════════════════════════════════ */
+
+/* ── Root ────────────────────────────────────────────── */
+.root {
+    -fx-background-color: #F2F2F7;
+    -fx-font-family: 'SF Pro Display', 'Segoe UI', system-ui;
+    -fx-font-size: 14px;
+    /* Apple semantic colour tokens */
+    -apple-blue:        #007AFF;
+    -apple-blue-dark:   #0056D6;
+    -apple-red:         #FF3B30;
+    -apple-red-dark:    #D70015;
+    -apple-green:       #34C759;
+    -apple-orange:      #FF9500;
+    -apple-purple:      #AF52DE;
+    -apple-teal:        #5AC8FA;
+    -apple-gray1:       #1D1D1F;
+    -apple-gray2:       #3A3A3C;
+    -apple-gray3:       #636366;
+    -apple-gray4:       #8E8E93;
+    -apple-gray5:       #AEAEB2;
+    -apple-gray6:       #C7C7CC;
+    -apple-separator:   #E5E5EA;
+    -apple-fill1:       #F2F2F7;
+    -apple-fill2:       #E5E5EA;
+    -apple-surface:     #FFFFFF;
+}
+
+/* ── Navigation Bar (frosted glass) ──────────────────── */
+.nav-bar {
+    -fx-background-color: rgba(255,255,255,0.82);
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 16, 0, 0, 2);
+    -fx-padding: 14 24;
+    -fx-min-height: 56;
+}
+
+.nav-title {
+    -fx-font-size: 20px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #1D1D1F;
+    -fx-padding: 0;
+}
+
+.nav-link {
+    -fx-background-color: transparent;
+    -fx-text-fill: #007AFF;
+    -fx-font-size: 15px;
+    -fx-font-weight: 500;
+    -fx-cursor: hand;
+    -fx-border-color: transparent;
+    -fx-padding: 8 14;
+    -fx-background-radius: 8;
+}
+.nav-link:hover {
+    -fx-background-color: rgba(0,122,255,0.08);
+}
+
+/* ── Status Bar ──────────────────────────────────────── */
+.status-bar {
+    -fx-background-color: #F9F9F9;
+    -fx-padding: 8 24;
+    -fx-border-color: transparent transparent #E5E5EA transparent;
+    -fx-border-width: 0 0 0.5 0;
+}
+
+.status-label {
+    -fx-font-size: 12px;
+    -fx-font-weight: 400;
+    -fx-text-fill: #8E8E93;
+}
+
+/* ── Text Field ──────────────────────────────────────── */
+.text-field {
+    -fx-background-color: #EFEFF4;
+    -fx-background-radius: 12;
+    -fx-border-color: transparent;
+    -fx-border-radius: 12;
+    -fx-padding: 14 18;
+    -fx-font-size: 15px;
+    -fx-prompt-text-fill: #AEAEB2;
+}
+.text-field:focused {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #007AFF;
+    -fx-border-width: 2;
+    -fx-effect: dropshadow(gaussian, rgba(0,122,255,0.15), 12, 0, 0, 0);
+}
+.text-field .text {
+    -fx-fill: #1D1D1F;
+}
+
+/* ── Buttons ─────────────────────────────────────────── */
+.button {
+    -fx-background-radius: 24;
+    -fx-font-size: 15px;
+    -fx-font-weight: 600;
+    -fx-padding: 12 28;
+    -fx-cursor: hand;
+    -fx-border-color: transparent;
+}
+
+/* Primary / Scan */
+.scan-button {
+    -fx-background-color: linear-gradient(to bottom, #2395FF, #007AFF);
+    -fx-text-fill: white;
+    -fx-effect: dropshadow(gaussian, rgba(0,122,255,0.35), 10, 0, 0, 3);
+}
+.scan-button:hover {
+    -fx-background-color: linear-gradient(to bottom, #007AFF, #0056D6);
+}
+.scan-button:pressed {
+    -fx-background-color: #0056D6;
+    -fx-effect: dropshadow(gaussian, rgba(0,122,255,0.15), 4, 0, 0, 1);
+}
+
+/* Destructive / Stop */
+.stop-button {
+    -fx-background-color: linear-gradient(to bottom, #FF6259, #FF3B30);
+    -fx-text-fill: white;
+    -fx-effect: dropshadow(gaussian, rgba(255,59,48,0.35), 10, 0, 0, 3);
+}
+.stop-button:hover {
+    -fx-background-color: linear-gradient(to bottom, #FF3B30, #D70015);
+}
+.stop-button:pressed {
+    -fx-background-color: #D70015;
+    -fx-effect: dropshadow(gaussian, rgba(255,59,48,0.15), 4, 0, 0, 1);
+}
+
+/* Secondary / Export & Clear */
+.secondary-button {
+    -fx-background-color: #F2F2F7;
+    -fx-text-fill: #007AFF;
+    -fx-effect: none;
+    -fx-border-color: #E5E5EA;
+    -fx-border-width: 1;
+    -fx-border-radius: 24;
+}
+.secondary-button:hover {
+    -fx-background-color: #E8E8ED;
+}
+
+.button:disabled {
+    -fx-background-color: #E5E5EA;
+    -fx-text-fill: #AEAEB2;
+    -fx-effect: none;
+}
+
+/* ── Labels ──────────────────────────────────────────── */
+.label {
+    -fx-text-fill: #1D1D1F;
+}
+
+.title-label {
+    -fx-font-size: 22px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #1D1D1F;
+}
+
+.section-title {
+    -fx-font-size: 17px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #1D1D1F;
+}
+
+.subtitle-label {
+    -fx-font-size: 13px;
+    -fx-font-weight: 500;
+    -fx-text-fill: #636366;
+    -fx-padding: 0 0 2 2;
+}
+
+.counter-label {
+    -fx-font-size: 12px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #636366;
+    -fx-background-color: #EFEFF4;
+    -fx-background-radius: 14;
+    -fx-padding: 4 12;
+}
+
+.host-resolved-label {
+    -fx-font-size: 12px;
+    -fx-text-fill: #8E8E93;
+    -fx-padding: 4 0 0 2;
+}
+
+/* ── Cards ───────────────────────────────────────────── */
+.card {
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 16;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 12, 0, 0, 3);
+    -fx-padding: 24;
+}
+
+/* ── Table View ──────────────────────────────────────── */
+.table-view {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+    -fx-border-color: transparent;
+    -fx-table-cell-border-color: transparent;
+}
+
+.table-view .filler {
+    -fx-background-color: transparent;
+}
+
+.table-view .column-header-background {
+    -fx-background-color: #FAFAFC;
+    -fx-border-color: transparent transparent #E5E5EA transparent;
+    -fx-border-width: 0 0 0.5 0;
+}
+
+.table-view .column-header {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-font-size: 12px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #636366;
+    -fx-padding: 10 12;
+}
+
+.table-view .column-header .label {
+    -fx-text-fill: #636366;
+    -fx-font-size: 12px;
+    -fx-font-weight: 600;
+}
+
+.table-view .table-cell {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent transparent #F2F2F7 transparent;
+    -fx-border-width: 0 0 0.5 0;
+    -fx-padding: 14 12;
+    -fx-text-fill: #1D1D1F;
+    -fx-font-size: 14px;
+}
+
+.table-row-cell {
+    -fx-background-color: transparent;
+}
+
+.table-row-cell:odd {
+    -fx-background-color: rgba(0,0,0,0.015);
+}
+
+.table-row-cell:selected {
+    -fx-background-color: rgba(0,122,255,0.08);
+}
+
+.table-row-cell:selected .table-cell {
+    -fx-text-fill: #007AFF;
+}
+
+.table-row-cell:hover:filled {
+    -fx-background-color: rgba(0,0,0,0.03);
+}
+
+.table-view .placeholder .label {
+    -fx-text-fill: #AEAEB2;
+    -fx-font-size: 15px;
+}
+
+/* ── Progress Indicator ──────────────────────────────── */
+.progress-indicator {
+    -fx-progress-color: #007AFF;
+    -fx-background-color: transparent;
+}
+
+.progress-bar .track {
+    -fx-background-color: #E5E5EA;
+    -fx-background-radius: 3;
+}
+
+.progress-bar .bar {
+    -fx-background-color: linear-gradient(to right, #5AC8FA, #007AFF);
+    -fx-background-radius: 3;
+    -fx-background-insets: 0;
+}
+
+/* ── Context Menu ────────────────────────────────────── */
+.context-menu {
+    -fx-background-color: rgba(255,255,255,0.96);
+    -fx-background-radius: 14;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 20, 0, 0, 6);
+    -fx-padding: 6;
+}
+
+.menu-item {
+    -fx-background-color: transparent;
+    -fx-text-fill: #1D1D1F;
+    -fx-padding: 10 16;
+    -fx-background-radius: 8;
+    -fx-font-size: 14px;
+}
+
+.menu-item:hover, .menu-item:focused {
+    -fx-background-color: #007AFF;
+    -fx-text-fill: white;
+}
+
+.separator {
+    -fx-padding: 4 0;
+}
+
+.separator .line {
+    -fx-border-color: #E5E5EA;
+    -fx-border-width: 0.5 0 0 0;
+}
+
+/* ── Scroll Pane ─────────────────────────────────────── */
+.scroll-pane {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+}
+
+.scroll-pane .viewport {
+    -fx-background-color: transparent;
+}
+
+.scroll-pane .corner {
+    -fx-background-color: transparent;
+}
+
+/* ── Scroll Bar (thin iOS-style) ─────────────────────── */
+.scroll-bar {
+    -fx-background-color: transparent;
+    -fx-pref-width: 6;
+}
+
+.scroll-bar .track {
+    -fx-background-color: transparent;
+    -fx-background-radius: 3;
+}
+
+.scroll-bar .thumb {
+    -fx-background-color: rgba(0,0,0,0.15);
+    -fx-background-radius: 3;
+    -fx-background-insets: 1;
+}
+
+.scroll-bar .thumb:hover {
+    -fx-background-color: rgba(0,0,0,0.28);
+}
+
+.scroll-bar .increment-button,
+.scroll-bar .decrement-button {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 0;
+}
+
+.scroll-bar .increment-arrow,
+.scroll-bar .decrement-arrow {
+    -fx-shape: "";
+    -fx-padding: 0;
+}
+
+/* ── Tooltip ─────────────────────────────────────────── */
+.tooltip {
+    -fx-background-color: rgba(44,44,46,0.92);
+    -fx-background-radius: 8;
+    -fx-text-fill: white;
+    -fx-font-size: 12px;
+    -fx-padding: 6 10;
+}
+
+/* ── Alert / Dialog ──────────────────────────────────── */
+.dialog-pane {
+    -fx-background-color: white;
+    -fx-background-radius: 16;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 24, 0, 0, 6);
+    -fx-font-family: 'SF Pro Display', 'Segoe UI', system-ui;
+    -fx-padding: 24;
+}
+
+.dialog-pane .button {
+    -fx-background-color: #007AFF;
+    -fx-background-radius: 10;
+    -fx-text-fill: white;
+    -fx-font-weight: 600;
+    -fx-padding: 10 20;
+}
+
+.dialog-pane .button:hover {
+    -fx-background-color: #0056D6;
+}
+
+/* ── Thread-count Spinner ────────────────────────────── */
+.spinner {
+    -fx-background-color: #EFEFF4;
+    -fx-background-radius: 10;
+    -fx-border-color: transparent;
+}
+
+.spinner .text-field {
+    -fx-background-color: transparent;
+    -fx-padding: 8 12;
+    -fx-font-size: 14px;
+}
+
+.spinner .increment-arrow-button,
+.spinner .decrement-arrow-button {
+    -fx-background-color: transparent;
+    -fx-border-color: #E5E5EA;
+}
+
+/* ── Badge labels (protocol/service) ─────────────────── */
+.badge {
+    -fx-font-size: 11px;
+    -fx-font-weight: 600;
+    -fx-padding: 3 8;
+    -fx-background-radius: 10;
+}
+
+.badge-blue {
+    -fx-background-color: rgba(0,122,255,0.12);
+    -fx-text-fill: #007AFF;
+}
+
+.badge-green {
+    -fx-background-color: rgba(52,199,89,0.12);
+    -fx-text-fill: #248A3D;
+}
+
+.badge-orange {
+    -fx-background-color: rgba(255,149,0,0.12);
+    -fx-text-fill: #C93400;
+}
+
+.badge-red {
+    -fx-background-color: rgba(255,59,48,0.12);
+    -fx-text-fill: #D70015;
+}
+
+.badge-gray {
+    -fx-background-color: rgba(142,142,147,0.12);
+    -fx-text-fill: #636366;
+}
+
+/* ── Host Info Card ──────────────────────────────────── */
+.info-item {
+    -fx-padding: 4 0;
+}
+
+.info-key {
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #8E8E93;
+    -fx-padding: 0 0 2 0;
+}
+
+.info-value {
+    -fx-font-size: 15px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #1D1D1F;
+}
