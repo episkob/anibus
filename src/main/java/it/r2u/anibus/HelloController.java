@@ -247,7 +247,7 @@ public class HelloController {
 
         int[] ports = portScannerService.parsePortsRange(portsRange);
         if (ports == null || ports[0] > ports[1]) {
-            showModernAlert("Invalid range", "Use format start-end, e.g. 1-1024.", Alert.AlertType.ERROR);
+            showModernAlert("Invalid range", "Use format start-end (1–65535), e.g. 1-1024 or 1-65535.", Alert.AlertType.ERROR);
             return;
         }
 

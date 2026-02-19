@@ -68,7 +68,7 @@
                                     <children>
                                         <Label text="PORT RANGE" styleClass="subtitle-label" />
                                         <TextField fx:id="portsTextField"
-                                                   promptText="e.g. 1-1024" />
+                                                   promptText="e.g. 1-1024 or 1-65535" />
                                     </children>
                                 </VBox>
 

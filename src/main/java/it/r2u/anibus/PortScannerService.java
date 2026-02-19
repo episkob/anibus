@@ -28,6 +28,9 @@ public class PortScannerService {
             try {
                 int startPort = Integer.parseInt(matcher.group(1));
                 int endPort   = Integer.parseInt(matcher.group(2));
+                if (startPort < 1 || endPort > 65535 || startPort > endPort) {
+                    return null;
+                }
                 return new int[]{startPort, endPort};
             } catch (NumberFormatException e) {
                 return null;
