@@ -19,8 +19,7 @@
 <?import javafx.scene.layout.VBox?>
 
 <VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="it.r2u.anibus.AnibusController"
-      style="-fx-background-color: #F2F2F7;">
+      fx:controller="it.r2u.anibus.AnibusController">
     <children>
 
         <!-- ══ Navigation Bar ══ -->
@@ -42,10 +41,9 @@
         </HBox>
 
         <!-- ══ Scrollable Content ══ -->
-        <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS"
-                    style="-fx-background-color: transparent; -fx-background: transparent;">
+        <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS">
             <content>
-                <VBox spacing="16" style="-fx-padding: 20 24;">
+                <VBox spacing="16" styleClass="content-area">
                     <children>
 
                         <!-- ── Input Card ── -->
@@ -68,7 +66,7 @@
                                     <children>
                                         <Label text="PORT RANGE" styleClass="subtitle-label" />
                                         <TextField fx:id="portsTextField"
-                                                   promptText="e.g. 1-1024 or 1-65535" />
+                                                   promptText="e.g. 1-65535" />
                                     </children>
                                 </VBox>
 
@@ -88,7 +86,7 @@
                                     </children>
                                 </HBox>
 
-                                <Separator style="-fx-padding: 4 0;" />
+                                <Separator />
 
                                 <!-- Actions -->
                                 <HBox spacing="10" alignment="CENTER_LEFT">

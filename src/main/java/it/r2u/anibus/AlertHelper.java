@@ -7,7 +7,7 @@ import javafx.scene.control.DialogPane;
 import java.net.URL;
 
 /**
- * Displays styled iOS-look modal alerts.
+ * Displays styled modal alerts using the Anibus design system.
  */
 public class AlertHelper {
 

@@ -219,7 +219,7 @@ public class AnibusController {
     @FXML
     protected void onAboutClick() {
         AlertHelper.show("About Anibus",
-                "Anibus Port Scanner  v1.1\n\nA modern iOS-inspired port scanning\napplication built with JavaFX.\n\n(c) 2026 r2u",
+                "Anibus Design System  ›  Version: 1.0.0\n\nAuthor: Iaroslav Tsymbaliuk\n\nPosition: Intern (2025–2026) @ r2u",
                 Alert.AlertType.INFORMATION, cssUrl());
     }
 
@@ -249,7 +249,7 @@ public class AnibusController {
     }
 
     private java.net.URL cssUrl() {
-        return getClass().getResource("ios-style.css");
+        return getClass().getResource("anibus-style.css");
     }
 
     public void shutdownExecutor() {

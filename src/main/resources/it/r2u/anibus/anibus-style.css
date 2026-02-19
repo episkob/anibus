@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════
-   Anibus — iOS 17 Design System
-   Palette  : Apple Human Interface Guidelines
+   Anibus Design System
+   Palette  : Anibus colour tokens
    Font     : SF Pro Display → Segoe UI → system-ui
    ═══════════════════════════════════════════════════════ */
 
@@ -326,7 +326,7 @@
     -fx-background-color: transparent;
 }
 
-/* ── Scroll Bar (thin iOS-style) ─────────────────────── */
+/* ── Scroll Bar (thin) ──────────────────────────────── */
 .scroll-bar {
     -fx-background-color: transparent;
     -fx-pref-width: 6;
@@ -440,6 +440,11 @@
 .badge-gray {
     -fx-background-color: rgba(142,142,147,0.12);
     -fx-text-fill: #636366;
+}
+
+/* ── Content Area ────────────────────────────────────── */
+.content-area {
+    -fx-padding: 20 24;
 }
 
 /* ── Host Info Card ──────────────────────────────────── */

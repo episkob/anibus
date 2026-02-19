@@ -16,8 +16,8 @@ public class AnibusApplication extends Application {
         FXMLLoader fxmlLoader = new FXMLLoader(AnibusApplication.class.getResource("hello-view.fxml"));
         Scene scene = new Scene(fxmlLoader.load(), 1200, 800);
 
-        // Добавляем iOS-стиль CSS
-        scene.getStylesheets().add(AnibusApplication.class.getResource("ios-style.css").toExternalForm());
+        // Apply Anibus design CSS
+        scene.getStylesheets().add(AnibusApplication.class.getResource("anibus-style.css").toExternalForm());
 
         controller = fxmlLoader.getController();
 
