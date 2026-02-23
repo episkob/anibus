@@ -22,6 +22,7 @@ A modern desktop port scanning application built with the **Anibus Design System
 - Protocol & **encryption detection** (TLS, STARTTLS, HTTPS, SMTPS, LDAPS, etc.)
 
 ### UI & Workflow
+- **Traffic light network indicator** — live dot in the status bar (🟢 internet, 🟡 local only, 🔴 no connection), polled every 5 seconds
 - **Host Information panel** — shows IP, hostname, scan time, ports scanned, open ports count, and average latency (live-updated)
 - **7-column results table** — Port, State, Service, Version, Protocol, Latency, Banner
 - **Export to CSV or XML** with all columns
@@ -40,23 +41,30 @@ src/
     ├── java/
     │   ├── module-info.java
     │   └── it/r2u/anibus/
-    │       ├── AnibusApplication.java     # JavaFX entry point
-    │       ├── AnibusController.java      # UI controller — wires all services together
-    │       ├── PortScanResult.java        # Data model (7 fields)
-    │       ├── PortScannerService.java    # Thin coordinator: latency probe + port-range parsing
-    │       ├── ScanTask.java              # Background Task<Void> with callbacks
-    │       ├── BannerGrabber.java         # HTTP HEAD / raw greeting banner grabber
-    │       ├── VersionExtractor.java      # Regex-based version extraction from banners
-    │       ├── PortRegistry.java          # Service name & protocol/encryption lookup tables
-    │       ├── ExportService.java         # CSV and XML export with format-selection dialog
-    │       ├── TableConfigurator.java     # TableView column setup and cell factories
-    │       ├── ClipboardService.java      # Clipboard copy utilities
-            └── AlertHelper.java           # Anibus design modal alert dialogs
+    │       ├── AnibusApplication.java          # JavaFX entry point
+    │       ├── AnibusController.java           # UI controller — wires all services together
+    │       │
+    │       ├── model/
+    │       │   ├── PortScanResult.java          # Data model (7 fields)
+    │       │   └── PortRegistry.java            # Service name & protocol/encryption lookup tables
+    │       │
+    │       ├── service/
+    │       │   ├── PortScannerService.java      # Thin coordinator: latency probe + port-range parsing
+    │       │   ├── ScanTask.java                # Background Task<Void> with callbacks
+    │       │   ├── BannerGrabber.java           # HTTP HEAD / raw greeting banner grabber
+    │       │   ├── VersionExtractor.java        # Regex-based version extraction from banners
+    │       │   └── ExportService.java           # CSV and XML export with format-selection dialog
+    │       │
+    │       └── ui/
+    │           ├── AlertHelper.java             # Anibus design modal alert dialogs
+    │           ├── ClipboardService.java        # Clipboard copy utilities
+    │           └── TableConfigurator.java       # TableView column setup and cell factories
+    │
     └── resources/
         └── it/r2u/anibus/
-            ├── hello-view.fxml            # UI layout
-            ├── anibus-style.css           # Anibus Design System stylesheet
-            └── app.properties             # Maven-filtered runtime version
+            ├── hello-view.fxml                  # UI layout
+            ├── anibus-style.css                 # Anibus Design System stylesheet
+            └── app.properties                   # Maven-filtered runtime version
 ```
 
 ---

@@ -22,6 +22,7 @@ Un'applicazione desktop moderna per la scansione delle porte, realizzata con **A
 - Rilevamento di protocollo e **cifratura** (TLS, STARTTLS, HTTPS, SMTPS, LDAPS, ecc.)
 
 ### Interfaccia e Flusso di Lavoro
+- **Indicatore di rete (semaforo)** — punto animato nella barra di stato (🟢 internet, 🟡 solo rete locale, 🔴 nessuna connessione), aggiornato ogni 5 secondi
 - **Pannello informazioni host** — IP, hostname, tempo di scansione, porte analizzate, porte aperte, latenza media (aggiornamento in tempo reale)
 - **Tabella risultati con 7 colonne** — Porta, Stato, Servizio, Versione, Protocollo, Latenza, Banner
 - **Esportazione in CSV o XML** con tutte le colonne
@@ -40,23 +41,30 @@ src/
     ├── java/
     │   ├── module-info.java
     │   └── it/r2u/anibus/
-    │       ├── AnibusApplication.java     # Punto di ingresso JavaFX
-    │       ├── AnibusController.java      # Controller UI — collega tutti i servizi
-    │       ├── PortScanResult.java        # Modello dati (7 campi)
-    │       ├── PortScannerService.java    # Coordinatore: sonda latenza e parsing intervallo
-    │       ├── ScanTask.java              # Task<Void> in background con callbacks
-    │       ├── BannerGrabber.java         # Acquisizione banner (HTTP HEAD / greeting raw)
-    │       ├── VersionExtractor.java      # Estrazione versione software dai banner (regex)
-    │       ├── PortRegistry.java          # Tabelle di servizi e protocolli/cifratura
-    │       ├── ExportService.java         # Esportazione CSV e XML con dialogo scelta formato
-    │       ├── TableConfigurator.java     # Configurazione colonne e celle della tabella
-    │       ├── ClipboardService.java      # Utilità copia negli appunti
-            └── AlertHelper.java           # Dialoghi di avviso Anibus Design System
+    │       ├── AnibusApplication.java          # Punto di ingresso JavaFX
+    │       ├── AnibusController.java           # Controller UI — collega tutti i servizi
+    │       │
+    │       ├── model/
+    │       │   ├── PortScanResult.java          # Modello dati (7 campi)
+    │       │   └── PortRegistry.java            # Tabelle di servizi e protocolli/cifratura
+    │       │
+    │       ├── service/
+    │       │   ├── PortScannerService.java      # Coordinatore: sonda latenza e parsing intervallo
+    │       │   ├── ScanTask.java                # Task<Void> in background con callbacks
+    │       │   ├── BannerGrabber.java           # Acquisizione banner (HTTP HEAD / greeting raw)
+    │       │   ├── VersionExtractor.java        # Estrazione versione software dai banner (regex)
+    │       │   └── ExportService.java           # Esportazione CSV e XML con dialogo scelta formato
+    │       │
+    │       └── ui/
+    │           ├── AlertHelper.java             # Dialoghi di avviso Anibus Design System
+    │           ├── ClipboardService.java        # Utilità copia negli appunti
+    │           └── TableConfigurator.java       # Configurazione colonne e celle della tabella
+    │
     └── resources/
         └── it/r2u/anibus/
-            ├── hello-view.fxml            # Layout dell'interfaccia
-            ├── anibus-style.css           # Foglio di stile Anibus Design System
-            └── app.properties             # Versione runtime filtrata da Maven
+            ├── hello-view.fxml                  # Layout dell'interfaccia
+            ├── anibus-style.css                 # Foglio di stile Anibus Design System
+            └── app.properties                   # Versione runtime filtrata da Maven
 ```
 
 ---
