@@ -32,6 +32,7 @@ public class AnibusController {
     @FXML private Button            stopButton;
     @FXML private Button            exportButton;
     @FXML private Button            clearButton;
+    @FXML private ComboBox<String>  scanTypeComboBox;
 
     /* -- Info card labels ------------------------------------- */
     @FXML private VBox  infoCard;
@@ -65,6 +66,14 @@ public class AnibusController {
                 portColumn, stateColumn, serviceColumn,
                 versionColumn, protocolColumn, latencyColumn, bannerColumn);
         resultTableView.setItems(results);
+
+        scanTypeComboBox.getItems().addAll(
+                "Port Scanner",
+                "Service Detection",
+                "OS Fingerprinting",
+                "Vulnerability Scan"
+        );
+        scanTypeComboBox.getSelectionModel().selectFirst();
 
         threadSpinner.setValueFactory(
                 new SpinnerValueFactory.IntegerSpinnerValueFactory(10, 500, 100, 10));

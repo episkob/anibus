@@ -2,6 +2,7 @@
 
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ProgressBar?>
 <?import javafx.scene.control.ProgressIndicator?>
@@ -34,8 +35,10 @@
         <!-- ══ Status Bar ══ -->
         <HBox alignment="CENTER_LEFT" styleClass="status-bar" spacing="8">
             <children>
-                <Label fx:id="statusLabel" text="Ready" styleClass="status-label" />
+                <Label text="SCAN TYPE" styleClass="subtitle-label" />
+                <ComboBox fx:id="scanTypeComboBox" prefWidth="160" />
                 <Region HBox.hgrow="ALWAYS" />
+                <Label fx:id="statusLabel" text="Ready" styleClass="status-label" />
                 <ProgressIndicator fx:id="progressIndicator" visible="false" prefWidth="14" prefHeight="14" />
             </children>
         </HBox>
