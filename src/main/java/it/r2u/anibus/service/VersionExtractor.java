@@ -1,4 +1,4 @@
-package it.r2u.anibus;
+package it.r2u.anibus.service;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;

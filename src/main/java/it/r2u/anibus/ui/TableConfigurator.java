@@ -1,4 +1,6 @@
-package it.r2u.anibus;
+package it.r2u.anibus.ui;
+
+import it.r2u.anibus.model.PortScanResult;
 
 import javafx.scene.control.Label;
 import javafx.scene.control.TableCell;
@@ -41,19 +43,24 @@ public class TableConfigurator {
         stateCol.setCellFactory(col -> new TableCell<>() {
             @Override protected void updateItem(String val, boolean empty) {
                 super.updateItem(val, empty);
-                if (empty || val == null) { setText(null); setStyle(""); }
-                else { setText(val); setStyle("-fx-text-fill: #34C759; -fx-font-weight: 600;"); }
+                getStyleClass().remove("state-open");
+                if (empty || val == null) {
+                    setText(null);
+                } else {
+                    setText(val);
+                    getStyleClass().add("state-open");
+                }
             }
         });
 
         table.setRowFactory(tv -> {
             TableRow<PortScanResult> row = new TableRow<>();
-            row.setStyle("-fx-background-color: transparent; -fx-border-width: 0 0 0.5 0; -fx-border-color: #E5E5EA;");
+            row.getStyleClass().add("result-row");
             return row;
         });
 
         Label placeholder = new Label("No results yet — start a scan above");
-        placeholder.setStyle("-fx-text-fill: #AEAEB2; -fx-font-size: 15;");
+        placeholder.getStyleClass().add("table-placeholder");
         table.setPlaceholder(placeholder);
     }
 }

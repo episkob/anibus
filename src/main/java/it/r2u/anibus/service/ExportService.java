@@ -1,4 +1,7 @@
-package it.r2u.anibus;
+package it.r2u.anibus.service;
+
+import it.r2u.anibus.model.PortScanResult;
+import it.r2u.anibus.ui.AlertHelper;
 
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonBar;
@@ -38,9 +41,9 @@ public class ExportService {
     public void promptAndExport() {
         if (results.isEmpty()) return;
 
-        ButtonType csvBtn  = new ButtonType("CSV");
-        ButtonType xmlBtn  = new ButtonType("XML");
-        ButtonType cancel  = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+        ButtonType csvBtn = new ButtonType("CSV");
+        ButtonType xmlBtn = new ButtonType("XML");
+        ButtonType cancel = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
         Alert fmt = new Alert(Alert.AlertType.NONE, "Choose export format:", csvBtn, xmlBtn, cancel);
         fmt.setTitle("Export Format");
         fmt.setHeaderText(null);
@@ -107,15 +110,13 @@ public class ExportService {
 
     private void styleDialog(DialogPane dp) {
         if (cssUrl != null) dp.getStylesheets().add(cssUrl.toExternalForm());
-        dp.setStyle("-fx-background-color: white; -fx-background-radius: 16; " +
-                "-fx-effect: dropshadow(gaussian,rgba(0,0,0,0.2),24,0,0,6); " +
-                "-fx-font-family: 'SF Pro Display','Segoe UI',system-ui;");
+        dp.getStyleClass().add("anibus-dialog");
     }
 
     private String esc(String s) { return s == null ? "" : s.replace("\"", "\"\""); }
     private String x(String s) {
         if (s == null) return "";
-        return s.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;")
-                .replace("\"","&quot;").replace("'","&apos;");
+        return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+                .replace("\"", "&quot;").replace("'", "&apos;");
     }
 }

@@ -465,3 +465,62 @@
     -fx-font-weight: 600;
     -fx-text-fill: #1D1D1F;
 }
+/* ── Network Status Dot ──────────────────────────────── */
+.network-dot {
+    -fx-fill: #8E8E93;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 4, 0, 0, 0);
+}
+
+.network-dot-green {
+    -fx-fill: #34C759;
+    -fx-effect: dropshadow(gaussian, rgba(52,199,89,0.4), 6, 0, 0, 0);
+}
+
+.network-dot-yellow {
+    -fx-fill: #FF9500;
+    -fx-effect: dropshadow(gaussian, rgba(255,149,0,0.4), 6, 0, 0, 0);
+}
+
+.network-dot-red {
+    -fx-fill: #FF3B30;
+    -fx-effect: dropshadow(gaussian, rgba(255,59,48,0.4), 6, 0, 0, 0);
+}
+
+/* ── Alert / Dialog ──────────────────────────────────── */
+.anibus-dialog {
+    -fx-background-color: white;
+    -fx-background-radius: 16;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 24, 0, 0, 6);
+    -fx-font-family: 'SF Pro Display', 'Segoe UI', system-ui;
+}
+
+.anibus-dialog-ok-button {
+    -fx-background-color: #007AFF;
+    -fx-background-radius: 10;
+    -fx-text-fill: white;
+    -fx-font-weight: 600;
+    -fx-padding: 10 20;
+}
+
+.anibus-dialog-ok-button:hover {
+    -fx-background-color: #0056D6;
+}
+
+/* ── Table: state cell ───────────────────────────────── */
+.state-open {
+    -fx-text-fill: #34C759;
+    -fx-font-weight: 600;
+}
+
+/* ── Table: result row ───────────────────────────────── */
+.result-row {
+    -fx-background-color: transparent;
+    -fx-border-width: 0 0 0.5 0;
+    -fx-border-color: #E5E5EA;
+}
+
+/* ── Table: placeholder ──────────────────────────────── */
+.table-placeholder {
+    -fx-text-fill: #AEAEB2;
+    -fx-font-size: 15;
+}

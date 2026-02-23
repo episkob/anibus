@@ -1,4 +1,4 @@
-package it.r2u.anibus;
+package it.r2u.anibus.model;
 
 /**
  * Static lookup tables for port → service name and protocol/encryption info.

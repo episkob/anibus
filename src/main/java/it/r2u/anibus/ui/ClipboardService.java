@@ -1,4 +1,6 @@
-package it.r2u.anibus;
+package it.r2u.anibus.ui;
+
+import it.r2u.anibus.model.PortScanResult;
 
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;

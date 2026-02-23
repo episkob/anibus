@@ -1,4 +1,6 @@
-﻿package it.r2u.anibus;
+package it.r2u.anibus.service;
+
+import it.r2u.anibus.model.PortRegistry;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;

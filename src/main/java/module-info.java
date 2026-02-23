@@ -1,17 +1,21 @@
 module it.r2u.anibus {
-    // Import required JavaFX modules and external libraries
     requires transitive javafx.base;
     requires transitive javafx.graphics;
     requires transitive javafx.controls;
     requires javafx.fxml;
 
-    // Open the it.r2u.anibus package to javafx.fxml.
-    // This is necessary so the FXML loader can create controller instances
-    // and access fields annotated with @FXML.
+    // Main package: FXML controller lives here
     opens it.r2u.anibus to javafx.fxml;
 
-    // Export the package so that other modules (if any)
-    // can use classes from it.
-    // Not strictly necessary here, but good practice.
+    // model: PropertyValueFactory uses reflection on PortScanResult
+    opens it.r2u.anibus.model to javafx.base, javafx.controls;
+
+    // service & ui: opened for potential future FXML use
+    opens it.r2u.anibus.service to javafx.fxml;
+    opens it.r2u.anibus.ui to javafx.fxml;
+
     exports it.r2u.anibus;
+    exports it.r2u.anibus.model;
+    exports it.r2u.anibus.service;
+    exports it.r2u.anibus.ui;
 }

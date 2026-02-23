@@ -1,4 +1,12 @@
-﻿package it.r2u.anibus;
+package it.r2u.anibus;
+
+import it.r2u.anibus.model.PortScanResult;
+import it.r2u.anibus.service.ExportService;
+import it.r2u.anibus.service.PortScannerService;
+import it.r2u.anibus.service.ScanTask;
+import it.r2u.anibus.ui.AlertHelper;
+import it.r2u.anibus.ui.ClipboardService;
+import it.r2u.anibus.ui.TableConfigurator;
 
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -6,12 +14,15 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
+import javafx.scene.shape.Circle;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
+import java.net.*;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Properties;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * UI controller: handles FXML events and delegates work
@@ -25,6 +36,8 @@ public class AnibusController {
     @FXML private Spinner<Integer>  threadSpinner;
     @FXML private Label             resolvedHostLabel;
     @FXML private Label             statusLabel;
+    @FXML private Circle            networkDot;
+    private Tooltip                 networkTooltip;
     @FXML private Label             resultCountLabel;
     @FXML private ProgressIndicator progressIndicator;
     @FXML private ProgressBar       progressBar;
@@ -54,10 +67,11 @@ public class AnibusController {
     @FXML private TableColumn<PortScanResult, String>  bannerColumn;
 
     /* -- State ------------------------------------------------ */
-    private ScanTask activeScanTask;
-    private Instant  scanStartTime;
-    private final ObservableList<PortScanResult> results       = FXCollections.observableArrayList();
-    private final PortScannerService             scanner       = new PortScannerService();
+    private ScanTask                  activeScanTask;
+    private Instant                   scanStartTime;
+    private ScheduledExecutorService  networkMonitor;
+    private final ObservableList<PortScanResult> results  = FXCollections.observableArrayList();
+    private final PortScannerService             scanner  = new PortScannerService();
 
     /* -- Initialization --------------------------------------- */
     @FXML
@@ -88,9 +102,13 @@ public class AnibusController {
             });
         });
 
+        networkTooltip = new Tooltip("Checking network…");
+        Tooltip.install(networkDot, networkTooltip);
+
         setupContextMenu();
         hostTextField.focusedProperty().addListener((obs, was, is) -> { if (!is) resolveHost(); });
         refreshResultCount();
+        startNetworkMonitor();
     }
 
     private void setupContextMenu() {
@@ -99,6 +117,67 @@ public class AnibusController {
         MenuItem copyAll = new MenuItem("Copy all results");
         copyAll.setOnAction(e -> copyAllRows());
         resultTableView.setContextMenu(new ContextMenu(copyRow, new SeparatorMenuItem(), copyAll));
+    }
+
+    /* -- Network status --------------------------------------- */
+    private enum NetworkStatus { INTERNET, LOCAL_ONLY, NONE }
+
+    private void startNetworkMonitor() {
+        networkMonitor = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "network-monitor");
+            t.setDaemon(true);
+            return t;
+        });
+        // Check immediately, then every 5 seconds
+        networkMonitor.scheduleWithFixedDelay(() -> {
+            NetworkStatus status = detectNetworkStatus();
+            Platform.runLater(() -> applyNetworkDot(status));
+        }, 0, 5, TimeUnit.SECONDS);
+    }
+
+    private NetworkStatus detectNetworkStatus() {
+        // Try a lightweight TCP probe to a well-known public DNS server
+        try (Socket socket = new Socket()) {
+            socket.connect(new InetSocketAddress("8.8.8.8", 53), 2000);
+            return NetworkStatus.INTERNET;
+        } catch (Exception ignored) {}
+        // Fall back: check whether any non-loopback interface is up
+        try {
+            var ifaces = NetworkInterface.getNetworkInterfaces();
+            if (ifaces != null) {
+                while (ifaces.hasMoreElements()) {
+                    NetworkInterface iface = ifaces.nextElement();
+                    if (!iface.isLoopback() && iface.isUp()) {
+                        var addrs = iface.getInetAddresses();
+                        while (addrs.hasMoreElements()) {
+                            InetAddress addr = addrs.nextElement();
+                            if (!addr.isLoopbackAddress() && !addr.isLinkLocalAddress())
+                                return NetworkStatus.LOCAL_ONLY;
+                        }
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
+        return NetworkStatus.NONE;
+    }
+
+    private void applyNetworkDot(NetworkStatus status) {
+        if (networkDot == null) return;
+        networkDot.getStyleClass().removeAll("network-dot-green", "network-dot-yellow", "network-dot-red");
+        switch (status) {
+            case INTERNET -> {
+                networkDot.getStyleClass().add("network-dot-green");
+                if (networkTooltip != null) networkTooltip.setText("Internet: connected");
+            }
+            case LOCAL_ONLY -> {
+                networkDot.getStyleClass().add("network-dot-yellow");
+                if (networkTooltip != null) networkTooltip.setText("Network: local only (no internet)");
+            }
+            case NONE -> {
+                networkDot.getStyleClass().add("network-dot-red");
+                if (networkTooltip != null) networkTooltip.setText("Network: no connection");
+            }
+        }
     }
 
     /* -- DNS resolve ------------------------------------------ */
@@ -272,5 +351,6 @@ public class AnibusController {
 
     public void shutdownExecutor() {
         if (activeScanTask != null) activeScanTask.shutdown();
+        if (networkMonitor != null && !networkMonitor.isShutdown()) networkMonitor.shutdownNow();
     }
 }

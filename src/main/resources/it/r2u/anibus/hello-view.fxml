@@ -18,6 +18,7 @@
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.shape.Circle?>
 
 <VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="it.r2u.anibus.AnibusController">
@@ -38,6 +39,7 @@
                 <Label text="SCAN TYPE" styleClass="subtitle-label" />
                 <ComboBox fx:id="scanTypeComboBox" prefWidth="160" />
                 <Region HBox.hgrow="ALWAYS" />
+                <Circle fx:id="networkDot" radius="5" fill="#8E8E93" styleClass="network-dot" />
                 <Label fx:id="statusLabel" text="Ready" styleClass="status-label" />
                 <ProgressIndicator fx:id="progressIndicator" visible="false" prefWidth="14" prefHeight="14" />
             </children>

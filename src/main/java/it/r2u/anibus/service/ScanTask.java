@@ -1,4 +1,6 @@
-package it.r2u.anibus;
+package it.r2u.anibus.service;
+
+import it.r2u.anibus.model.PortScanResult;
 
 import javafx.application.Platform;
 import javafx.concurrent.Task;
@@ -48,9 +50,9 @@ public class ScanTask extends Task<Void> {
     protected Void call() throws Exception {
         int totalPorts = endPort - startPort + 1;
         try {
-            InetAddress addr     = InetAddress.getByName(host);
-            String ip            = addr.getHostAddress();
-            String hostname      = addr.getCanonicalHostName();
+            InetAddress addr = InetAddress.getByName(host);
+            String ip        = addr.getHostAddress();
+            String hostname  = addr.getCanonicalHostName();
 
             Platform.runLater(() -> callbacks.onHostResolved(ip));
             callbacks.onScanStarted(ip, hostname, totalPorts);
