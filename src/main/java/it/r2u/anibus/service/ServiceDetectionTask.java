@@ -13,16 +13,20 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
 /**
- * Background Task that scans a port range on a given host.
- * All UI updates are dispatched via the Callbacks interface.
+ * Enhanced scanning task that performs deep service detection with:
+ * - Multiple service-specific probes
+ * - Enhanced banner analysis
+ * - Protocol fingerprinting
+ * - Real-time service identification
  */
-public class ScanTask extends Task<Void> {
+public class ServiceDetectionTask extends Task<Void> {
 
     public interface Callbacks {
         void onHostResolved(String ip);
         void onScanStarted(String ip, String hostname, int totalPorts);
         void onResult(PortScanResult result);
         void onStatus(String message);
+        void onSubnetDetected(String subnet, String gateway);
         void onCompleted();
         void onCancelled();
         void onFailed(String error);
@@ -32,17 +36,19 @@ public class ScanTask extends Task<Void> {
     private final int startPort;
     private final int endPort;
     private final int threadCount;
-    private final PortScannerService scanner;
+    private final EnhancedServiceDetector detector;
+    private final SubnetScanner subnetScanner;
     private final Callbacks callbacks;
     private ExecutorService executor;
 
-    public ScanTask(String host, int startPort, int endPort, int threadCount,
-                    PortScannerService scanner, Callbacks callbacks) {
+    public ServiceDetectionTask(String host, int startPort, int endPort, int threadCount,
+                               EnhancedServiceDetector detector, Callbacks callbacks) {
         this.host        = host;
         this.startPort   = startPort;
         this.endPort     = endPort;
         this.threadCount = threadCount;
-        this.scanner     = scanner;
+        this.detector    = detector;
+        this.subnetScanner = new SubnetScanner();
         this.callbacks   = callbacks;
     }
 
@@ -55,8 +61,12 @@ public class ScanTask extends Task<Void> {
             String hostname  = addr.getCanonicalHostName();
 
             Platform.runLater(() -> callbacks.onHostResolved(ip));
+            
+            // Detect subnet information
+            detectSubnetInfo(ip);
+            
             callbacks.onScanStarted(ip, hostname, totalPorts);
-            callbacks.onStatus("Scanning " + host + " (" + ip + ") — ports " + startPort + "–" + endPort);
+            callbacks.onStatus("Service Detection: Scanning " + host + " (" + ip + ") — ports " + startPort + "–" + endPort);
 
             CountDownLatch latch = new CountDownLatch(totalPorts);
             ThreadFactory daemon = r -> { Thread t = new Thread(r); t.setDaemon(true); return t; };
@@ -67,15 +77,19 @@ public class ScanTask extends Task<Void> {
                 final int p = port;
                 executor.submit(() -> {
                     try {
-                        long latency = scanner.measurePortLatency(ip, p);
-                        if (latency >= 0) {
-                            String banner   = scanner.getBanner(ip, p);
-                            String service  = scanner.getServiceName(p);
-                            String protocol = scanner.getProtocol(p, banner);
-                            String version  = scanner.extractVersion(banner);
-                            Platform.runLater(() ->
-                                callbacks.onResult(new PortScanResult(
-                                    p, service, banner, protocol, latency, version, "Open", "Standard")));
+                        // Enhanced service detection
+                        PortScanResult result = detector.detectService(ip, p);
+                        if (result != null) {
+                            Platform.runLater(() -> {
+                                callbacks.onResult(result);
+                                String service = result.getService();
+                                // Highlight security services in status message
+                                if (service.contains("[") && service.contains("]")) {
+                                    callbacks.onStatus("🛡️ Security detected: " + service + " on port " + p);
+                                } else {
+                                    callbacks.onStatus("Detected: " + service + " on port " + p);
+                                }
+                            });
                         }
                     } finally {
                         latch.countDown();
@@ -91,6 +105,21 @@ public class ScanTask extends Task<Void> {
             shutdown();
         }
         return null;
+    }
+
+    private void detectSubnetInfo(String ip) {
+        try {
+            String subnet = subnetScanner.detectSubnet(ip);
+            String gateway = subnetScanner.detectGateway(ip);
+            if (subnet != null || gateway != null) {
+                Platform.runLater(() -> callbacks.onSubnetDetected(
+                    subnet != null ? subnet : "Unknown", 
+                    gateway != null ? gateway : "Unknown"
+                ));
+            }
+        } catch (Exception e) {
+            // Subnet detection is optional, don't fail the scan
+        }
     }
 
     @Override protected void succeeded() { super.succeeded(); callbacks.onCompleted(); }

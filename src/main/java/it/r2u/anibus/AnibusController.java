@@ -4,6 +4,8 @@ import it.r2u.anibus.model.PortScanResult;
 import it.r2u.anibus.service.ExportService;
 import it.r2u.anibus.service.PortScannerService;
 import it.r2u.anibus.service.ScanTask;
+import it.r2u.anibus.service.ServiceDetectionTask;
+import it.r2u.anibus.service.EnhancedServiceDetector;
 import it.r2u.anibus.ui.AlertHelper;
 import it.r2u.anibus.ui.ClipboardService;
 import it.r2u.anibus.ui.TableConfigurator;
@@ -55,6 +57,8 @@ public class AnibusController {
     @FXML private Label infoPortsScannedLabel;
     @FXML private Label infoOpenPortsLabel;
     @FXML private Label infoAvgLatencyLabel;
+    @FXML private Label infoSubnetLabel;
+    @FXML private Label infoGatewayLabel;
 
     /* -- Table ------------------------------------------------ */
     @FXML private TableView<PortScanResult>            resultTableView;
@@ -68,10 +72,13 @@ public class AnibusController {
 
     /* -- State ------------------------------------------------ */
     private ScanTask                  activeScanTask;
+    private ServiceDetectionTask      activeServiceDetectionTask;
+    private String                    currentScanMode = "Standard Scanning";
     private Instant                   scanStartTime;
     private ScheduledExecutorService  networkMonitor;
     private final ObservableList<PortScanResult> results  = FXCollections.observableArrayList();
     private final PortScannerService             scanner  = new PortScannerService();
+    private final EnhancedServiceDetector        detector = new EnhancedServiceDetector();
 
     /* -- Initialization --------------------------------------- */
     @FXML
@@ -82,12 +89,20 @@ public class AnibusController {
         resultTableView.setItems(results);
 
         scanTypeComboBox.getItems().addAll(
-                "Port Scanner",
+                "Standard Scanning",
                 "Service Detection",
                 "OS Fingerprinting",
                 "Vulnerability Scan"
         );
         scanTypeComboBox.getSelectionModel().selectFirst();
+        
+        // Handle scan mode changes
+        scanTypeComboBox.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
+            onScanModeChanged(newVal);
+        });
+        
+        // Set initial status for default mode
+        onScanModeChanged(scanTypeComboBox.getSelectionModel().getSelectedItem());
 
         threadSpinner.setValueFactory(
                 new SpinnerValueFactory.IntegerSpinnerValueFactory(10, 500, 100, 10));
@@ -117,6 +132,43 @@ public class AnibusController {
         MenuItem copyAll = new MenuItem("Copy all results");
         copyAll.setOnAction(e -> copyAllRows());
         resultTableView.setContextMenu(new ContextMenu(copyRow, new SeparatorMenuItem(), copyAll));
+    }
+
+    /* -- Scan mode handling ----------------------------------- */
+    private void onScanModeChanged(String mode) {
+        if (mode == null) return;
+        currentScanMode = mode;
+        
+        switch (mode) {
+            case "Standard Scanning" -> {
+                setStatus("Standard Scanning mode: Basic TCP port scanning with service detection");
+                // Standard mode is fully functional
+            }
+            case "Service Detection" -> {
+                setStatus("Service Detection mode: Enhanced service fingerprinting with real-time detection");
+                // Service detection mode is now fully functional
+            }
+            case "OS Fingerprinting" -> {
+                setStatus("OS Fingerprinting mode: Operating system detection (coming soon)");
+                AlertHelper.show("Feature Preview", 
+                    "OS Fingerprinting mode will provide:\n" +
+                    "• TCP/IP stack analysis\n" +
+                    "• TTL and window size detection\n" +
+                    "• Operating system identification\n\n" +
+                    "Currently using Standard Scanning.",
+                    Alert.AlertType.INFORMATION, cssUrl());
+            }
+            case "Vulnerability Scan" -> {
+                setStatus("Vulnerability Scan mode: Security assessment (coming soon)");
+                AlertHelper.show("Feature Preview", 
+                    "Vulnerability Scan mode will provide:\n" +
+                    "• Known vulnerability detection\n" +
+                    "• CVE database matching\n" +
+                    "• Security risk assessment\n\n" +
+                    "Currently using Standard Scanning.",
+                    Alert.AlertType.INFORMATION, cssUrl());
+            }
+        }
     }
 
     /* -- Network status --------------------------------------- */
@@ -224,6 +276,8 @@ public class AnibusController {
             infoOpenPortsLabel.setText("0");
             infoAvgLatencyLabel.setText("-");
             infoScanTimeLabel.setText("scanning");
+            if (infoSubnetLabel != null) infoSubnetLabel.setText("-");
+            if (infoGatewayLabel != null) infoGatewayLabel.setText("-");
         });
     }
 
@@ -264,28 +318,88 @@ public class AnibusController {
         progressIndicator.setVisible(true);
         progressBar.setVisible(true);
         progressBar.setProgress(0);
-        setStatus("Resolving " + host + " ");
+        
+        // Show mode-specific status
+        String modePrefix = "Service Detection".equals(currentScanMode) ? 
+            "🔍 Service Detection: " : "⚡ Standard Scan: ";
+        setStatus(modePrefix + "Resolving " + host + "...");
         scanStartTime = Instant.now();
 
+        // Choose task based on current scan mode
+        if ("Service Detection".equals(currentScanMode)) {
+            startServiceDetectionScan(host, ports);
+        } else {
+            startStandardScan(host, ports);
+        }
+    }
+
+    private void startStandardScan(String host, int[] ports) {
         activeScanTask = new ScanTask(host, ports[0], ports[1], threadSpinner.getValue(), scanner,
                 new ScanTask.Callbacks() {
                     public void onHostResolved(String ip)                    { resolvedHostLabel.setText("Resolved: " + ip); }
                     public void onScanStarted(String ip, String hn, int tot) { showInfoCard(ip, hn, tot); }
                     public void onResult(PortScanResult r)                   { results.add(r); }
                     public void onStatus(String msg)                         { setStatus(msg); }
-                    public void onCompleted() { finalizeScanTime(); setStatus("Scan complete  " + results.size() + " open port(s) found"); resetUI(); }
-                    public void onCancelled() { finalizeScanTime(); setStatus("Scan stopped by user"); resetUI(); }
-                    public void onFailed(String err) { finalizeScanTime(); setStatus("Scan failed: " + err); resetUI(); }
+                    public void onCompleted() { finalizeScanTime(); setStatus("⚡ Standard Scan complete — " + results.size() + " open port(s) found"); resetUI(); }
+                    public void onCancelled() { finalizeScanTime(); setStatus("⚡ Standard Scan stopped by user"); resetUI(); }
+                    public void onFailed(String err) { finalizeScanTime(); setStatus("⚡ Standard Scan failed: " + err); resetUI(); }
                 });
 
         progressBar.progressProperty().bind(activeScanTask.progressProperty());
         new Thread(activeScanTask).start();
     }
 
+    private void startServiceDetectionScan(String host, int[] ports) {
+        activeServiceDetectionTask = new ServiceDetectionTask(host, ports[0], ports[1], threadSpinner.getValue(), detector,
+                new ServiceDetectionTask.Callbacks() {
+                    public void onHostResolved(String ip) { 
+                        Platform.runLater(() -> resolvedHostLabel.setText("Resolved: " + ip)); 
+                    }
+                    public void onScanStarted(String ip, String hn, int tot) { 
+                        showInfoCard(ip, hn, tot); 
+                    }
+                    public void onResult(PortScanResult r) { 
+                        Platform.runLater(() -> results.add(r)); 
+                    }
+                    public void onStatus(String msg) { 
+                        setStatus(msg); 
+                    }
+                    public void onSubnetDetected(String subnet, String gateway) {
+                        Platform.runLater(() -> {
+                            if (infoSubnetLabel != null) infoSubnetLabel.setText(subnet);
+                            if (infoGatewayLabel != null) infoGatewayLabel.setText(gateway);
+                        });
+                    }
+                    public void onCompleted() { 
+                        finalizeScanTime(); 
+                        setStatus("🔍 Service Detection complete — " + results.size() + " service(s) detected with enhanced details"); 
+                        resetUI(); 
+                    }
+                    public void onCancelled() { 
+                        finalizeScanTime(); 
+                        setStatus("🔍 Service Detection stopped by user"); 
+                        resetUI(); 
+                    }
+                    public void onFailed(String err) { 
+                        finalizeScanTime(); 
+                        setStatus("🔍 Service Detection failed: " + err); 
+                        resetUI(); 
+                    }
+                });
+
+        progressBar.progressProperty().bind(activeServiceDetectionTask.progressProperty());
+        new Thread(activeServiceDetectionTask).start();
+    }
+
     /* -- Scan stop -------------------------------------------- */
     @FXML
     protected void onStopButtonClick() {
-        if (activeScanTask != null && activeScanTask.isRunning()) activeScanTask.cancel();
+        if (activeScanTask != null && activeScanTask.isRunning()) {
+            activeScanTask.cancel();
+        }
+        if (activeServiceDetectionTask != null && activeServiceDetectionTask.isRunning()) {
+            activeServiceDetectionTask.cancel();
+        }
     }
 
     /* -- Export ----------------------------------------------- */
@@ -351,6 +465,7 @@ public class AnibusController {
 
     public void shutdownExecutor() {
         if (activeScanTask != null) activeScanTask.shutdown();
+        if (activeServiceDetectionTask != null) activeServiceDetectionTask.shutdown();
         if (networkMonitor != null && !networkMonitor.isShutdown()) networkMonitor.shutdownNow();
     }
 }

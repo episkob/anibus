@@ -53,9 +53,60 @@ public class TableConfigurator {
             }
         });
 
+        serviceCol.setCellFactory(col -> new TableCell<>() {
+            @Override protected void updateItem(String val, boolean empty) {
+                super.updateItem(val, empty);
+                getStyleClass().removeAll("service-enhanced", "service-standard");
+                if (empty || val == null) {
+                    setText(null);
+                } else {
+                    setText(val);
+                    TableRow<?> row = getTableRow();
+                    if (row != null && row.getItem() instanceof PortScanResult result) {
+                        if ("Service Detection".equals(result.getScanMode())) {
+                            getStyleClass().add("service-enhanced");
+                        } else {
+                            getStyleClass().add("service-standard");
+                        }
+                    }
+                }
+            }
+        });
+
+        protocolCol.setCellFactory(col -> new TableCell<>() {
+            @Override protected void updateItem(String val, boolean empty) {
+                super.updateItem(val, empty);
+                getStyleClass().removeAll("protocol-enhanced");
+                if (empty || val == null) {
+                    setText(null);
+                } else {
+                    setText(val);
+                    TableRow<?> row = getTableRow();
+                    if (row != null && row.getItem() instanceof PortScanResult result) {
+                        if ("Service Detection".equals(result.getScanMode())) {
+                            getStyleClass().add("protocol-enhanced");
+                        }
+                    }
+                }
+            }
+        });
+
         table.setRowFactory(tv -> {
-            TableRow<PortScanResult> row = new TableRow<>();
-            row.getStyleClass().add("result-row");
+            TableRow<PortScanResult> row = new TableRow<>() {
+                @Override
+                protected void updateItem(PortScanResult item, boolean empty) {
+                    super.updateItem(item, empty);
+                    getStyleClass().removeAll("result-row", "row-standard", "row-service-detection");
+                    if (!empty && item != null) {
+                        getStyleClass().add("result-row");
+                        if ("Service Detection".equals(item.getScanMode())) {
+                            getStyleClass().add("row-service-detection");
+                        } else {
+                            getStyleClass().add("row-standard");
+                        }
+                    }
+                }
+            };
             return row;
         });
 

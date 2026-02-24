@@ -12,6 +12,13 @@ import java.util.regex.Pattern;
  * Thin coordinator: connection probing and port-range parsing.
  * Delegates banner grabbing to BannerGrabber, version extraction
  * to VersionExtractor, and service lookup to PortRegistry.
+ * 
+ * This service implements the "Standard Scanning" mode which performs:
+ * - Basic TCP connection probing to detect open ports
+ * - Latency measurement for each connection attempt
+ * - Banner grabbing from responsive services
+ * - Service name and protocol identification via PortRegistry
+ * - Version detection from banners when available
  */
 public class PortScannerService {
 

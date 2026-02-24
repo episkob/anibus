@@ -13,9 +13,15 @@ public class PortScanResult {
     private final SimpleLongProperty latency;
     private final SimpleStringProperty version;
     private final SimpleStringProperty state;
+    private final SimpleStringProperty scanMode;
 
     public PortScanResult(int port, String service, String banner, String protocol,
                           long latency, String version, String state) {
+        this(port, service, banner, protocol, latency, version, state, "Standard");
+    }
+
+    public PortScanResult(int port, String service, String banner, String protocol,
+                          long latency, String version, String state, String scanMode) {
         this.port     = new SimpleIntegerProperty(port);
         this.service  = new SimpleStringProperty(service);
         this.banner   = new SimpleStringProperty(banner);
@@ -23,6 +29,7 @@ public class PortScanResult {
         this.latency  = new SimpleLongProperty(latency);
         this.version  = new SimpleStringProperty(version);
         this.state    = new SimpleStringProperty(state);
+        this.scanMode = new SimpleStringProperty(scanMode != null ? scanMode : "Standard");
     }
 
     public int getPort()                          { return port.get(); }
@@ -45,4 +52,7 @@ public class PortScanResult {
 
     public String getState()                      { return state.get(); }
     public SimpleStringProperty stateProperty()   { return state; }
+
+    public String getScanMode()                   { return scanMode.get(); }
+    public SimpleStringProperty scanModeProperty() { return scanMode; }
 }

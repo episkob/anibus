@@ -519,6 +519,40 @@
     -fx-border-color: #E5E5EA;
 }
 
+/* ── Table: Standard Scanning rows ───────────────────── */
+.row-standard {
+    -fx-background-color: transparent;
+}
+
+.row-standard:hover {
+    -fx-background-color: rgba(0, 122, 255, 0.05);
+}
+
+/* ── Table: Service Detection rows (enhanced) ─────────── */
+.row-service-detection {
+    -fx-background-color: rgba(52, 199, 89, 0.04);
+}
+
+.row-service-detection:hover {
+    -fx-background-color: rgba(52, 199, 89, 0.12);
+}
+
+/* ── Table: Service column styling ───────────────────── */
+.service-enhanced {
+    -fx-text-fill: #34C759;
+    -fx-font-weight: 600;
+}
+
+.service-standard {
+    -fx-text-fill: #1D1D1F;
+}
+
+/* ── Table: Protocol column styling ──────────────────── */
+.protocol-enhanced {
+    -fx-text-fill: #007AFF;
+    -fx-font-weight: 500;
+}
+
 /* ── Table: placeholder ──────────────────────────────── */
 .table-placeholder {
     -fx-text-fill: #AEAEB2;

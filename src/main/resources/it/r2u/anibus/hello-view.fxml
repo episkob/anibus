@@ -150,6 +150,18 @@
                                                 <Label fx:id="infoAvgLatencyLabel" text="-" styleClass="info-value" />
                                             </children>
                                         </VBox>
+                                        <VBox spacing="4" styleClass="info-item">
+                                            <children>
+                                                <Label text="SUBNET" styleClass="info-key" />
+                                                <Label fx:id="infoSubnetLabel" text="-" styleClass="info-value" />
+                                            </children>
+                                        </VBox>
+                                        <VBox spacing="4" styleClass="info-item">
+                                            <children>
+                                                <Label text="GATEWAY" styleClass="info-key" />
+                                                <Label fx:id="infoGatewayLabel" text="-" styleClass="info-value" />
+                                            </children>
+                                        </VBox>
                                     </children>
                                 </HBox>
                             </children>
