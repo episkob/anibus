@@ -11,7 +11,7 @@ A modern desktop port scanning application built with the **Anibus Design System
 ### Scanning
 - Scan any hostname or IP address for open ports
 - Configurable port range (e.g. `1-1024`)
-- Adjustable thread count (10–500, default 100)
+- Adjustable thread count (10–500, default 10)
 - Per-port **latency measurement** (ms)
 - Graceful scan cancellation
 

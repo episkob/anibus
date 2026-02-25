@@ -176,6 +176,9 @@
                                         <Label fx:id="resultCountLabel" text="No open ports"
                                                styleClass="counter-label" />
                                         <Region HBox.hgrow="ALWAYS" />
+                                        <Button fx:id="viewToggleButton" text="Console View"
+                                                onAction="#onViewToggleClick"
+                                                styleClass="secondary-button" />
                                         <Button fx:id="exportButton" text="Export"
                                                 onAction="#onExportClick"
                                                 styleClass="secondary-button" disable="true" />
@@ -185,18 +188,31 @@
                                     </children>
                                 </HBox>
 
-                                <TableView fx:id="resultTableView" VBox.vgrow="ALWAYS"
-                                           prefHeight="380">
-                                    <columns>
-                                        <TableColumn fx:id="portColumn" text="Port" prefWidth="70" />
-                                        <TableColumn fx:id="stateColumn" text="State" prefWidth="80" />
-                                        <TableColumn fx:id="serviceColumn" text="Service" prefWidth="120" />
-                                        <TableColumn fx:id="versionColumn" text="Version" prefWidth="160" />
-                                        <TableColumn fx:id="protocolColumn" text="Protocol" prefWidth="140" />
-                                        <TableColumn fx:id="latencyColumn" text="Latency" prefWidth="70" />
-                                        <TableColumn fx:id="bannerColumn" text="Banner" prefWidth="340" />
-                                    </columns>
-                                </TableView>
+                                <StackPane VBox.vgrow="ALWAYS">
+                                    <children>
+                                        <TableView fx:id="resultTableView" VBox.vgrow="ALWAYS"
+                                                   prefHeight="380">
+                                            <columns>
+                                                <TableColumn fx:id="portColumn" text="Port" prefWidth="70" />
+                                                <TableColumn fx:id="stateColumn" text="State" prefWidth="80" />
+                                                <TableColumn fx:id="serviceColumn" text="Service" prefWidth="120" />
+                                                <TableColumn fx:id="versionColumn" text="Version" prefWidth="160" />
+                                                <TableColumn fx:id="protocolColumn" text="Protocol" prefWidth="140" />
+                                                <TableColumn fx:id="latencyColumn" text="Latency" prefWidth="70" />
+                                                <TableColumn fx:id="bannerColumn" text="Banner" prefWidth="340" />
+                                            </columns>
+                                        </TableView>
+                                        
+                                        <ScrollPane fx:id="consoleScrollPane" visible="false" fitToWidth="true" fitToHeight="true">
+                                            <content>
+                                                <javafx.scene.control.TextArea fx:id="consoleTextArea" 
+                                                    editable="false" wrapText="true"
+                                                    styleClass="console-view"
+                                                    VBox.vgrow="ALWAYS" />
+                                            </content>
+                                        </ScrollPane>
+                                    </children>
+                                </StackPane>
                             </children>
                         </VBox>
 

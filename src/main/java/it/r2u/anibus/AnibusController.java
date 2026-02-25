@@ -25,6 +25,8 @@ import java.util.Properties;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
 
 /**
  * UI controller: handles FXML events and delegates work
@@ -48,6 +50,9 @@ public class AnibusController {
     @FXML private Button            exportButton;
     @FXML private Button            clearButton;
     @FXML private ComboBox<String>  scanTypeComboBox;
+    @FXML private Button            viewToggleButton;
+    @FXML private ScrollPane        consoleScrollPane;
+    @FXML private javafx.scene.control.TextArea consoleTextArea;
 
     /* -- Info card labels ------------------------------------- */
     @FXML private VBox  infoCard;
@@ -76,6 +81,7 @@ public class AnibusController {
     private String                    currentScanMode = "Standard Scanning";
     private Instant                   scanStartTime;
     private ScheduledExecutorService  networkMonitor;
+    private boolean                   isConsoleView = false;
     private final ObservableList<PortScanResult> results  = FXCollections.observableArrayList();
     private final PortScannerService             scanner  = new PortScannerService();
     private final EnhancedServiceDetector        detector = new EnhancedServiceDetector();
@@ -105,7 +111,7 @@ public class AnibusController {
         onScanModeChanged(scanTypeComboBox.getSelectionModel().getSelectedItem());
 
         threadSpinner.setValueFactory(
-                new SpinnerValueFactory.IntegerSpinnerValueFactory(10, 500, 100, 10));
+                new SpinnerValueFactory.IntegerSpinnerValueFactory(10, 500, 10, 10));
 
         results.addListener((javafx.collections.ListChangeListener<PortScanResult>) c -> {
             refreshResultCount();
@@ -132,6 +138,11 @@ public class AnibusController {
         MenuItem copyAll = new MenuItem("Copy all results");
         copyAll.setOnAction(e -> copyAllRows());
         resultTableView.setContextMenu(new ContextMenu(copyRow, new SeparatorMenuItem(), copyAll));
+        
+        // Context menu for resolved host label
+        MenuItem copyIP = new MenuItem("Copy");
+        copyIP.setOnAction(e -> copyResolvedIP());
+        resolvedHostLabel.setContextMenu(new ContextMenu(copyIP));
     }
 
     /* -- Scan mode handling ----------------------------------- */
@@ -233,13 +244,64 @@ public class AnibusController {
     }
 
     /* -- DNS resolve ------------------------------------------ */
+    private String sanitizeHost(String input) {
+        if (input == null || input.isEmpty()) return input;
+        
+        String cleaned = input.trim();
+        
+        // Remove http:// or https:// prefix
+        if (cleaned.toLowerCase().startsWith("https://")) {
+            cleaned = cleaned.substring(8);
+        } else if (cleaned.toLowerCase().startsWith("http://")) {
+            cleaned = cleaned.substring(7);
+        }
+        
+        // Remove path, query params, and fragments (keep only hostname/IP)
+        int slashIndex = cleaned.indexOf('/');
+        if (slashIndex != -1) {
+            cleaned = cleaned.substring(0, slashIndex);
+        }
+        
+        // Remove port number from hostname if present (e.g., example.com:8080)
+        int colonIndex = cleaned.indexOf(':');
+        if (colonIndex != -1) {
+            // Check if it's not an IPv6 address
+            if (!cleaned.contains("[") && !cleaned.contains("]")) {
+                cleaned = cleaned.substring(0, colonIndex);
+            }
+        }
+        
+        return cleaned.trim();
+    }
+    
+    private String checkSSL(String host) {
+        try {
+            SSLSocketFactory factory = (SSLSocketFactory) SSLSocketFactory.getDefault();
+            try (SSLSocket socket = (SSLSocket) factory.createSocket()) {
+                socket.connect(new InetSocketAddress(host, 443), 2000);
+                socket.startHandshake();
+                return " [SSL/TLS ✓]";
+            }
+        } catch (Exception e) {
+            return " [SSL/TLS ✗]";
+        }
+    }
+    
     private void resolveHost() {
-        String host = hostTextField.getText().trim();
+        String host = sanitizeHost(hostTextField.getText());
         if (host.isEmpty()) { resolvedHostLabel.setText(""); return; }
+        
+        // Update text field with sanitized host
+        if (!host.equals(hostTextField.getText().trim())) {
+            Platform.runLater(() -> hostTextField.setText(host));
+        }
+        
+        final String finalHost = host;
         new Thread(() -> {
             try {
-                String ip = InetAddress.getByName(host).getHostAddress();
-                Platform.runLater(() -> resolvedHostLabel.setText("Resolved: " + ip));
+                String ip = InetAddress.getByName(finalHost).getHostAddress();
+                String sslStatus = checkSSL(finalHost);
+                Platform.runLater(() -> resolvedHostLabel.setText("Resolved: " + ip + sslStatus));
             } catch (UnknownHostException ex) {
                 Platform.runLater(() -> resolvedHostLabel.setText("Unable to resolve host"));
             }
@@ -297,13 +359,18 @@ public class AnibusController {
     @FXML
     protected void onScanButtonClick() {
         results.clear();
-        String host      = hostTextField.getText().trim();
+        String host      = sanitizeHost(hostTextField.getText());
         String portsRange = portsTextField.getText().trim();
 
         if (host.isEmpty() || portsRange.isEmpty()) {
             AlertHelper.show("Missing input", "Please enter both hostname and port range.",
                     Alert.AlertType.WARNING, cssUrl());
             return;
+        }
+        
+        // Update text field with sanitized host
+        if (!host.equals(hostTextField.getText().trim())) {
+            hostTextField.setText(host);
         }
 
         int[] ports = scanner.parsePortsRange(portsRange);
@@ -334,11 +401,15 @@ public class AnibusController {
     }
 
     private void startStandardScan(String host, int[] ports) {
+        final String finalHost = host;
         activeScanTask = new ScanTask(host, ports[0], ports[1], threadSpinner.getValue(), scanner,
                 new ScanTask.Callbacks() {
-                    public void onHostResolved(String ip)                    { resolvedHostLabel.setText("Resolved: " + ip); }
+                    public void onHostResolved(String ip)                    { 
+                        String sslStatus = checkSSL(finalHost);
+                        resolvedHostLabel.setText("Resolved: " + ip + sslStatus); 
+                    }
                     public void onScanStarted(String ip, String hn, int tot) { showInfoCard(ip, hn, tot); }
-                    public void onResult(PortScanResult r)                   { results.add(r); }
+                    public void onResult(PortScanResult r)                   { results.add(r); appendToConsole(r); }
                     public void onStatus(String msg)                         { setStatus(msg); }
                     public void onCompleted() { finalizeScanTime(); setStatus("⚡ Standard Scan complete — " + results.size() + " open port(s) found"); resetUI(); }
                     public void onCancelled() { finalizeScanTime(); setStatus("⚡ Standard Scan stopped by user"); resetUI(); }
@@ -350,16 +421,21 @@ public class AnibusController {
     }
 
     private void startServiceDetectionScan(String host, int[] ports) {
+        final String finalHost = host;
         activeServiceDetectionTask = new ServiceDetectionTask(host, ports[0], ports[1], threadSpinner.getValue(), detector,
                 new ServiceDetectionTask.Callbacks() {
                     public void onHostResolved(String ip) { 
-                        Platform.runLater(() -> resolvedHostLabel.setText("Resolved: " + ip)); 
+                        String sslStatus = checkSSL(finalHost);
+                        Platform.runLater(() -> resolvedHostLabel.setText("Resolved: " + ip + sslStatus)); 
                     }
                     public void onScanStarted(String ip, String hn, int tot) { 
                         showInfoCard(ip, hn, tot); 
                     }
                     public void onResult(PortScanResult r) { 
-                        Platform.runLater(() -> results.add(r)); 
+                        Platform.runLater(() -> {
+                            results.add(r);
+                            appendToConsole(r);
+                        }); 
                     }
                     public void onStatus(String msg) { 
                         setStatus(msg); 
@@ -413,6 +489,9 @@ public class AnibusController {
     @FXML
     protected void onClearClick() {
         results.clear();
+        if (consoleTextArea != null) {
+            consoleTextArea.clear();
+        }
         infoCard.setVisible(false);
         infoCard.setManaged(false);
         setStatus("Results cleared");
@@ -448,6 +527,22 @@ public class AnibusController {
         setStatus("All results copied to clipboard");
     }
 
+    private void copyResolvedIP() {
+        String text = resolvedHostLabel.getText();
+        if (text == null || text.isEmpty()) return;
+        // Extract IP from "Resolved: 172.217.23.163 [SSL/TLS ✓]" format
+        String ip = text.replace("Resolved:", "").trim();
+        // Remove SSL status if present
+        int sslIndex = ip.indexOf("[SSL/TLS");
+        if (sslIndex != -1) {
+            ip = ip.substring(0, sslIndex).trim();
+        }
+        if (!ip.isEmpty()) {
+            ClipboardService.copy(ip);
+            setStatus("IP address copied to clipboard");
+        }
+    }
+
     /* -- UI helpers ------------------------------------------- */
     private void resetUI() {
         Platform.runLater(() -> {
@@ -461,6 +556,88 @@ public class AnibusController {
 
     private java.net.URL cssUrl() {
         return getClass().getResource("anibus-style.css");
+    }
+
+    /* -- View Toggle ------------------------------------------ */
+    @FXML
+    protected void onViewToggleClick() {
+        isConsoleView = !isConsoleView;
+        Platform.runLater(() -> {
+            if (isConsoleView) {
+                resultTableView.setVisible(false);
+                consoleScrollPane.setVisible(true);
+                viewToggleButton.setText("Table View");
+                // Populate console with current results
+                updateConsoleWithAllResults();
+            } else {
+                resultTableView.setVisible(true);
+                consoleScrollPane.setVisible(false);
+                viewToggleButton.setText("Console View");
+            }
+        });
+    }
+    
+    private void updateConsoleWithAllResults() {
+        if (consoleTextArea == null) return;
+        StringBuilder sb = new StringBuilder();
+        sb.append("═══════════════════════════════════════════════════════════════════════\n");
+        sb.append("  ANIBUS SCAN RESULTS\n");
+        sb.append("═══════════════════════════════════════════════════════════════════════\n\n");
+        
+        if (results.isEmpty()) {
+            sb.append("  No open ports found.\n\n");
+        } else {
+            for (PortScanResult result : results) {
+                sb.append(formatConsoleResult(result));
+            }
+        }
+        
+        sb.append("═══════════════════════════════════════════════════════════════════════\n");
+        sb.append(String.format("  Total: %d open port%s\n", results.size(), results.size() == 1 ? "" : "s"));
+        sb.append("═══════════════════════════════════════════════════════════════════════\n");
+        
+        consoleTextArea.setText(sb.toString());
+    }
+    
+    private void appendToConsole(PortScanResult result) {
+        if (consoleTextArea == null || !isConsoleView) return;
+        Platform.runLater(() -> {
+            String current = consoleTextArea.getText();
+            if (current.isEmpty() || !current.contains("ANIBUS SCAN RESULTS")) {
+                // First result - add header
+                consoleTextArea.setText(
+                    "═══════════════════════════════════════════════════════════════════════\n" +
+                    "  ANIBUS SCAN RESULTS\n" +
+                    "═══════════════════════════════════════════════════════════════════════\n\n" +
+                    formatConsoleResult(result)
+                );
+            } else {
+                // Append to existing results
+                consoleTextArea.appendText(formatConsoleResult(result));
+            }
+            // Auto-scroll to bottom
+            consoleTextArea.setScrollTop(Double.MAX_VALUE);
+        });
+    }
+    
+    private String formatConsoleResult(PortScanResult result) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(String.format("┌─ Port: %d (%s)\n", result.getPort(), result.getState()));
+        sb.append(String.format("│  Service:  %s\n", result.getService() != null && !result.getService().isEmpty() ? result.getService() : "unknown"));
+        if (result.getVersion() != null && !result.getVersion().isEmpty()) {
+            sb.append(String.format("│  Version:  %s\n", result.getVersion()));
+        }
+        if (result.getProtocol() != null && !result.getProtocol().isEmpty()) {
+            sb.append(String.format("│  Protocol: %s\n", result.getProtocol()));
+        }
+        sb.append(String.format("│  Latency:  %d ms\n", result.getLatency()));
+        if (result.getBanner() != null && !result.getBanner().isEmpty()) {
+            // Show full banner without truncation, with proper indentation for wrapped lines
+            String banner = result.getBanner();
+            sb.append(String.format("│  Banner:   %s\n", banner));
+        }
+        sb.append("└─────────────────────────────────────────────────────────────────────\n\n");
+        return sb.toString();
     }
 
     public void shutdownExecutor() {

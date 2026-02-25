@@ -11,7 +11,7 @@ Un'applicazione desktop moderna per la scansione delle porte, realizzata con **A
 ### Scansione
 - Scansione di qualsiasi hostname o indirizzo IP alla ricerca di porte aperte
 - Intervallo di porte configurabile (es. `1-1024`)
-- Numero di thread regolabile (10–500, predefinito 100)
+- Numero di thread regolabile (10–500, predefinito 10)
 - Misurazione della **latenza** per ogni porta (ms)
 - Interruzione della scansione in modo sicuro
 
