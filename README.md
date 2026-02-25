@@ -22,12 +22,17 @@ A modern desktop port scanning application built with the **Anibus Design System
 - Protocol & **encryption detection** (TLS, STARTTLS, HTTPS, SMTPS, LDAPS, etc.)
 
 ### UI & Workflow
+- **Dark theme** — complete dark mode design with optimized contrast and readability
+- **Console view** — toggle between table and terminal-style console output with formatted results
+- **SSL/TLS detection** — automatic HTTPS support check when resolving hosts (displays ✓/✗ indicator)
+- **Smart URL handling** — auto-removes http:// and https:// prefixes, extracts hostname from full URLs
 - **Traffic light network indicator** — live dot in the status bar (🟢 internet, 🟡 local only, 🔴 no connection), polled every 5 seconds
 - **Host Information panel** — shows IP, hostname, scan time, ports scanned, open ports count, and average latency (live-updated)
 - **7-column results table** — Port, State, Service, Version, Protocol, Latency, Banner
 - **Export to CSV or XML** with all columns
 - **Clear** results with one click
 - **Copy row** or **Copy all** via right-click context menu
+- **Copy IP address** from resolved host label via right-click
 - Auto DNS resolution on focus-out
 - **Anibus Design System**: frosted-glass navbar, gradient buttons, thin scrollbars, rounded cards, color-coded state column
 

@@ -22,12 +22,17 @@ Un'applicazione desktop moderna per la scansione delle porte, realizzata con **A
 - Rilevamento di protocollo e **cifratura** (TLS, STARTTLS, HTTPS, SMTPS, LDAPS, ecc.)
 
 ### Interfaccia e Flusso di Lavoro
+- **Tema scuro** — design completo in modalità dark con contrasto e leggibilità ottimizzati
+- **Vista console** — alternanza tra visualizzazione tabella e output console in stile terminale con risultati formattati
+- **Rilevamento SSL/TLS** — controllo automatico del supporto HTTPS durante la risoluzione degli host (indicatore ✓/✗)
+- **Gestione intelligente degli URL** — rimozione automatica dei prefissi http:// e https://, estrazione dell'hostname dagli URL completi
 - **Indicatore di rete (semaforo)** — punto animato nella barra di stato (🟢 internet, 🟡 solo rete locale, 🔴 nessuna connessione), aggiornato ogni 5 secondi
 - **Pannello informazioni host** — IP, hostname, tempo di scansione, porte analizzate, porte aperte, latenza media (aggiornamento in tempo reale)
 - **Tabella risultati con 7 colonne** — Porta, Stato, Servizio, Versione, Protocollo, Latenza, Banner
 - **Esportazione in CSV o XML** con tutte le colonne
 - **Cancellazione** dei risultati con un clic
 - **Copia riga** o **copia tutti** tramite menu contestuale
+- **Copia indirizzo IP** dall'etichetta dell'host risolto tramite clic destro
 - Risoluzione DNS automatica alla perdita del focus
 - **Anibus Design System**: barra di navigazione effetto vetro, pulsanti con gradiente, barre di scorrimento sottili, schede arrotondate, colonna stato colorata
 
