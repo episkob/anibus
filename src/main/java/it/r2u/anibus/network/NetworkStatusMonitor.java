@@ -27,10 +27,6 @@ public class NetworkStatusMonitor {
     public NetworkStatusMonitor(Circle networkDot, Tooltip networkTooltip) {
         this.networkDot = networkDot;
         this.networkTooltip = networkTooltip;
-        // Install tooltip on the Circle (required for non-Control nodes)
-        if (networkDot != null && networkTooltip != null) {
-            Tooltip.install(networkDot, networkTooltip);
-        }
     }
     
     /**
@@ -106,19 +102,19 @@ public class NetworkStatusMonitor {
             case CONNECTED -> {
                 networkDot.getStyleClass().add("network-dot-green");
                 if (networkTooltip != null) {
-                    networkTooltip.setText("🟢 Internet connected");
+                    networkTooltip.setText("Internet connected");
                 }
             }
             case LOCAL_ONLY -> {
                 networkDot.getStyleClass().add("network-dot-yellow");
                 if (networkTooltip != null) {
-                    networkTooltip.setText("🟡 Local network only");
+                    networkTooltip.setText("Local network only");
                 }
             }
             case DISCONNECTED -> {
                 networkDot.getStyleClass().add("network-dot-red");
                 if (networkTooltip != null) {
-                    networkTooltip.setText("🔴 No network connection");
+                    networkTooltip.setText("No network connection");
                 }
             }
         }

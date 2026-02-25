@@ -89,7 +89,15 @@ public class AnibusController {
     public void initialize() {
         // Initialize helper classes
         hostResolver = new HostResolver();
-        networkStatusMonitor = new NetworkStatusMonitor(networkDot, new Tooltip("Checking network…"));
+        
+        // Create and install tooltip for network dot (Circle doesn't support FXML tooltip property)
+        Tooltip networkTooltip = new Tooltip("Checking network");
+        Tooltip.install(networkDot, networkTooltip);
+        
+        // Add tooltip for thread spinner
+        threadSpinner.setTooltip(new Tooltip("Number of concurrent scanning threads"));
+        
+        networkStatusMonitor = new NetworkStatusMonitor(networkDot, networkTooltip);
         consoleViewManager = new ConsoleViewManager(consoleTextArea);
         infoCardManager = new InfoCardManager(infoCard, infoIpLabel, infoHostnameLabel,
                 infoScanTimeLabel, infoPortsScannedLabel, infoOpenPortsLabel, infoAvgLatencyLabel);
