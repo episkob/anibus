@@ -10,7 +10,7 @@ A modern desktop port scanning application built with the **Anibus Design System
 
 ### Scanning
 - Scan any hostname or IP address for open ports
-- Configurable port range (e.g. `1-1024`)
+- Configurable port range (e.g. `1-65535`)
 - Adjustable thread count (10–500, default 10)
 - Per-port **latency measurement** (ms)
 - Graceful scan cancellation
@@ -106,7 +106,7 @@ mvnw.cmd javafx:run
 ## Usage
 
 1. Enter the **target host** (hostname or IP address)
-2. Enter the **port range** in the format `start-end` (e.g. `1-1024`)
+2. Enter the **port range** in the format `start-end` (e.g. `1-65535`)
 3. Optionally adjust the **thread count**
 4. Click **Start Scan**
 5. The **Host Information** card appears with live stats

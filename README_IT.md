@@ -10,7 +10,7 @@ Un'applicazione desktop moderna per la scansione delle porte, realizzata con **A
 
 ### Scansione
 - Scansione di qualsiasi hostname o indirizzo IP alla ricerca di porte aperte
-- Intervallo di porte configurabile (es. `1-1024`)
+- Intervallo di porte configurabile (es. `1-65535`)
 - Numero di thread regolabile (10–500, predefinito 10)
 - Misurazione della **latenza** per ogni porta (ms)
 - Interruzione della scansione in modo sicuro
@@ -106,7 +106,7 @@ mvnw.cmd javafx:run
 ## Utilizzo
 
 1. Inserire l'**host di destinazione** (hostname o indirizzo IP)
-2. Inserire l'**intervallo di porte** nel formato `inizio-fine` (es. `1-1024`)
+2. Inserire l'**intervallo di porte** nel formato `inizio-fine` (es. `1-65535`)
 3. Facoltativamente, regolare il **numero di thread**
 4. Cliccare su **Start Scan**
 5. Appare il **pannello informazioni host** con statistiche in tempo reale
