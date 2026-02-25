@@ -7,7 +7,7 @@ import javafx.scene.shape.Circle;
 
 import java.net.HttpURLConnection;
 import java.net.InetAddress;
-import java.net.URL;
+import java.net.URI;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -66,8 +66,7 @@ public class NetworkStatusMonitor {
     private NetworkStatus checkNetworkStatus() {
         try {
             // Check internet connectivity
-            URL url = new URL("https://www.google.com");
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            HttpURLConnection conn = (HttpURLConnection) URI.create("https://www.google.com").toURL().openConnection();
             conn.setRequestMethod("HEAD");
             conn.setConnectTimeout(2000);
             conn.setReadTimeout(2000);

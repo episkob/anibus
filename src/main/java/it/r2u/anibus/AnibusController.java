@@ -37,7 +37,6 @@ public class AnibusController {
     @FXML private Label             resolvedHostLabel;
     @FXML private Label             statusLabel;
     @FXML private Circle            networkDot;
-    private Tooltip                 networkTooltip;
     @FXML private Label             resultCountLabel;
     @FXML private ProgressIndicator progressIndicator;
     @FXML private ProgressBar       progressBar;

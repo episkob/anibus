@@ -7,7 +7,6 @@ import javafx.scene.layout.VBox;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 /**
