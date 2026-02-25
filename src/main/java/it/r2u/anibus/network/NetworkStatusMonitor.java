@@ -2,7 +2,6 @@ package it.r2u.anibus.network;
 
 import javafx.application.Platform;
 import javafx.scene.control.Tooltip;
-import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 
 import java.net.HttpURLConnection;
@@ -100,21 +99,24 @@ public class NetworkStatusMonitor {
     private void applyNetworkDot(NetworkStatus status) {
         if (networkDot == null) return;
         
+        // Remove all status classes first
+        networkDot.getStyleClass().removeAll("network-dot-green", "network-dot-yellow", "network-dot-red");
+        
         switch (status) {
             case CONNECTED -> {
-                networkDot.setFill(Color.web("#30D158"));
+                networkDot.getStyleClass().add("network-dot-green");
                 if (networkTooltip != null) {
                     networkTooltip.setText("🟢 Internet connected");
                 }
             }
             case LOCAL_ONLY -> {
-                networkDot.setFill(Color.web("#FF9F0A"));
+                networkDot.getStyleClass().add("network-dot-yellow");
                 if (networkTooltip != null) {
                     networkTooltip.setText("🟡 Local network only");
                 }
             }
             case DISCONNECTED -> {
-                networkDot.setFill(Color.web("#FF453A"));
+                networkDot.getStyleClass().add("network-dot-red");
                 if (networkTooltip != null) {
                     networkTooltip.setText("🔴 No network connection");
                 }
