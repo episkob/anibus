@@ -1,6 +1,8 @@
 package it.r2u.anibus;
 
 import it.r2u.anibus.model.PortScanResult;
+import it.r2u.anibus.network.HostResolver;
+import it.r2u.anibus.network.NetworkStatusMonitor;
 import it.r2u.anibus.service.ExportService;
 import it.r2u.anibus.service.PortScannerService;
 import it.r2u.anibus.service.ScanTask;
@@ -8,6 +10,8 @@ import it.r2u.anibus.service.ServiceDetectionTask;
 import it.r2u.anibus.service.EnhancedServiceDetector;
 import it.r2u.anibus.ui.AlertHelper;
 import it.r2u.anibus.ui.ClipboardService;
+import it.r2u.anibus.ui.ConsoleViewManager;
+import it.r2u.anibus.ui.InfoCardManager;
 import it.r2u.anibus.ui.TableConfigurator;
 
 import javafx.application.Platform;
@@ -18,15 +22,7 @@ import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.Circle;
 
-import java.net.*;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.Properties;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import javax.net.ssl.SSLSocket;
-import javax.net.ssl.SSLSocketFactory;
 
 /**
  * UI controller: handles FXML events and delegates work
@@ -79,16 +75,26 @@ public class AnibusController {
     private ScanTask                  activeScanTask;
     private ServiceDetectionTask      activeServiceDetectionTask;
     private String                    currentScanMode = "Standard Scanning";
-    private Instant                   scanStartTime;
-    private ScheduledExecutorService  networkMonitor;
-    private boolean                   isConsoleView = false;
     private final ObservableList<PortScanResult> results  = FXCollections.observableArrayList();
     private final PortScannerService             scanner  = new PortScannerService();
     private final EnhancedServiceDetector        detector = new EnhancedServiceDetector();
+    
+    /* -- Helper classes --------------------------------------- */
+    private HostResolver           hostResolver;
+    private NetworkStatusMonitor   networkStatusMonitor;
+    private ConsoleViewManager     consoleViewManager;
+    private InfoCardManager        infoCardManager;
 
     /* -- Initialization --------------------------------------- */
     @FXML
     public void initialize() {
+        // Initialize helper classes
+        hostResolver = new HostResolver();
+        networkStatusMonitor = new NetworkStatusMonitor(networkDot, new Tooltip("Checking network…"));
+        consoleViewManager = new ConsoleViewManager(consoleTextArea);
+        infoCardManager = new InfoCardManager(infoCard, infoIpLabel, infoHostnameLabel,
+                infoScanTimeLabel, infoPortsScannedLabel, infoOpenPortsLabel, infoAvgLatencyLabel);
+        
         TableConfigurator.setup(resultTableView,
                 portColumn, stateColumn, serviceColumn,
                 versionColumn, protocolColumn, latencyColumn, bannerColumn);
@@ -115,7 +121,7 @@ public class AnibusController {
 
         results.addListener((javafx.collections.ListChangeListener<PortScanResult>) c -> {
             refreshResultCount();
-            refreshInfoCard();
+            infoCardManager.refreshInfoCard(results);
             Platform.runLater(() -> {
                 boolean any = !results.isEmpty();
                 exportButton.setDisable(!any);
@@ -123,13 +129,22 @@ public class AnibusController {
             });
         });
 
-        networkTooltip = new Tooltip("Checking network…");
-        Tooltip.install(networkDot, networkTooltip);
-
         setupContextMenu();
-        hostTextField.focusedProperty().addListener((obs, was, is) -> { if (!is) resolveHost(); });
+        hostTextField.focusedProperty().addListener((obs, was, is) -> { 
+            if (!is) {
+                String host = hostResolver.sanitizeHost(hostTextField.getText());
+                if (!host.isEmpty()) {
+                    if (!host.equals(hostTextField.getText().trim())) {
+                        hostTextField.setText(host);
+                    }
+                    hostResolver.resolveHostAsync(host, resolvedHostLabel, null);
+                } else {
+                    resolvedHostLabel.setText("");
+                }
+            }
+        });
         refreshResultCount();
-        startNetworkMonitor();
+        networkStatusMonitor.start();
     }
 
     private void setupContextMenu() {
@@ -182,132 +197,6 @@ public class AnibusController {
         }
     }
 
-    /* -- Network status --------------------------------------- */
-    private enum NetworkStatus { INTERNET, LOCAL_ONLY, NONE }
-
-    private void startNetworkMonitor() {
-        networkMonitor = Executors.newSingleThreadScheduledExecutor(r -> {
-            Thread t = new Thread(r, "network-monitor");
-            t.setDaemon(true);
-            return t;
-        });
-        // Check immediately, then every 5 seconds
-        networkMonitor.scheduleWithFixedDelay(() -> {
-            NetworkStatus status = detectNetworkStatus();
-            Platform.runLater(() -> applyNetworkDot(status));
-        }, 0, 5, TimeUnit.SECONDS);
-    }
-
-    private NetworkStatus detectNetworkStatus() {
-        // Try a lightweight TCP probe to a well-known public DNS server
-        try (Socket socket = new Socket()) {
-            socket.connect(new InetSocketAddress("8.8.8.8", 53), 2000);
-            return NetworkStatus.INTERNET;
-        } catch (Exception ignored) {}
-        // Fall back: check whether any non-loopback interface is up
-        try {
-            var ifaces = NetworkInterface.getNetworkInterfaces();
-            if (ifaces != null) {
-                while (ifaces.hasMoreElements()) {
-                    NetworkInterface iface = ifaces.nextElement();
-                    if (!iface.isLoopback() && iface.isUp()) {
-                        var addrs = iface.getInetAddresses();
-                        while (addrs.hasMoreElements()) {
-                            InetAddress addr = addrs.nextElement();
-                            if (!addr.isLoopbackAddress() && !addr.isLinkLocalAddress())
-                                return NetworkStatus.LOCAL_ONLY;
-                        }
-                    }
-                }
-            }
-        } catch (Exception ignored) {}
-        return NetworkStatus.NONE;
-    }
-
-    private void applyNetworkDot(NetworkStatus status) {
-        if (networkDot == null) return;
-        networkDot.getStyleClass().removeAll("network-dot-green", "network-dot-yellow", "network-dot-red");
-        switch (status) {
-            case INTERNET -> {
-                networkDot.getStyleClass().add("network-dot-green");
-                if (networkTooltip != null) networkTooltip.setText("Internet: connected");
-            }
-            case LOCAL_ONLY -> {
-                networkDot.getStyleClass().add("network-dot-yellow");
-                if (networkTooltip != null) networkTooltip.setText("Network: local only (no internet)");
-            }
-            case NONE -> {
-                networkDot.getStyleClass().add("network-dot-red");
-                if (networkTooltip != null) networkTooltip.setText("Network: no connection");
-            }
-        }
-    }
-
-    /* -- DNS resolve ------------------------------------------ */
-    private String sanitizeHost(String input) {
-        if (input == null || input.isEmpty()) return input;
-        
-        String cleaned = input.trim();
-        
-        // Remove http:// or https:// prefix
-        if (cleaned.toLowerCase().startsWith("https://")) {
-            cleaned = cleaned.substring(8);
-        } else if (cleaned.toLowerCase().startsWith("http://")) {
-            cleaned = cleaned.substring(7);
-        }
-        
-        // Remove path, query params, and fragments (keep only hostname/IP)
-        int slashIndex = cleaned.indexOf('/');
-        if (slashIndex != -1) {
-            cleaned = cleaned.substring(0, slashIndex);
-        }
-        
-        // Remove port number from hostname if present (e.g., example.com:8080)
-        int colonIndex = cleaned.indexOf(':');
-        if (colonIndex != -1) {
-            // Check if it's not an IPv6 address
-            if (!cleaned.contains("[") && !cleaned.contains("]")) {
-                cleaned = cleaned.substring(0, colonIndex);
-            }
-        }
-        
-        return cleaned.trim();
-    }
-    
-    private String checkSSL(String host) {
-        try {
-            SSLSocketFactory factory = (SSLSocketFactory) SSLSocketFactory.getDefault();
-            try (SSLSocket socket = (SSLSocket) factory.createSocket()) {
-                socket.connect(new InetSocketAddress(host, 443), 2000);
-                socket.startHandshake();
-                return " [SSL/TLS ✓]";
-            }
-        } catch (Exception e) {
-            return " [SSL/TLS ✗]";
-        }
-    }
-    
-    private void resolveHost() {
-        String host = sanitizeHost(hostTextField.getText());
-        if (host.isEmpty()) { resolvedHostLabel.setText(""); return; }
-        
-        // Update text field with sanitized host
-        if (!host.equals(hostTextField.getText().trim())) {
-            Platform.runLater(() -> hostTextField.setText(host));
-        }
-        
-        final String finalHost = host;
-        new Thread(() -> {
-            try {
-                String ip = InetAddress.getByName(finalHost).getHostAddress();
-                String sslStatus = checkSSL(finalHost);
-                Platform.runLater(() -> resolvedHostLabel.setText("Resolved: " + ip + sslStatus));
-            } catch (UnknownHostException ex) {
-                Platform.runLater(() -> resolvedHostLabel.setText("Unable to resolve host"));
-            }
-        }).start();
-    }
-
     /* -- Result count ----------------------------------------- */
     private void refreshResultCount() {
         Platform.runLater(() -> {
@@ -315,39 +204,6 @@ public class AnibusController {
             if (resultCountLabel != null)
                 resultCountLabel.setText(n == 0 ? "No open ports" : n == 1 ? "1 open port" : n + " open ports");
         });
-    }
-
-    /* -- Info card -------------------------------------------- */
-    private void refreshInfoCard() {
-        Platform.runLater(() -> {
-            if (infoOpenPortsLabel != null) infoOpenPortsLabel.setText(String.valueOf(results.size()));
-            if (infoAvgLatencyLabel != null && !results.isEmpty()) {
-                double avg = results.stream().mapToLong(PortScanResult::getLatency).average().orElse(0);
-                infoAvgLatencyLabel.setText(String.format("%.0f ms", avg));
-            }
-        });
-    }
-
-    private void showInfoCard(String ip, String hostname, int totalPorts) {
-        Platform.runLater(() -> {
-            infoCard.setVisible(true);
-            infoCard.setManaged(true);
-            infoIpLabel.setText(ip);
-            infoHostnameLabel.setText(hostname);
-            infoPortsScannedLabel.setText(String.valueOf(totalPorts));
-            infoOpenPortsLabel.setText("0");
-            infoAvgLatencyLabel.setText("-");
-            infoScanTimeLabel.setText("scanning");
-            if (infoSubnetLabel != null) infoSubnetLabel.setText("-");
-            if (infoGatewayLabel != null) infoGatewayLabel.setText("-");
-        });
-    }
-
-    private void finalizeScanTime() {
-        if (scanStartTime == null) return;
-        long s = Duration.between(scanStartTime, Instant.now()).getSeconds();
-        String elapsed = s < 60 ? s + "s" : (s / 60) + "m " + (s % 60) + "s";
-        Platform.runLater(() -> infoScanTimeLabel.setText(elapsed));
     }
 
     /* -- Status ----------------------------------------------- */
@@ -359,7 +215,7 @@ public class AnibusController {
     @FXML
     protected void onScanButtonClick() {
         results.clear();
-        String host      = sanitizeHost(hostTextField.getText());
+        String host      = hostResolver.sanitizeHost(hostTextField.getText());
         String portsRange = portsTextField.getText().trim();
 
         if (host.isEmpty() || portsRange.isEmpty()) {
@@ -390,7 +246,7 @@ public class AnibusController {
         String modePrefix = "Service Detection".equals(currentScanMode) ? 
             "🔍 Service Detection: " : "⚡ Standard Scan: ";
         setStatus(modePrefix + "Resolving " + host + "...");
-        scanStartTime = Instant.now();
+        infoCardManager.startScanTime();
 
         // Choose task based on current scan mode
         if ("Service Detection".equals(currentScanMode)) {
@@ -405,15 +261,15 @@ public class AnibusController {
         activeScanTask = new ScanTask(host, ports[0], ports[1], threadSpinner.getValue(), scanner,
                 new ScanTask.Callbacks() {
                     public void onHostResolved(String ip)                    { 
-                        String sslStatus = checkSSL(finalHost);
+                        String sslStatus = hostResolver.checkSSL(finalHost);
                         resolvedHostLabel.setText("Resolved: " + ip + sslStatus); 
                     }
-                    public void onScanStarted(String ip, String hn, int tot) { showInfoCard(ip, hn, tot); }
-                    public void onResult(PortScanResult r)                   { results.add(r); appendToConsole(r); }
+                    public void onScanStarted(String ip, String hn, int tot) { infoCardManager.showInfoCard(ip, hn, tot); }
+                    public void onResult(PortScanResult r)                   { results.add(r); consoleViewManager.appendToConsole(r); }
                     public void onStatus(String msg)                         { setStatus(msg); }
-                    public void onCompleted() { finalizeScanTime(); setStatus("⚡ Standard Scan complete — " + results.size() + " open port(s) found"); resetUI(); }
-                    public void onCancelled() { finalizeScanTime(); setStatus("⚡ Standard Scan stopped by user"); resetUI(); }
-                    public void onFailed(String err) { finalizeScanTime(); setStatus("⚡ Standard Scan failed: " + err); resetUI(); }
+                    public void onCompleted() { infoCardManager.finalizeScanTime(); setStatus("⚡ Standard Scan complete — " + results.size() + " open port(s) found"); resetUI(); }
+                    public void onCancelled() { infoCardManager.finalizeScanTime(); setStatus("⚡ Standard Scan stopped by user"); resetUI(); }
+                    public void onFailed(String err) { infoCardManager.finalizeScanTime(); setStatus("⚡ Standard Scan failed: " + err); resetUI(); }
                 });
 
         progressBar.progressProperty().bind(activeScanTask.progressProperty());
@@ -425,16 +281,16 @@ public class AnibusController {
         activeServiceDetectionTask = new ServiceDetectionTask(host, ports[0], ports[1], threadSpinner.getValue(), detector,
                 new ServiceDetectionTask.Callbacks() {
                     public void onHostResolved(String ip) { 
-                        String sslStatus = checkSSL(finalHost);
+                        String sslStatus = hostResolver.checkSSL(finalHost);
                         Platform.runLater(() -> resolvedHostLabel.setText("Resolved: " + ip + sslStatus)); 
                     }
                     public void onScanStarted(String ip, String hn, int tot) { 
-                        showInfoCard(ip, hn, tot); 
+                        infoCardManager.showInfoCard(ip, hn, tot); 
                     }
                     public void onResult(PortScanResult r) { 
                         Platform.runLater(() -> {
                             results.add(r);
-                            appendToConsole(r);
+                            consoleViewManager.appendToConsole(r);
                         }); 
                     }
                     public void onStatus(String msg) { 
@@ -447,17 +303,17 @@ public class AnibusController {
                         });
                     }
                     public void onCompleted() { 
-                        finalizeScanTime(); 
+                        infoCardManager.finalizeScanTime(); 
                         setStatus("🔍 Service Detection complete — " + results.size() + " service(s) detected with enhanced details"); 
                         resetUI(); 
                     }
                     public void onCancelled() { 
-                        finalizeScanTime(); 
+                        infoCardManager.finalizeScanTime(); 
                         setStatus("🔍 Service Detection stopped by user"); 
                         resetUI(); 
                     }
                     public void onFailed(String err) { 
-                        finalizeScanTime(); 
+                        infoCardManager.finalizeScanTime(); 
                         setStatus("🔍 Service Detection failed: " + err); 
                         resetUI(); 
                     }
@@ -561,14 +417,14 @@ public class AnibusController {
     /* -- View Toggle ------------------------------------------ */
     @FXML
     protected void onViewToggleClick() {
-        isConsoleView = !isConsoleView;
+        consoleViewManager.toggle();
         Platform.runLater(() -> {
-            if (isConsoleView) {
+            if (consoleViewManager.isConsoleView()) {
                 resultTableView.setVisible(false);
                 consoleScrollPane.setVisible(true);
                 viewToggleButton.setText("Table View");
                 // Populate console with current results
-                updateConsoleWithAllResults();
+                consoleViewManager.updateConsoleWithAllResults(results);
             } else {
                 resultTableView.setVisible(true);
                 consoleScrollPane.setVisible(false);
@@ -577,72 +433,9 @@ public class AnibusController {
         });
     }
     
-    private void updateConsoleWithAllResults() {
-        if (consoleTextArea == null) return;
-        StringBuilder sb = new StringBuilder();
-        sb.append("═══════════════════════════════════════════════════════════════════════\n");
-        sb.append("  ANIBUS SCAN RESULTS\n");
-        sb.append("═══════════════════════════════════════════════════════════════════════\n\n");
-        
-        if (results.isEmpty()) {
-            sb.append("  No open ports found.\n\n");
-        } else {
-            for (PortScanResult result : results) {
-                sb.append(formatConsoleResult(result));
-            }
-        }
-        
-        sb.append("═══════════════════════════════════════════════════════════════════════\n");
-        sb.append(String.format("  Total: %d open port%s\n", results.size(), results.size() == 1 ? "" : "s"));
-        sb.append("═══════════════════════════════════════════════════════════════════════\n");
-        
-        consoleTextArea.setText(sb.toString());
-    }
-    
-    private void appendToConsole(PortScanResult result) {
-        if (consoleTextArea == null || !isConsoleView) return;
-        Platform.runLater(() -> {
-            String current = consoleTextArea.getText();
-            if (current.isEmpty() || !current.contains("ANIBUS SCAN RESULTS")) {
-                // First result - add header
-                consoleTextArea.setText(
-                    "═══════════════════════════════════════════════════════════════════════\n" +
-                    "  ANIBUS SCAN RESULTS\n" +
-                    "═══════════════════════════════════════════════════════════════════════\n\n" +
-                    formatConsoleResult(result)
-                );
-            } else {
-                // Append to existing results
-                consoleTextArea.appendText(formatConsoleResult(result));
-            }
-            // Auto-scroll to bottom
-            consoleTextArea.setScrollTop(Double.MAX_VALUE);
-        });
-    }
-    
-    private String formatConsoleResult(PortScanResult result) {
-        StringBuilder sb = new StringBuilder();
-        sb.append(String.format("┌─ Port: %d (%s)\n", result.getPort(), result.getState()));
-        sb.append(String.format("│  Service:  %s\n", result.getService() != null && !result.getService().isEmpty() ? result.getService() : "unknown"));
-        if (result.getVersion() != null && !result.getVersion().isEmpty()) {
-            sb.append(String.format("│  Version:  %s\n", result.getVersion()));
-        }
-        if (result.getProtocol() != null && !result.getProtocol().isEmpty()) {
-            sb.append(String.format("│  Protocol: %s\n", result.getProtocol()));
-        }
-        sb.append(String.format("│  Latency:  %d ms\n", result.getLatency()));
-        if (result.getBanner() != null && !result.getBanner().isEmpty()) {
-            // Show full banner without truncation, with proper indentation for wrapped lines
-            String banner = result.getBanner();
-            sb.append(String.format("│  Banner:   %s\n", banner));
-        }
-        sb.append("└─────────────────────────────────────────────────────────────────────\n\n");
-        return sb.toString();
-    }
-
     public void shutdownExecutor() {
         if (activeScanTask != null) activeScanTask.shutdown();
         if (activeServiceDetectionTask != null) activeServiceDetectionTask.shutdown();
-        if (networkMonitor != null && !networkMonitor.isShutdown()) networkMonitor.shutdownNow();
+        networkStatusMonitor.stop();
     }
 }
