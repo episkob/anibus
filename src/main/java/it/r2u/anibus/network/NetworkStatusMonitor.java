@@ -28,6 +28,10 @@ public class NetworkStatusMonitor {
     public NetworkStatusMonitor(Circle networkDot, Tooltip networkTooltip) {
         this.networkDot = networkDot;
         this.networkTooltip = networkTooltip;
+        // Install tooltip on the Circle (required for non-Control nodes)
+        if (networkDot != null && networkTooltip != null) {
+            Tooltip.install(networkDot, networkTooltip);
+        }
     }
     
     /**
