@@ -85,7 +85,7 @@ public class ServiceDetectionTask extends Task<Void> {
                                 String service = result.getService();
                                 // Highlight security services in status message
                                 if (service.contains("[") && service.contains("]")) {
-                                    callbacks.onStatus("🛡️ Security detected: " + service + " on port " + p);
+                                    callbacks.onStatus("[SECURITY] Security detected: " + service + " on port " + p);
                                 } else {
                                     callbacks.onStatus("Detected: " + service + " on port " + p);
                                 }

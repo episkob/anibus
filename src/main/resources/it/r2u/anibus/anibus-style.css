@@ -79,10 +79,13 @@
     -fx-background-radius: 12;
     -fx-border-color: transparent;
     -fx-border-radius: 12;
-    -fx-padding: 14 18;
-    -fx-font-size: 15px;
+    -fx-padding: 8 12;
+    -fx-font-size: 14px;
     -fx-text-fill: #EBEBF5;
     -fx-prompt-text-fill: #636366;
+    -fx-min-height: 36px;
+    -fx-pref-height: 36px;
+    -fx-max-height: 36px;
 }
 .text-field:focused {
     -fx-background-color: #3A3A3C;
@@ -205,7 +208,7 @@
 }
 
 .title-label {
-    -fx-font-size: 22px;
+    -fx-font-size: 18px;
     -fx-font-weight: 700;
     -fx-text-fill: #EBEBF5;
 }
@@ -243,7 +246,7 @@
     -fx-background-color: #1C1C1E;
     -fx-background-radius: 16;
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 12, 0, 0, 3);
-    -fx-padding: 24;
+    -fx-padding: 16;
 }
 
 /* ── Table View ──────────────────────────────────────── */
@@ -444,21 +447,33 @@
 /* ── Thread-count Spinner ────────────────────────────── */
 .spinner {
     -fx-background-color: #2C2C2E;
-    -fx-background-radius: 10;
+    -fx-background-radius: 12;
     -fx-border-color: transparent;
+    -fx-min-height: 36px;
+    -fx-pref-height: 36px;
+    -fx-max-height: 36px;
 }
 
 .spinner .text-field {
     -fx-background-color: transparent;
     -fx-text-fill: #EBEBF5;
-    -fx-padding: 8 12;
+    -fx-padding: 0 8;
     -fx-font-size: 14px;
+    -fx-min-height: 36px;
+    -fx-pref-height: 36px;
+    -fx-max-height: 36px;
 }
 
 .spinner .increment-arrow-button,
 .spinner .decrement-arrow-button {
     -fx-background-color: transparent;
     -fx-border-color: #48484A;
+}
+
+.spinner:focused {
+    -fx-background-color: #3A3A3C;
+    -fx-border-color: #0A84FF;
+    -fx-border-width: 2;
 }
 
 /* ── Badge labels (protocol/service) ─────────────────── */
@@ -496,7 +511,7 @@
 
 /* ── Content Area ────────────────────────────────────── */
 .content-area {
-    -fx-padding: 20 24;
+    -fx-padding: 12 16;
 }
 
 /* ── Host Info Card ──────────────────────────────────── */

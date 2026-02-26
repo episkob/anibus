@@ -8,13 +8,11 @@
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.Spinner?>
-<?import javafx.scene.control.TableView?>
-<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Priority?>
 <?import javafx.scene.layout.Region?>
-<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.shape.Circle?>
 
@@ -45,46 +43,41 @@
         <!-- Scrollable Content -->
         <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS">
             <content>
-                <VBox spacing="16" styleClass="content-area">
+                <VBox spacing="10" styleClass="content-area">
                     <children>
 
                         <!-- Input Card -->
-                        <VBox spacing="18" styleClass="card">
+                        <VBox spacing="10" styleClass="card">
                             <children>
                                 <Label text="Port Scanner" styleClass="title-label" />
 
-                                <!-- Host -->
-                                <VBox spacing="6">
+                                <!-- Host & Port Range & Threads in one row -->
+                                <HBox spacing="12" alignment="BOTTOM_LEFT">
                                     <children>
-                                        <Label text="TARGET HOST" styleClass="subtitle-label" />
-                                        <TextField fx:id="hostTextField"
-                                                   promptText="hostname or IP address" />
-                                        <Label fx:id="resolvedHostLabel" text="" styleClass="host-resolved-label" />
-                                    </children>
-                                </VBox>
-
-                                <!-- Port Range -->
-                                <VBox spacing="6">
-                                    <children>
-                                        <Label text="PORT RANGE" styleClass="subtitle-label" />
-                                        <TextField fx:id="portsTextField"
-                                                   promptText="e.g. 1-65535" />
-                                    </children>
-                                </VBox>
-
-                                <!-- Threads -->
-                                <HBox spacing="12" alignment="CENTER_LEFT">
-                                    <children>
-                                        <VBox spacing="6">
+                                        <VBox spacing="3" HBox.hgrow="ALWAYS">
+                                            <children>
+                                                <Label text="TARGET HOST" styleClass="subtitle-label" />
+                                                <TextField fx:id="hostTextField"
+                                                           promptText="hostname or IP address" />
+                                            </children>
+                                        </VBox>
+                                        <VBox spacing="3" prefWidth="150">
+                                            <children>
+                                                <Label text="PORT RANGE" styleClass="subtitle-label" />
+                                                <TextField fx:id="portsTextField"
+                                                           promptText="e.g. 1-65535" />
+                                            </children>
+                                        </VBox>
+                                        <VBox spacing="3" prefWidth="80">
                                             <children>
                                                 <Label text="THREADS" styleClass="subtitle-label" />
-                                                <Spinner fx:id="threadSpinner" prefWidth="100" editable="true" />
+                                                <Spinner fx:id="threadSpinner" editable="true" />
                                             </children>
                                         </VBox>
                                     </children>
                                 </HBox>
-
-                                <Separator />
+                                
+                                <Label fx:id="resolvedHostLabel" text="" styleClass="host-resolved-label" />
 
                                 <!-- Actions -->
                                 <HBox spacing="10" alignment="CENTER_LEFT">
@@ -149,17 +142,14 @@
                         </VBox>
 
                         <!-- Results Card -->
-                        <VBox spacing="14" styleClass="card" VBox.vgrow="ALWAYS">
+                        <VBox spacing="14" styleClass="card">
                             <children>
                                 <HBox alignment="CENTER_LEFT" spacing="10">
                                     <children>
-                                        <Label text="Results" styleClass="section-title" />
+                                        <Label text="Console Output" styleClass="section-title" />
                                         <Label fx:id="resultCountLabel" text="No open ports"
                                                styleClass="counter-label" />
                                         <Region HBox.hgrow="ALWAYS" />
-                                        <Button fx:id="viewToggleButton" text="Console View"
-                                                onAction="#onViewToggleClick"
-                                                styleClass="secondary-button" />
                                         <Button fx:id="exportButton" text="Export"
                                                 onAction="#onExportClick"
                                                 styleClass="secondary-button" disable="true" />
@@ -169,31 +159,10 @@
                                     </children>
                                 </HBox>
 
-                                <StackPane VBox.vgrow="ALWAYS">
-                                    <children>
-                                        <TableView fx:id="resultTableView" VBox.vgrow="ALWAYS"
-                                                   prefHeight="380">
-                                            <columns>
-                                                <TableColumn fx:id="portColumn" text="Port" prefWidth="70" />
-                                                <TableColumn fx:id="stateColumn" text="State" prefWidth="80" />
-                                                <TableColumn fx:id="serviceColumn" text="Service" prefWidth="120" />
-                                                <TableColumn fx:id="versionColumn" text="Version" prefWidth="160" />
-                                                <TableColumn fx:id="protocolColumn" text="Protocol" prefWidth="140" />
-                                                <TableColumn fx:id="latencyColumn" text="Latency" prefWidth="70" />
-                                                <TableColumn fx:id="bannerColumn" text="Banner" prefWidth="340" />
-                                            </columns>
-                                        </TableView>
-                                        
-                                        <ScrollPane fx:id="consoleScrollPane" visible="false" fitToWidth="true" fitToHeight="true">
-                                            <content>
-                                                <javafx.scene.control.TextArea fx:id="consoleTextArea" 
-                                                    editable="false" wrapText="true"
-                                                    styleClass="console-view"
-                                                    VBox.vgrow="ALWAYS" />
-                                            </content>
-                                        </ScrollPane>
-                                    </children>
-                                </StackPane>
+                                <TextArea fx:id="consoleTextArea" 
+                                    editable="false" wrapText="true"
+                                    styleClass="console-view"
+                                    prefRowCount="2" />
                             </children>
                         </VBox>
 

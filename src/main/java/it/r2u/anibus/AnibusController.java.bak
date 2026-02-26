@@ -1,0 +1,487 @@
+package it.r2u.anibus;
+
+import it.r2u.anibus.model.PortScanResult;
+import it.r2u.anibus.network.HostResolver;
+import it.r2u.anibus.network.NetworkStatusMonitor;
+import it.r2u.anibus.service.ExportService;
+import it.r2u.anibus.service.PortScannerService;
+import it.r2u.anibus.service.ScanTask;
+import it.r2u.anibus.service.ServiceDetectionTask;
+import it.r2u.anibus.service.EnhancedServiceDetector;
+// import it.r2u.anibus.service.SoftwareStackDetector; // Disabled by user request
+import it.r2u.anibus.ui.AlertHelper;
+import it.r2u.anibus.ui.ClipboardService;
+import it.r2u.anibus.ui.ConsoleViewManager;
+import it.r2u.anibus.ui.InfoCardManager;
+
+import javafx.application.Platform;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.fxml.FXML;
+import javafx.scene.control.*;
+import javafx.scene.layout.VBox;
+import javafx.scene.shape.Circle;
+
+import java.util.Properties;
+
+/**
+ * UI controller: handles FXML events and delegates work
+ * to focused service/helper classes.
+ */
+public class AnibusController {
+
+    /* -- FXML fields ------------------------------------------ */
+    @FXML private TextField         hostTextField;
+    @FXML private TextField         portsTextField;
+    @FXML private Spinner<Integer>  threadSpinner;
+    @FXML private Label             resolvedHostLabel;
+    @FXML private Label             statusLabel;
+    @FXML private Circle            networkDot;
+    @FXML private Label             resultCountLabel;
+    @FXML private ProgressBar       progressBar;
+    @FXML private Button            scanButton;
+    @FXML private Button            stopButton;
+    @FXML private Button            exportButton;
+    @FXML private Button            clearButton;
+    @FXML private ComboBox<String>  scanTypeComboBox;
+    @FXML private javafx.scene.control.TextArea consoleTextArea;
+
+    /* -- Info card labels ------------------------------------- */
+    @FXML private VBox  infoCard;
+    @FXML private Label infoIpLabel;
+    @FXML private Label infoHostnameLabel;
+    @FXML private Label infoScanTimeLabel;
+    @FXML private Label infoPortsScannedLabel;
+    @FXML private Label infoOpenPortsLabel;
+    @FXML private Label infoAvgLatencyLabel;
+
+    /* -- State ------------------------------------------------ */
+    private ScanTask                  activeScanTask;
+    private ServiceDetectionTask      activeServiceDetectionTask;
+    private String                    currentScanMode = "Standard Scanning";
+    private final ObservableList<PortScanResult> results  = FXCollections.observableArrayList();
+    private final PortScannerService             scanner  = new PortScannerService();
+    private final EnhancedServiceDetector        detector = new EnhancedServiceDetector();
+    
+    /* -- Helper classes --------------------------------------- */
+    private HostResolver           hostResolver;
+    private NetworkStatusMonitor   networkStatusMonitor;
+    private ConsoleViewManager     consoleViewManager;
+    private InfoCardManager        infoCardManager;
+
+    /* -- Initialization --------------------------------------- */
+    @FXML
+    public void initialize() {
+        // Initialize helper classes
+        hostResolver = new HostResolver();
+        
+        // Create and install tooltip for network dot (Circle doesn't support FXML tooltip property)
+        Tooltip networkTooltip = new Tooltip("Checking network");
+        Tooltip.install(networkDot, networkTooltip);
+        
+        // Add tooltip for thread spinner
+        threadSpinner.setTooltip(new Tooltip("Number of concurrent scanning threads"));
+        
+        networkStatusMonitor = new NetworkStatusMonitor(networkDot, networkTooltip);
+        consoleViewManager = new ConsoleViewManager(consoleTextArea);
+        infoCardManager = new InfoCardManager(infoCard, infoIpLabel, infoHostnameLabel,
+                infoScanTimeLabel, infoPortsScannedLabel, infoOpenPortsLabel, infoAvgLatencyLabel);
+        
+        // Bind managed property to visible property so card doesn't take space when hidden
+        infoCard.managedProperty().bind(infoCard.visibleProperty());
+
+        // Set console view as default
+        consoleViewManager.setConsoleView(true);
+        
+        // Auto-resize console TextArea based on content
+        consoleTextArea.textProperty().addListener((obs, oldText, newText) -> {
+            adjustConsoleHeight();
+        });
+        consoleTextArea.setPrefRowCount(2);
+        
+        scanTypeComboBox.getItems().addAll(
+                "Standard Scanning",
+                "Service Detection"
+        );
+        scanTypeComboBox.getSelectionModel().selectFirst();
+        
+        // Handle scan mode changes
+        scanTypeComboBox.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
+            onScanModeChanged(newVal);
+        });
+        
+        // Set initial status for default mode
+        onScanModeChanged(scanTypeComboBox.getSelectionModel().getSelectedItem());
+
+        threadSpinner.setValueFactory(
+                new SpinnerValueFactory.IntegerSpinnerValueFactory(10, 500, 10, 10));
+
+        results.addListener((javafx.collections.ListChangeListener<PortScanResult>) c -> {
+            refreshResultCount();
+            infoCardManager.refreshInfoCard(results);
+            Platform.runLater(() -> {
+                boolean any = !results.isEmpty();
+                exportButton.setDisable(!any);
+                clearButton.setDisable(!any);
+            });
+        });
+
+        // Setup console context menu
+        setupConsoleContextMenu();
+        
+        hostTextField.focusedProperty().addListener((obs, was, is) -> { 
+            if (!is) {
+                String originalHost = hostTextField.getText().trim();
+                String sanitizedHost = hostResolver.sanitizeHost(originalHost);
+                
+                if (!sanitizedHost.isEmpty()) {
+                    // Show punycode version in field if different from original
+                    if (!sanitizedHost.equals(originalHost)) {
+                        hostTextField.setText(sanitizedHost);
+                    }
+                    hostResolver.resolveHostAsync(sanitizedHost, resolvedHostLabel, null);
+                } else {
+                    resolvedHostLabel.setText("");
+                }
+            }
+        });
+        refreshResultCount();
+        networkStatusMonitor.start();
+    }
+
+    private void setupConsoleContextMenu() {
+        MenuItem copyAll = new MenuItem("Copy all console output");
+        copyAll.setOnAction(e -> copyConsoleOutput());
+        MenuItem copyResults = new MenuItem("Copy results only");
+        copyResults.setOnAction(e -> copyAllRows());
+        MenuItem runTraceroute = new MenuItem("Run Traceroute...");
+        runTraceroute.setOnAction(e -> runTraceroute());
+        consoleTextArea.setContextMenu(new ContextMenu(copyAll, copyResults, new SeparatorMenuItem(), runTraceroute));
+        
+        // Context menu for resolved host label
+        MenuItem copyIP = new MenuItem("Copy");
+        copyIP.setOnAction(e -> copyResolvedIP());
+        resolvedHostLabel.setContextMenu(new ContextMenu(copyIP));
+    }
+
+    /* -- Scan mode handling ----------------------------------- */
+    private void onScanModeChanged(String mode) {
+        if (mode == null) return;
+        currentScanMode = mode;
+        
+        switch (mode) {
+            case "Standard Scanning" -> {
+                setStatus("Standard Scanning mode: Basic TCP port scanning with service detection");
+            }
+            case "Service Detection" -> {
+                setStatus("Service Detection mode: Enhanced service fingerprinting with real-time detection");
+            }
+        }
+    }
+
+    /* -- Result count ----------------------------------------- */
+    private void refreshResultCount() {
+        Platform.runLater(() -> {
+            int n = results.size();
+            if (resultCountLabel != null)
+                resultCountLabel.setText(n == 0 ? "No open ports" : n == 1 ? "1 open port" : n + " open ports");
+        });
+    }
+
+    /* -- Status ----------------------------------------------- */
+    private void setStatus(String msg) {
+        Platform.runLater(() -> { if (statusLabel != null) statusLabel.setText(msg); });
+    }
+
+    /* -- Scan start ------------------------------------------- */
+    @FXML
+    protected void onScanButtonClick() {
+        results.clear();
+        String host      = hostResolver.sanitizeHost(hostTextField.getText());
+        String portsRange = portsTextField.getText().trim();
+
+        if (host.isEmpty() || portsRange.isEmpty()) {
+            AlertHelper.show("Missing input", "Please enter both hostname and port range.",
+                    Alert.AlertType.WARNING, cssUrl());
+            return;
+        }
+        
+        // Update text field with sanitized host
+        if (!host.equals(hostTextField.getText().trim())) {
+            hostTextField.setText(host);
+        }
+
+        int[] ports = scanner.parsePortsRange(portsRange);
+        if (ports == null) {
+            AlertHelper.show("Invalid range", "Use format start-end (1-65535), e.g. 1-1024 or 1-65535.",
+                    Alert.AlertType.ERROR, cssUrl());
+            return;
+        }
+
+        scanButton.setDisable(true);
+        stopButton.setDisable(false);
+        progressBar.setVisible(true);
+        progressBar.setProgress(0);
+        
+        // Show mode-specific status
+        String modePrefix = "Service Detection".equals(currentScanMode) ? 
+            "🔍 Service Detection: " : "⚡ Standard Scan: ";
+        setStatus(modePrefix + "Resolving " + host + "...");
+        infoCardManager.startScanTime();
+
+        // Choose task based on current scan mode
+        if ("Service Detection".equals(currentScanMode)) {
+            startServiceDetectionScan(host, ports);
+        } else {
+            startStandardScan(host, ports);
+        }
+    }
+
+    private void startStandardScan(String host, int[] ports) {
+        final String finalHost = host;
+        activeScanTask = new ScanTask(host, ports[0], ports[1], threadSpinner.getValue(), scanner,
+                new ScanTask.Callbacks() {
+                    public void onHostResolved(String ip)                    { 
+                        String sslStatus = hostResolver.checkSSL(finalHost);
+                        resolvedHostLabel.setText("Resolved: " + ip + sslStatus); 
+                    }
+                    public void onScanStarted(String ip, String hn, int tot) { infoCardManager.showInfoCard(ip, hn, tot); }
+                    public void onResult(PortScanResult r)                   { results.add(r); consoleViewManager.appendToConsole(r); }
+                    public void onStatus(String msg)                         { setStatus(msg); }
+                    public void onCompleted() { infoCardManager.finalizeScanTime(); setStatus("⚡ Standard Scan complete — " + results.size() + " open port(s) found"); resetUI(); }
+                    public void onCancelled() { infoCardManager.finalizeScanTime(); setStatus("⚡ Standard Scan stopped by user"); resetUI(); }
+                    public void onFailed(String err) { infoCardManager.finalizeScanTime(); setStatus("⚡ Standard Scan failed: " + err); resetUI(); }
+                });
+
+        progressBar.progressProperty().bind(activeScanTask.progressProperty());
+        new Thread(activeScanTask).start();
+    }
+
+    private void startServiceDetectionScan(String host, int[] ports) {
+        final String finalHost = host;
+        activeServiceDetectionTask = new ServiceDetectionTask(host, ports[0], ports[1], threadSpinner.getValue(), detector,
+                new ServiceDetectionTask.Callbacks() {
+                    public void onHostResolved(String ip) { 
+                        String sslStatus = hostResolver.checkSSL(finalHost);
+                        Platform.runLater(() -> resolvedHostLabel.setText("Resolved: " + ip + sslStatus)); 
+                    }
+                    public void onScanStarted(String ip, String hn, int tot) { 
+                        infoCardManager.showInfoCard(ip, hn, tot); 
+                    }
+                    public void onResult(PortScanResult r) { 
+                        Platform.runLater(() -> {
+                            results.add(r);
+                            consoleViewManager.appendToConsole(r);
+                        }); 
+                    }
+                    public void onStatus(String msg) { 
+                        setStatus(msg); 
+                    }
+                    public void onSubnetDetected(String subnet, String gateway) {
+                        // Subnet and gateway fields removed from UI
+                    }
+                    public void onCompleted() { 
+                        infoCardManager.finalizeScanTime(); 
+                        
+                        // Analyze detected software stack
+                        analyzeSoftwareStack();
+                        
+                        setStatus("🔍 Service Detection complete — " + results.size() + " service(s) detected with enhanced details"); 
+                        resetUI(); 
+                    }
+                    public void onCancelled() { 
+                        infoCardManager.finalizeScanTime(); 
+                        setStatus("🔍 Service Detection stopped by user"); 
+                        resetUI(); 
+                    }
+                    public void onFailed(String err) { 
+                        infoCardManager.finalizeScanTime(); 
+                        setStatus("🔍 Service Detection failed: " + err); 
+                        resetUI(); 
+                    }
+                });
+
+        progressBar.progressProperty().bind(activeServiceDetectionTask.progressProperty());
+        new Thread(activeServiceDetectionTask).start();
+    }
+
+    /* -- Scan stop -------------------------------------------- */
+    @FXML
+    protected void onStopButtonClick() {
+        if (activeScanTask != null && activeScanTask.isRunning()) {
+            activeScanTask.cancel();
+        }
+        if (activeServiceDetectionTask != null && activeServiceDetectionTask.isRunning()) {
+            activeServiceDetectionTask.cancel();
+        }
+    }
+
+    /* -- Export ----------------------------------------------- */
+    @FXML
+    protected void onExportClick() {
+        new ExportService(results, consoleTextArea.getScene().getWindow(), cssUrl(), this::setStatus)
+                .promptAndExport();
+    }
+
+    /* -- Clear ------------------------------------------------ */
+    @FXML
+    protected void onClearClick() {
+        results.clear();
+        if (consoleTextArea != null) {
+            consoleTextArea.clear();
+        }
+        infoCard.setVisible(false);
+        setStatus("Results cleared");
+    }
+
+    /* -- About ------------------------------------------------ */
+    @FXML
+    protected void onAboutClick() {
+        String version = "1.1.0";
+        try (var in = getClass().getResourceAsStream("app.properties")) {
+            if (in != null) {
+                Properties props = new Properties();
+                props.load(in);
+                version = props.getProperty("app.version", version);
+            }
+        } catch (Exception ignored) {}
+        AlertHelper.show("About Anibus",
+                "Anibus Design System  \u203a  Version: " + version + "\n\nAuthor: Iaroslav Tsymbaliuk\n\nPosition: Intern (2025\u20132026) @ r2u",
+                Alert.AlertType.INFORMATION, cssUrl());
+    }
+
+    /* -- Clipboard -------------------------------------------- */
+    private void copyConsoleOutput() {
+        if (consoleTextArea.getText() == null || consoleTextArea.getText().isEmpty()) return;
+        ClipboardService.copy(consoleTextArea.getText());
+        setStatus("Console output copied to clipboard");
+    }
+
+    private void copyAllRows() {
+        if (results.isEmpty()) return;
+        ClipboardService.copy(ClipboardService.formatAll(results));
+        setStatus("All results copied to clipboard");
+    }
+
+    private void copyResolvedIP() {
+        String text = resolvedHostLabel.getText();
+        if (text == null || text.isEmpty()) return;
+        // Extract IP from "Resolved: 172.217.23.163 [SSL/TLS ✓]" format
+        String ip = text.replace("Resolved:", "").trim();
+        // Remove SSL status if present
+        int sslIndex = ip.indexOf("[SSL/TLS");
+        if (sslIndex != -1) {
+            ip = ip.substring(0, sslIndex).trim();
+        }
+        if (!ip.isEmpty()) {
+            ClipboardService.copy(ip);
+            setStatus("IP address copied to clipboard");
+        }
+    }
+
+    /* -- Software Stack Detection ----------------------------- */
+    private void analyzeSoftwareStack() {
+        if (results.isEmpty()) return;
+        
+        // Collect all open ports with their banners
+        java.util.Map<Integer, String> openPortsWithBanners = new java.util.HashMap<>();
+        for (PortScanResult result : results) {
+            String banner = result.getBanner();
+            if (banner == null) banner = "";
+            // Include service name in banner for better detection
+            banner = banner + " " + (result.getService() != null ? result.getService() : "");
+            openPortsWithBanners.put(result.getPort(), banner);
+        }
+        
+        // Detect software stack - disabled by user request
+        // java.util.List<String> detectedSoftware = SoftwareStackDetector.detectSoftwareStack(openPortsWithBanners);
+        // if (!detectedSoftware.isEmpty()) {
+        //     Platform.runLater(() -> showSoftwareStackDialog(detectedSoftware));
+        // }
+    }
+    
+    // Software stack dialog disabled by user request
+    // private void showSoftwareStackDialog(java.util.List<String> detectedSoftware) {
+    //     Alert alert = new Alert(Alert.AlertType.INFORMATION);
+    //     alert.setTitle("Software Stack Detected");
+    //     alert.setHeaderText("🔍 Detected Technologies on Host");
+    //     
+    //     StringBuilder content = new StringBuilder();
+    //     content.append("The following software and technologies were identified:\n\n");
+    //     for (String software : detectedSoftware) {
+    //         content.append("  • ").append(software).append("\n");
+    //     }
+    //     
+    //     alert.setContentText(content.toString());
+    //     alert.show();
+    // }
+
+    /* -- Traceroute ------------------------------------------- */
+    private void runTraceroute() {
+        TextInputDialog dialog = new TextInputDialog(hostTextField.getText());
+        dialog.setTitle("Traceroute");
+        dialog.setHeaderText("Network Path Tracing");
+        dialog.setContentText("Enter target host or IP:");
+        
+        dialog.showAndWait().ifPresent(target -> {
+            if (target == null || target.trim().isEmpty()) {
+                return;
+            }
+            
+            // Show progress
+            Platform.runLater(() -> {
+                consoleTextArea.appendText("\n\n" + "=".repeat(80) + "\n");
+                consoleTextArea.appendText("Starting traceroute to " + target + "...\n");
+                consoleTextArea.appendText("This may take some time...\n");
+                consoleTextArea.appendText("=".repeat(80) + "\n\n");
+            });
+            
+            // Run traceroute in background thread
+            Thread tracerouteThread = new Thread(() -> {
+                it.r2u.anibus.service.TracerouteService.TraceRoute result = 
+                    it.r2u.anibus.service.TracerouteService.traceroute(target);
+                
+                Platform.runLater(() -> {
+                    consoleTextArea.appendText(result.toString());
+                    consoleTextArea.appendText("\n\n");
+                    setStatus("Traceroute completed");
+                });
+            });
+            
+            tracerouteThread.setDaemon(true);
+            tracerouteThread.start();
+        });
+    }
+
+    /* -- UI helpers ------------------------------------------- */
+    private void resetUI() {
+        Platform.runLater(() -> {
+            scanButton.setDisable(false);
+            stopButton.setDisable(true);
+            progressBar.setVisible(false);
+            progressBar.progressProperty().unbind();
+        });
+    }
+
+    private java.net.URL cssUrl() {
+        return getClass().getResource("anibus-style.css");
+    }
+    
+    private void adjustConsoleHeight() {
+        Platform.runLater(() -> {
+            String text = consoleTextArea.getText();
+            if (text == null || text.isEmpty()) {
+                consoleTextArea.setPrefRowCount(2);
+                return;
+            }
+            int lineCount = text.split("\n", -1).length;
+            consoleTextArea.setPrefRowCount(Math.max(2, lineCount + 1));
+        });
+    }
+    
+    public void shutdownExecutor() {
+        if (activeScanTask != null) activeScanTask.shutdown();
+        if (activeServiceDetectionTask != null) activeServiceDetectionTask.shutdown();
+        networkStatusMonitor.stop();
+    }
+}

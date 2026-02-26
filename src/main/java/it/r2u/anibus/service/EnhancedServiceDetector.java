@@ -41,9 +41,109 @@ public class EnhancedServiceDetector {
                 if (securityLayer != null) {
                     serviceName = serviceName + " [" + securityLayer + "]";
                 }
+                
+                // Check for web source code leaks on HTTP/HTTPS services
+                if (isHttpPort(port)) {
+                    String leakInfo = checkWebSourceLeaks(host, port, protocol);
+                    if (leakInfo != null && !leakInfo.isEmpty()) {
+                        banner = banner + " | [ALERT] LEAKS: " + leakInfo;
+                    }
+                }
+            }
+            
+            // Build comprehensive information
+            StringBuilder enhancedBanner = new StringBuilder();
+            enhancedBanner.append(banner);
+            
+            // 1. OS Detection
+            OSDetector.OSInfo osInfo = OSDetector.detectOS(host, banner);
+            if (osInfo != null && osInfo.getConfidence() >= 50) {
+                enhancedBanner.append("\n").append(osInfo.toString());
+            }
+            
+            // 2. Vulnerability Scanning
+            if (serviceName != null && !serviceName.isEmpty()) {
+                java.util.List<VulnerabilityScanner.Vulnerability> vulns = 
+                    VulnerabilityScanner.scanVulnerabilities(serviceName, banner);
+                if (!vulns.isEmpty()) {
+                    enhancedBanner.append("\n").append(VulnerabilityScanner.formatVulnerabilities(vulns));
+                }
+            }
+            
+            // 3. Geolocation (only for first scan to avoid rate limits)
+            GeolocationService.GeoInfo geoInfo = GeolocationService.getGeoInfo(host);
+            if (geoInfo != null && !geoInfo.isPrivate()) {
+                enhancedBanner.append("\n").append(geoInfo.toString());
+            }
+            
+            // 4. Advanced HTTP Analysis (for HTTP/HTTPS ports)
+            if (isHttpPort(port)) {
+                boolean useSSL = port == 443 || port == 8443;
+                HTTPAnalyzer.HTTPInfo httpInfo = HTTPAnalyzer.analyzeHTTP(host, port, useSSL);
+                if (httpInfo != null) {
+                    if (httpInfo.getPageTitle() != null) {
+                        enhancedBanner.append("\n[TITLE] Title: ").append(httpInfo.getPageTitle());
+                    }
+                    if (httpInfo.getCms() != null) {
+                        enhancedBanner.append("\n[CMS] CMS: ").append(httpInfo.getCms());
+                    }
+                    if (!httpInfo.getTechnologies().isEmpty()) {
+                        enhancedBanner.append("\n[TECH] Tech: ").append(String.join(", ", httpInfo.getTechnologies()));
+                    }
+                    if (httpInfo.getSslCert() != null) {
+                        HTTPAnalyzer.SSLCertInfo cert = httpInfo.getSslCert();
+                        if (cert.isExpired()) {
+                            enhancedBanner.append("\n[SSL] SSL: [EXPIRED]");
+                        } else if (cert.getDaysUntilExpiry() < 30) {
+                            enhancedBanner.append("\n[SSL] SSL: [WARN] Expires in ").append(cert.getDaysUntilExpiry()).append(" days");
+                        }
+                    }
+                    // Security headers summary
+                    int secHeaderCount = httpInfo.getSecurityHeaders().size();
+                    if (secHeaderCount > 0) {
+                        enhancedBanner.append("\n[SECURE] Security Headers: ").append(secHeaderCount).append("/6");
+                    } else {
+                        enhancedBanner.append("\n[INSECURE] Security Headers: None");
+                    }
+                }
+            }
+            
+            // 5. IoT & IP Camera Detection
+            IoTDetector.IoTDevice iotDevice = IoTDetector.detectIoTDevice(host, port, banner);
+            if (iotDevice != null) {
+                enhancedBanner.append("\n").append(iotDevice.toString());
+                
+                // Update service name if camera detected
+                if (iotDevice.getDeviceType() != null && iotDevice.getDeviceType().contains("Camera")) {
+                    serviceName = iotDevice.getManufacturer() != null ? 
+                        iotDevice.getManufacturer() + " " + iotDevice.getDeviceType() : 
+                        iotDevice.getDeviceType();
+                }
+            }
+            
+            // 6. Keycloak Detection & Key Extraction
+            if (isHttpPort(port)) {
+                boolean useSSL = port == 443 || port == 8443;
+                KeycloakDetector.KeycloakInfo keycloakInfo = KeycloakDetector.detectKeycloak(host, port, useSSL);
+                
+                if (keycloakInfo.isKeycloak()) {
+                    enhancedBanner.append("\n").append(keycloakInfo.toString());
+                    
+                    // Update service name
+                    serviceName = "Keycloak IAM";
+                    
+                    // Critical warning if keys are exposed
+                    if (!keycloakInfo.getKeys().isEmpty()) {
+                        enhancedBanner.append("\n[WARN][WARN][WARN] CRITICAL: Cryptographic keys exposed!");
+                    }
+                } else {
+                    // Debug: Show that we tried to detect Keycloak with some path details
+                    String protocolScheme = useSSL ? "https" : "http";
+                    enhancedBanner.append("\n[CHECK] Keycloak: Checked ").append(protocolScheme).append("://").append(host).append(":").append(port).append("/[auth,keycloak,realms,...] - Not found");
+                }
             }
 
-            return new PortScanResult(port, serviceName, banner, protocol, latency, version, "Open", "Service Detection");
+            return new PortScanResult(port, serviceName, enhancedBanner.toString(), protocol, latency, version, "Open", "Service Detection");
         } catch (IOException e) {
             return null;  // Port closed or service not responding
         }
@@ -368,6 +468,39 @@ public class EnhancedServiceDetector {
 
     private boolean isMysqlPort(int port) {
         return port == 3306;
+    }
+    
+    /**
+     * Checks web page source code for leaked sensitive information.
+     * Returns a summary string if leaks are found.
+     */
+    private String checkWebSourceLeaks(String host, int port, String protocol) {
+        try {
+            boolean useHttps = protocol != null && protocol.toLowerCase().contains("https");
+            
+            java.util.List<WebSourceAnalyzer.LeakInfo> leaks = 
+                WebSourceAnalyzer.analyzeWebPage(host, port, useHttps);
+            
+            if (leaks.isEmpty()) {
+                return null;
+            }
+            
+            // Summarize findings
+            java.util.Map<String, Integer> counts = new java.util.HashMap<>();
+            for (WebSourceAnalyzer.LeakInfo leak : leaks) {
+                counts.put(leak.getType(), counts.getOrDefault(leak.getType(), 0) + 1);
+            }
+            
+            StringBuilder summary = new StringBuilder();
+            for (java.util.Map.Entry<String, Integer> entry : counts.entrySet()) {
+                if (summary.length() > 0) summary.append(", ");
+                summary.append(entry.getValue()).append(" ").append(entry.getKey());
+            }
+            
+            return summary.toString();
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private String sanitize(String s) {
