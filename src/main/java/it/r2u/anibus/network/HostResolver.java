@@ -6,6 +6,7 @@ import javafx.scene.control.Label;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.net.IDN;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 
@@ -17,6 +18,7 @@ public class HostResolver {
     /**
      * Sanitizes a host input by removing http/https prefixes,
      * extracting hostname from URLs, and removing port numbers.
+     * Also converts internationalized domain names (IDN) to ASCII (Punycode).
      */
     public String sanitizeHost(String input) {
         if (input == null || input.isEmpty()) return input;
@@ -42,6 +44,26 @@ public class HostResolver {
             // Check if it's not an IPv6 address
             if (!cleaned.contains("[") && !cleaned.contains("]")) {
                 cleaned = cleaned.substring(0, colonIndex);
+            }
+        }
+        
+        // Convert internationalized domain names to ASCII (Punycode)
+        // This handles Cyrillic domains like фсб.рф -> xn--b1aew.xn--p1ai
+        try {
+            // Use ALLOW_UNASSIGNED flag to support all Unicode characters
+            cleaned = IDN.toASCII(cleaned, IDN.ALLOW_UNASSIGNED);
+        } catch (IllegalArgumentException e) {
+            // If IDN conversion fails, try splitting by dots and converting each part
+            try {
+                String[] parts = cleaned.split("\\.");
+                StringBuilder result = new StringBuilder();
+                for (int i = 0; i < parts.length; i++) {
+                    if (i > 0) result.append(".");
+                    result.append(IDN.toASCII(parts[i], IDN.ALLOW_UNASSIGNED));
+                }
+                cleaned = result.toString();
+            } catch (Exception ex) {
+                // If still fails, return as is
             }
         }
         
@@ -78,7 +100,31 @@ public class HostResolver {
                 });
             } catch (UnknownHostException ex) {
                 Platform.runLater(() -> {
-                    resolvedHostLabel.setText("Unable to resolve host");
+                    // Check if it's an IDN domain by looking for xn-- prefix
+                    if (host.contains("xn--")) {
+                        try {
+                            String unicodeDomain = IDN.toUnicode(host);
+                            String errorMsg = "Unable to resolve: " + unicodeDomain;
+                            
+                            // Check for common mistakes with Cyrillic domains
+                            if (unicodeDomain.endsWith(".ру")) {
+                                errorMsg += " (hint: did you mean .рф or .ru?)";
+                            } else if (unicodeDomain.endsWith(".ргф") || unicodeDomain.endsWith(".рг")) {
+                                errorMsg += " (hint: did you mean .рф?)";
+                            }
+                            
+                            resolvedHostLabel.setText(errorMsg);
+                        } catch (Exception e) {
+                            resolvedHostLabel.setText("Unable to resolve: " + host);
+                        }
+                    } else {
+                        resolvedHostLabel.setText("Unable to resolve: " + host);
+                    }
+                    if (onUpdate != null) onUpdate.run();
+                });
+            } catch (Exception ex) {
+                Platform.runLater(() -> {
+                    resolvedHostLabel.setText("Error: " + ex.getMessage());
                     if (onUpdate != null) onUpdate.run();
                 });
             }

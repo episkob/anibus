@@ -5,7 +5,6 @@
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ProgressBar?>
-<?import javafx.scene.control.ProgressIndicator?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.Spinner?>
@@ -40,7 +39,6 @@
                 <Region HBox.hgrow="ALWAYS" />
                 <Circle fx:id="networkDot" radius="5" fill="#8E8E93" styleClass="network-dot" />
                 <Label fx:id="statusLabel" text="Ready" styleClass="status-label" />
-                <ProgressIndicator fx:id="progressIndicator" visible="false" prefWidth="14" prefHeight="14" />
             </children>
         </HBox>
 
@@ -104,7 +102,7 @@
                         </VBox>
 
                         <!-- Host Info Card -->
-                        <VBox fx:id="infoCard" spacing="12" styleClass="card" visible="false" managed="false">
+                        <VBox fx:id="infoCard" spacing="12" styleClass="card" visible="false">
                             <children>
                                 <Label text="Host Information" styleClass="section-title" />
                                 <HBox spacing="24">
@@ -143,18 +141,6 @@
                                             <children>
                                                 <Label text="AVG LATENCY" styleClass="info-key" />
                                                 <Label fx:id="infoAvgLatencyLabel" text="-" styleClass="info-value" />
-                                            </children>
-                                        </VBox>
-                                        <VBox spacing="4" styleClass="info-item">
-                                            <children>
-                                                <Label text="SUBNET" styleClass="info-key" />
-                                                <Label fx:id="infoSubnetLabel" text="-" styleClass="info-value" />
-                                            </children>
-                                        </VBox>
-                                        <VBox spacing="4" styleClass="info-item">
-                                            <children>
-                                                <Label text="GATEWAY" styleClass="info-key" />
-                                                <Label fx:id="infoGatewayLabel" text="-" styleClass="info-value" />
                                             </children>
                                         </VBox>
                                     </children>

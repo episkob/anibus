@@ -38,7 +38,6 @@ public class AnibusController {
     @FXML private Label             statusLabel;
     @FXML private Circle            networkDot;
     @FXML private Label             resultCountLabel;
-    @FXML private ProgressIndicator progressIndicator;
     @FXML private ProgressBar       progressBar;
     @FXML private Button            scanButton;
     @FXML private Button            stopButton;
@@ -57,8 +56,6 @@ public class AnibusController {
     @FXML private Label infoPortsScannedLabel;
     @FXML private Label infoOpenPortsLabel;
     @FXML private Label infoAvgLatencyLabel;
-    @FXML private Label infoSubnetLabel;
-    @FXML private Label infoGatewayLabel;
 
     /* -- Table ------------------------------------------------ */
     @FXML private TableView<PortScanResult>            resultTableView;
@@ -102,6 +99,9 @@ public class AnibusController {
         infoCardManager = new InfoCardManager(infoCard, infoIpLabel, infoHostnameLabel,
                 infoScanTimeLabel, infoPortsScannedLabel, infoOpenPortsLabel, infoAvgLatencyLabel);
         
+        // Bind managed property to visible property so card doesn't take space when hidden
+        infoCard.managedProperty().bind(infoCard.visibleProperty());
+        
         TableConfigurator.setup(resultTableView,
                 portColumn, stateColumn, serviceColumn,
                 versionColumn, protocolColumn, latencyColumn, bannerColumn);
@@ -109,9 +109,7 @@ public class AnibusController {
 
         scanTypeComboBox.getItems().addAll(
                 "Standard Scanning",
-                "Service Detection",
-                "OS Fingerprinting",
-                "Vulnerability Scan"
+                "Service Detection"
         );
         scanTypeComboBox.getSelectionModel().selectFirst();
         
@@ -139,12 +137,15 @@ public class AnibusController {
         setupContextMenu();
         hostTextField.focusedProperty().addListener((obs, was, is) -> { 
             if (!is) {
-                String host = hostResolver.sanitizeHost(hostTextField.getText());
-                if (!host.isEmpty()) {
-                    if (!host.equals(hostTextField.getText().trim())) {
-                        hostTextField.setText(host);
+                String originalHost = hostTextField.getText().trim();
+                String sanitizedHost = hostResolver.sanitizeHost(originalHost);
+                
+                if (!sanitizedHost.isEmpty()) {
+                    // Show punycode version in field if different from original
+                    if (!sanitizedHost.equals(originalHost)) {
+                        hostTextField.setText(sanitizedHost);
                     }
-                    hostResolver.resolveHostAsync(host, resolvedHostLabel, null);
+                    hostResolver.resolveHostAsync(sanitizedHost, resolvedHostLabel, null);
                 } else {
                     resolvedHostLabel.setText("");
                 }
@@ -175,31 +176,9 @@ public class AnibusController {
         switch (mode) {
             case "Standard Scanning" -> {
                 setStatus("Standard Scanning mode: Basic TCP port scanning with service detection");
-                // Standard mode is fully functional
             }
             case "Service Detection" -> {
                 setStatus("Service Detection mode: Enhanced service fingerprinting with real-time detection");
-                // Service detection mode is now fully functional
-            }
-            case "OS Fingerprinting" -> {
-                setStatus("OS Fingerprinting mode: Operating system detection (coming soon)");
-                AlertHelper.show("Feature Preview", 
-                    "OS Fingerprinting mode will provide:\n" +
-                    "• TCP/IP stack analysis\n" +
-                    "• TTL and window size detection\n" +
-                    "• Operating system identification\n\n" +
-                    "Currently using Standard Scanning.",
-                    Alert.AlertType.INFORMATION, cssUrl());
-            }
-            case "Vulnerability Scan" -> {
-                setStatus("Vulnerability Scan mode: Security assessment (coming soon)");
-                AlertHelper.show("Feature Preview", 
-                    "Vulnerability Scan mode will provide:\n" +
-                    "• Known vulnerability detection\n" +
-                    "• CVE database matching\n" +
-                    "• Security risk assessment\n\n" +
-                    "Currently using Standard Scanning.",
-                    Alert.AlertType.INFORMATION, cssUrl());
             }
         }
     }
@@ -245,7 +224,6 @@ public class AnibusController {
 
         scanButton.setDisable(true);
         stopButton.setDisable(false);
-        progressIndicator.setVisible(true);
         progressBar.setVisible(true);
         progressBar.setProgress(0);
         
@@ -304,10 +282,7 @@ public class AnibusController {
                         setStatus(msg); 
                     }
                     public void onSubnetDetected(String subnet, String gateway) {
-                        Platform.runLater(() -> {
-                            if (infoSubnetLabel != null) infoSubnetLabel.setText(subnet);
-                            if (infoGatewayLabel != null) infoGatewayLabel.setText(gateway);
-                        });
+                        // Subnet and gateway fields removed from UI
                     }
                     public void onCompleted() { 
                         infoCardManager.finalizeScanTime(); 
@@ -411,7 +386,6 @@ public class AnibusController {
         Platform.runLater(() -> {
             scanButton.setDisable(false);
             stopButton.setDisable(true);
-            progressIndicator.setVisible(false);
             progressBar.setVisible(false);
             progressBar.progressProperty().unbind();
         });
