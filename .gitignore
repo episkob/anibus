@@ -33,3 +33,13 @@ build/
 
 ### Mac OS ###
 .DS_Store
+
+# Build scripts
+build-release.bat
+build-release.ps1
+
+# Maven release files
+dependency-reduced-pom.xml
+
+# Release folder
+rel/

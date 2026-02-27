@@ -137,9 +137,7 @@ public class EnhancedServiceDetector {
                         enhancedBanner.append("\n[WARN][WARN][WARN] CRITICAL: Cryptographic keys exposed!");
                     }
                 } else {
-                    // Debug: Show that we tried to detect Keycloak with some path details
-                    String protocolScheme = useSSL ? "https" : "http";
-                    enhancedBanner.append("\n[CHECK] Keycloak: Checked ").append(protocolScheme).append("://").append(host).append(":").append(port).append("/[auth,keycloak,realms,...] - Not found");
+                    // Keycloak not found - no output needed
                 }
             }
 

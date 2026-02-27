@@ -50,7 +50,7 @@
                 <artifactId>javafx-maven-plugin</artifactId>
                 <version>0.0.8</version>
                 <configuration>
-                    <mainClass>it.r2u.anibus.AnibusApplication</mainClass>
+                    <mainClass>it.r2u.anibus.AnibusLauncher</mainClass>
                 </configuration>
                 <executions>
                     <execution>
@@ -58,6 +58,108 @@
                         <goals>
                             <goal>run</goal>
                         </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            
+            <!-- Maven Shade Plugin for creating executable JAR -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.5.1</version>
+                <configuration>
+                    <createDependencyReducedPom>false</createDependencyReducedPom>
+                    <transformers>
+                        <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                            <mainClass>it.r2u.anibus.AnibusLauncher</mainClass>
+                        </transformer>
+                        <!-- Add JavaFX service files -->
+                        <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                    </transformers>
+                    <filters>
+                        <filter>
+                            <artifact>*:*</artifact>
+                            <excludes>
+                                <exclude>META-INF/*.SF</exclude>
+                                <exclude>META-INF/*.DSA</exclude>
+                                <exclude>META-INF/*.RSA</exclude>
+                            </excludes>
+                        </filter>
+                    </filters>
+                    <finalName>anibus-${project.version}-executable</finalName>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            
+            <!-- Copy and rename JAR to releases folder -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>copy-to-releases</id>
+                        <phase>install</phase>
+                        <configuration>
+                            <target>
+                                <mkdir dir="${project.basedir}/rel/v${project.version}"/>
+                                <copy file="${project.build.directory}/anibus-${project.version}-executable.jar"
+                                      tofile="${project.basedir}/rel/v${project.version}/anibus-v${project.version}.jar"/>
+                                <echo message="Executable JAR copied to rel/v${project.version}/"/>
+                            </target>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            
+            <!-- Create native executable with jpackage -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>create-exe</id>
+                        <phase>install</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>${java.home}/bin/jpackage</executable>
+                            <workingDirectory>${project.basedir}/rel/v${project.version}</workingDirectory>
+                            <args>
+                                <arg>--input</arg>
+                                <arg>.</arg>
+                                <arg>--main-jar</arg>
+                                <arg>anibus-v${project.version}.jar</arg>
+                                <arg>--main-class</arg>
+                                <arg>it.r2u.anibus.AnibusLauncher</arg>
+                                <arg>--name</arg>
+                                <arg>Anibus</arg>
+                                <arg>--app-version</arg>
+                                <arg>${project.version}</arg>
+                                <arg>--vendor</arg>
+                                <arg>R2U</arg>
+                                <arg>--dest</arg>
+                                <arg>.</arg>
+                                <arg>--type</arg>
+                                <arg>app-image</arg>
+                                <arg>--java-options</arg>
+                                <arg>-Djava.util.logging.Level=SEVERE</arg>
+                                <arg>--java-options</arg>
+                                <arg>-Dprism.verbose=false</arg>
+                            </args>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
