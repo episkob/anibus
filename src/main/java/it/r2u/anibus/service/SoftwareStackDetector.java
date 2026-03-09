@@ -19,8 +19,40 @@ public class SoftwareStackDetector {
         
         // Docker detection
         if (openPortsWithBanners.containsKey(2375) || openPortsWithBanners.containsKey(2376)) {
-            detectedSoftware.add("🐳 Docker Engine (unsecured)" + 
-                (openPortsWithBanners.containsKey(2376) ? " [TLS]" : ""));
+            detectedSoftware.add("[DOCKER] Docker Engine" +
+                (openPortsWithBanners.containsKey(2375) ? " (API UNAUTHENTICATED — CRITICAL)" : " (API TLS)"));
+        }
+        
+        // Docker Swarm
+        if (openPortsWithBanners.containsKey(2377)) {
+            detectedSoftware.add("[DOCKER] Docker Swarm Manager (port 2377)");
+        }
+        
+        // Docker overlay / VXLAN network (UDP 4789 — informational if TCP open)
+        if (openPortsWithBanners.containsKey(4789)) {
+            detectedSoftware.add("[DOCKER] Docker Overlay Network / VXLAN (port 4789)");
+        }
+        
+        // Docker metrics (Prometheus exporter)
+        if (openPortsWithBanners.containsKey(9323)) {
+            detectedSoftware.add("[DOCKER] Docker Prometheus Metrics (port 9323)");
+        }
+        
+        // OCI / Docker Registry
+        if (openPortsWithBanners.containsKey(5000) &&
+                hasBannerKeyword(openPortsWithBanners.get(5000), "registry", "docker", "v2")) {
+            detectedSoftware.add("[DOCKER] Docker/OCI Container Registry (port 5000)");
+        }
+        
+        // cAdvisor container monitoring
+        if (openPortsWithBanners.containsKey(4194)) {
+            detectedSoftware.add("[CONTAINER] cAdvisor Container Metrics (port 4194)");
+        }
+        
+        // Podman REST API (same default port as Docker API but different banner)
+        if (openPortsWithBanners.containsKey(2375) &&
+                hasBannerKeyword(openPortsWithBanners.get(2375), "podman", "libpod")) {
+            detectedSoftware.add("[CONTAINER] Podman Container Engine");
         }
         
         // Kubernetes detection
@@ -30,9 +62,43 @@ public class SoftwareStackDetector {
         if (openPortsWithBanners.containsKey(10250)) {
             detectedSoftware.add("[K8S] Kubernetes Kubelet");
         }
+        if (openPortsWithBanners.containsKey(10248)) {
+            detectedSoftware.add("[K8S] Kubernetes Kubelet Healthz (port 10248)");
+        }
+        if (openPortsWithBanners.containsKey(10249)) {
+            detectedSoftware.add("[K8S] Kubernetes kube-proxy Metrics (port 10249)");
+        }
+        if (openPortsWithBanners.containsKey(10251)) {
+            detectedSoftware.add("[K8S] Kubernetes Scheduler (port 10251)");
+        }
+        if (openPortsWithBanners.containsKey(10252)) {
+            detectedSoftware.add("[K8S] Kubernetes Controller Manager (port 10252)");
+        }
         if (openPortsWithBanners.containsKey(8080) && 
             hasBannerKeyword(openPortsWithBanners.get(8080), "kubernetes", "k8s")) {
             detectedSoftware.add("[K8S] Kubernetes Dashboard");
+        }
+        
+        // Kubernetes etcd
+        if (openPortsWithBanners.containsKey(2379) || openPortsWithBanners.containsKey(2380)) {
+            detectedSoftware.add("[K8S] Kubernetes etcd (control plane key-value store)");
+        }
+        
+        // Kubernetes overlay networking
+        if (openPortsWithBanners.containsKey(8472)) {
+            detectedSoftware.add("[K8S] Flannel VXLAN Overlay Network (port 8472)");
+        }
+        if (openPortsWithBanners.containsKey(6783) || openPortsWithBanners.containsKey(6784)) {
+            detectedSoftware.add("[K8S] Weave Net Overlay Network (port 6783/6784)");
+        }
+        if (openPortsWithBanners.containsKey(9099)) {
+            detectedSoftware.add("[K8S] Calico Networking (port 9099)");
+        }
+        
+        // containerd gRPC
+        if (openPortsWithBanners.containsKey(2376) &&
+                hasBannerKeyword(openPortsWithBanners.get(2376), "containerd")) {
+            detectedSoftware.add("[CONTAINER] containerd Container Runtime");
         }
         
         // Jenkins detection

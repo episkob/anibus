@@ -141,6 +141,28 @@ public class EnhancedServiceDetector {
                 }
             }
 
+            // 7. Container / Orchestration Detection
+            {
+                // Collect HTTP response headers if available (from step 4)
+                java.util.Map<String, String> headersForContainer = null;
+                if (isHttpPort(port)) {
+                    boolean useSSL = port == 443 || port == 8443;
+                    HTTPAnalyzer.HTTPInfo httpInfoForContainer = HTTPAnalyzer.analyzeHTTP(host, port, useSSL);
+                    if (httpInfoForContainer != null) {
+                        headersForContainer = httpInfoForContainer.getRawHeaders();
+                    }
+                }
+                ContainerDetector.ContainerInfo containerInfo =
+                        ContainerDetector.detectContainer(host, port, headersForContainer);
+                if (containerInfo.isContainerized()) {
+                    enhancedBanner.append("\n").append(containerInfo.toString());
+                    if (containerInfo.getPlatform() != null &&
+                            (serviceName == null || serviceName.isEmpty())) {
+                        serviceName = containerInfo.getPlatform();
+                    }
+                }
+            }
+
             return new PortScanResult(port, serviceName, enhancedBanner.toString(), protocol, latency, version, "Open", "Service Detection");
         } catch (IOException e) {
             return null;  // Port closed or service not responding

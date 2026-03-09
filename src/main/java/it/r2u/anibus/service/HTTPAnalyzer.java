@@ -26,6 +26,7 @@ public class HTTPAnalyzer {
         private String pageTitle;
         private SSLCertInfo sslCert;
         private Map<String, String> securityHeaders;
+        private Map<String, String> rawHeaders;
         private String cms;
         private List<String> technologies;
         private int statusCode;
@@ -34,6 +35,7 @@ public class HTTPAnalyzer {
         public HTTPInfo(String url) {
             this.url = url;
             this.securityHeaders = new HashMap<>();
+            this.rawHeaders = new HashMap<>();
             this.technologies = new ArrayList<>();
         }
         
@@ -44,6 +46,7 @@ public class HTTPAnalyzer {
         public SSLCertInfo getSslCert() { return sslCert; }
         public void setSslCert(SSLCertInfo sslCert) { this.sslCert = sslCert; }
         public Map<String, String> getSecurityHeaders() { return securityHeaders; }
+        public Map<String, String> getRawHeaders() { return rawHeaders; }
         public String getCms() { return cms; }
         public void setCms(String cms) { this.cms = cms; }
         public List<String> getTechnologies() { return technologies; }
@@ -234,6 +237,9 @@ public class HTTPAnalyzer {
                     if (key.equalsIgnoreCase("Server")) {
                         info.setServer(value);
                     }
+                    
+                    // Store all headers for container/orchestration detection
+                    info.getRawHeaders().put(key, value);
                     
                     // CMS detection from headers
                     if (key.equalsIgnoreCase("X-Powered-By")) {
