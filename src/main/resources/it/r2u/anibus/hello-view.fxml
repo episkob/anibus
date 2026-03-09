@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import java.lang.String?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ComboBox?>
@@ -94,6 +95,83 @@
                             </children>
                         </VBox>
 
+                        <!-- JavaScript Security Analysis Card -->
+                        <VBox spacing="10" styleClass="card">
+                            <children>
+                                <Label text="JavaScript Security Analysis" styleClass="title-label" />
+                                
+                                <!-- URL input and analysis controls -->
+                                <HBox spacing="12" alignment="BOTTOM_LEFT">
+                                    <children>
+                                        <VBox spacing="3" HBox.hgrow="ALWAYS">
+                                            <children>
+                                                <Label text="TARGET URL" styleClass="subtitle-label" />
+                                                <TextField fx:id="jsTargetUrlField"
+                                                           promptText="https://example.com" />
+                                            </children>
+                                        </VBox>
+
+                                    </children>
+                                </HBox>
+
+                                <!-- Analysis Actions -->
+                                <HBox spacing="10" alignment="CENTER_LEFT">
+                                    <children>
+                                        <Button fx:id="jsAnalyzeButton" onAction="#onJsAnalyzeButtonClick"
+                                                text="Analyze JavaScript" styleClass="scan-button" />
+                                        <Button fx:id="jsStopButton" onAction="#onJsStopButtonClick"
+                                                text="Stop" disable="true" styleClass="stop-button" />
+                                        <Region HBox.hgrow="ALWAYS" />
+                                        <ProgressBar fx:id="jsProgressBar" visible="false"
+                                                     prefWidth="140" prefHeight="6" />
+                                    </children>
+                                </HBox>
+                                
+                                <!-- JavaScript Analysis Results -->
+                                <VBox fx:id="jsResultsCard" spacing="10" visible="false">
+                                    <children>
+                                        <Label text="Analysis Results" styleClass="section-title" />
+                                        
+                                        <!-- Results Summary -->
+                                        <HBox spacing="24">
+                                            <children>
+                                                <VBox spacing="4" styleClass="info-item">
+                                                    <children>
+                                                        <Label text="ENDPOINTS" styleClass="info-key" />
+                                                        <Label fx:id="jsEndpointsLabel" text="0" styleClass="info-value" />
+                                                    </children>
+                                                </VBox>
+                                                <VBox spacing="4" styleClass="info-item">
+                                                    <children>
+                                                        <Label text="DATA STRUCTURES" styleClass="info-key" />
+                                                        <Label fx:id="jsDataStructuresLabel" text="0" styleClass="info-value" />
+                                                    </children>
+                                                </VBox>
+                                                <VBox spacing="4" styleClass="info-item">
+                                                    <children>
+                                                        <Label text="DB SCHEMAS" styleClass="info-key" />
+                                                        <Label fx:id="jsDbSchemasLabel" text="0" styleClass="info-value" />
+                                                    </children>
+                                                </VBox>
+                                                <VBox spacing="4" styleClass="info-item">
+                                                    <children>
+                                                        <Label text="SENSITIVE INFO" styleClass="info-key" />
+                                                        <Label fx:id="jsSensitiveInfoLabel" text="0" styleClass="info-value" />
+                                                    </children>
+                                                </VBox>
+                                                <VBox spacing="4" styleClass="info-item">
+                                                    <children>
+                                                        <Label text="ARCHITECTURE" styleClass="info-key" />
+                                                        <Label fx:id="jsArchitectureLabel" text="-" styleClass="info-value" />
+                                                    </children>
+                                                </VBox>
+                                            </children>
+                                        </HBox>
+                                    </children>
+                                </VBox>
+                            </children>
+                        </VBox>
+
                         <!-- Host Info Card -->
                         <VBox fx:id="infoCard" spacing="12" styleClass="card" visible="false">
                             <children>
@@ -141,18 +219,21 @@
                             </children>
                         </VBox>
 
-                        <!-- Results Card -->
+                        <!-- Unified Results Console -->
                         <VBox spacing="14" styleClass="card">
                             <children>
                                 <HBox alignment="CENTER_LEFT" spacing="10">
                                     <children>
-                                        <Label text="Console Output" styleClass="section-title" />
-                                        <Label fx:id="resultCountLabel" text="No open ports"
+                                        <Label fx:id="consoleHeaderLabel" text="Console Output" styleClass="section-title" />
+                                        <Label fx:id="resultCountLabel" text="No results"
                                                styleClass="counter-label" />
                                         <Region HBox.hgrow="ALWAYS" />
                                         <Button fx:id="exportButton" text="Export"
                                                 onAction="#onExportClick"
                                                 styleClass="secondary-button" disable="true" />
+                                        <Button fx:id="jsExportButton" text="Export Analysis"
+                                                onAction="#onJsExportClick"
+                                                styleClass="secondary-button" disable="true" visible="false" />
                                         <Button fx:id="clearButton" text="Clear"
                                                 onAction="#onClearClick"
                                                 styleClass="secondary-button" disable="true" />
