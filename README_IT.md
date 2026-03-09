@@ -35,12 +35,13 @@ Un'applicazione desktop moderna per la scansione delle porte con analisi di sicu
 
 ### Estrazione Informazioni
 - **Analisi codice sorgente web** — rileva credenziali trapelate, chiavi API, file di configurazione
-- **Analisi approfondita JavaScript** — scansione avanzata del codice sorgente JS con due modalità: **Basic** (controllo rapido endpoint + sicurezza) e **Deep** (rilevamento pattern completo, estrazione credenziali DB, analisi flusso dati)
-- **Mappatura endpoint** — estrae automaticamente endpoint REST/GraphQL, metodi HTTP, URL e parametri dai bundle JavaScript
+- **Analisi approfondita JavaScript** — scansione avanzata del codice sorgente JS con pieno supporto HTTPS, estrazione automatica degli script inline `<script>`, rilevamento file con hash (bundle Webpack, Vite, Rollup), rilevamento `<link rel="modulepreload">` e analisi del contenuto della pagina HTML (meta tag, JSON-LD, configurazioni integrate). Tre modalità: **Basic** (controllo rapido endpoint + sicurezza), **Deep** (rilevamento pattern completo, estrazione credenziali DB) e **Comprehensive** (analisi architetturale + valutazione minacce classificate)
+- **Mappatura endpoint** — estrae automaticamente endpoint REST/GraphQL, metodi HTTP, URL e parametri da bundle JavaScript, script inline e sorgente pagina HTML
 - **Inferenza schema database** — rileva nomi di tabelle, colonne e relazioni dai pattern di query nel codice JS
 - **Estrazione credenziali database** — trova stringhe di connessione per MongoDB, MySQL, PostgreSQL, Redis e altri DB nei file JS (classificate per criticità)
 - **Rilevamento pattern architetturali** — identifica pattern MVC, SPA, micro-servizi e serverless dalla struttura JS
 - **Rilevamento servizi cloud** — Cloudflare, AWS, Azure, Akamai, identificazione WAF/CDN
+- **Rilevamento piattaforme container** — Docker, Kubernetes, Podman e rilevamento orchestrazione tramite fingerprinting passivo header HTTP (Envoy/Istio, Kong, Traefik) e probing attivo API (Docker API, K8s API, Kubelet, cAdvisor, Portainer, OCI Registry)
 - **Analisi stack software** — Kubernetes, Docker, Jenkins CI/CD, strumenti HashiCorp
 
 ### Interfaccia e Flusso di Lavoro
@@ -113,7 +114,10 @@ src/
     │       │   ├── IoTDetector.java             # Rilevamento telecamere IP e dispositivi IoT
     │       │   ├── KeycloakDetector.java        # Rilevamento Keycloak IAM ed estrazione chiavi
     │       │   ├── SoftwareStackDetector.java   # Analisi stack tecnologico
-    │       │   ├── JavaScriptSecurityAnalyzer.java # Analisi sicurezza JS avanzata (mappatura endpoint, architettura, inferenza schema)
+    │       │   ├── ContainerDetector.java        # Rilevamento piattaforme container Docker/K8s/Podman
+    │       │   ├── SubnetScanner.java            # Scansione intervallo subnet
+    │       │   ├── WebSourceAnalyzer.java        # Analisi perdite nel codice sorgente web
+    │       │   ├── JavaScriptSecurityAnalyzer.java # Analisi sicurezza JS avanzata (HTTPS, script inline, file hash, architettura)
     │       │   └── JavaScriptDatabaseAnalyzer.java # Estrazione credenziali DB e stringhe di connessione da JS
     │       │
     │       └── ui/

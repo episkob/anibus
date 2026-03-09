@@ -35,12 +35,13 @@ A modern desktop port scanning application with enhanced security analysis, buil
 
 ### Information Extraction
 - **Web source code analysis** — detects leaked credentials, API keys, configuration files
-- **JavaScript deep analysis** — advanced JS source code scanning with two depth modes: **Basic** (quick endpoint + security check) and **Deep** (full pattern matching, DB credential extraction, data-flow analysis)
-- **Endpoint mapping** — automatically extracts REST/GraphQL endpoints, HTTP methods, URL patterns and parameters from JavaScript bundles
+- **JavaScript deep analysis** — advanced JS source code scanning with full HTTPS support, automatic inline `<script>` extraction, hashed filename discovery (Webpack, Vite, Rollup bundles), `<link rel="modulepreload">` detection, and HTML page content analysis (meta tags, JSON-LD, embedded configs). Three depth modes: **Basic** (quick endpoint + security check), **Deep** (full pattern matching, DB credential extraction) and **Comprehensive** (architectural analysis + ranked threat assessment)
+- **Endpoint mapping** — automatically extracts REST/GraphQL endpoints, HTTP methods, URL patterns and parameters from JavaScript bundles, inline scripts, and HTML page source
 - **Database schema inference** — detects table names, column names and relationships from query patterns inside JS code
 - **Database credential extraction** — finds connection strings for MongoDB, MySQL, PostgreSQL, Redis and other databases buried in JS files (ranked by criticality)
 - **Architectural pattern detection** — identifies MVC, SPA, micro-service and serverless patterns from JS structure
 - **Cloud service detection** — Cloudflare, AWS, Azure, Akamai, WAF/CDN identification  
+- **Container platform detection** — Docker, Kubernetes, Podman, and container orchestration detection via passive HTTP header fingerprinting (Envoy/Istio, Kong, Traefik) and active API probing (Docker API, K8s API, Kubelet, cAdvisor, Portainer, OCI Registry)
 - **Software stack analysis** — Kubernetes, Docker, Jenkins CI/CD, HashiCorp tools
 
 ### UI & Workflow
@@ -113,7 +114,10 @@ src/
     │       │   ├── IoTDetector.java             # IP camera & IoT device detection
     │       │   ├── KeycloakDetector.java        # Keycloak IAM detection & key extraction
     │       │   ├── SoftwareStackDetector.java   # Technology stack analysis
-    │       │   ├── JavaScriptSecurityAnalyzer.java # Deep JS security analysis (endpoint mapping, architecture, schema inference)
+    │       │   ├── ContainerDetector.java        # Docker/K8s/Podman container platform detection
+    │       │   ├── SubnetScanner.java            # Subnet range scanning
+    │       │   ├── WebSourceAnalyzer.java        # Web page source code leak analysis
+    │       │   ├── JavaScriptSecurityAnalyzer.java # Deep JS security analysis (HTTPS, inline scripts, hashed files, architecture)
     │       │   └── JavaScriptDatabaseAnalyzer.java # DB credential & connection-string extraction from JS
     │       │
     │       └── ui/
