@@ -101,9 +101,9 @@ public class ContainerDetector {
             case 10250           -> probeKubelet(info, host);
             case 4194            -> probeCAdvisor(info, host);
             case 9000, 9443      -> probePortainer(info, host, port);
-            case 2377            -> markSwarm(info);           // Docker Swarm manager
-            case 9323            -> markDockerMetrics(info);   // Docker Prometheus metrics
-            case 2379, 2380      -> markEtcd(info);            // Kubernetes etcd
+            case 2377            -> markSwarm(info);                        // Docker Swarm manager
+            case 9323            -> markDockerMetrics(info, host);          // Docker Prometheus metrics
+            case 2379, 2380      -> markEtcd(info, port);                   // Kubernetes etcd
         }
 
         return info;
@@ -306,10 +306,10 @@ public class ContainerDetector {
         addIndicator(info, "Docker Swarm manager port 2377 open");
     }
 
-    private static void markDockerMetrics(ContainerInfo info) {
+    private static void markDockerMetrics(ContainerInfo info, String host) {
         info.setContainerized(true);
         setIfAbsentPlatform(info, "Docker");
-        String resp = httpGet(info.getPlatform() != null ? "" : "localhost", 9323, "/metrics", false);
+        String resp = httpGet(host, 9323, "/metrics", false);
         if (resp != null && resp.contains("docker_")) {
             info.getExposedApis().add("Docker Prometheus metrics on port 9323");
             addIndicator(info, "Docker metrics endpoint exposed (port 9323)");
@@ -318,11 +318,11 @@ public class ContainerDetector {
         }
     }
 
-    private static void markEtcd(ContainerInfo info) {
+    private static void markEtcd(ContainerInfo info, int port) {
         info.setContainerized(true);
         setIfAbsentPlatform(info, "Kubernetes");
         setIfAbsent(info, null, "Kubernetes");
-        addIndicator(info, "etcd key-value store port " + "open (Kubernetes control plane)");
+        addIndicator(info, "etcd key-value store port " + port + " open (Kubernetes control plane)");
     }
 
     // -------------------------------------------------------------------------

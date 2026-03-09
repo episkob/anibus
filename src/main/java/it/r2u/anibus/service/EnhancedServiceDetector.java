@@ -77,9 +77,10 @@ public class EnhancedServiceDetector {
             }
             
             // 4. Advanced HTTP Analysis (for HTTP/HTTPS ports)
+            HTTPAnalyzer.HTTPInfo httpInfo = null;
             if (isHttpPort(port)) {
                 boolean useSSL = port == 443 || port == 8443;
-                HTTPAnalyzer.HTTPInfo httpInfo = HTTPAnalyzer.analyzeHTTP(host, port, useSSL);
+                httpInfo = HTTPAnalyzer.analyzeHTTP(host, port, useSSL);
                 if (httpInfo != null) {
                     if (httpInfo.getPageTitle() != null) {
                         enhancedBanner.append("\n[TITLE] Title: ").append(httpInfo.getPageTitle());
@@ -143,15 +144,9 @@ public class EnhancedServiceDetector {
 
             // 7. Container / Orchestration Detection
             {
-                // Collect HTTP response headers if available (from step 4)
-                java.util.Map<String, String> headersForContainer = null;
-                if (isHttpPort(port)) {
-                    boolean useSSL = port == 443 || port == 8443;
-                    HTTPAnalyzer.HTTPInfo httpInfoForContainer = HTTPAnalyzer.analyzeHTTP(host, port, useSSL);
-                    if (httpInfoForContainer != null) {
-                        headersForContainer = httpInfoForContainer.getRawHeaders();
-                    }
-                }
+                // Reuse HTTP response headers collected in step 4 (avoid duplicate request)
+                java.util.Map<String, String> headersForContainer =
+                        (httpInfo != null) ? httpInfo.getRawHeaders() : null;
                 ContainerDetector.ContainerInfo containerInfo =
                         ContainerDetector.detectContainer(host, port, headersForContainer);
                 if (containerInfo.isContainerized()) {

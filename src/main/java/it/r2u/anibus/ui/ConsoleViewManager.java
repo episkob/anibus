@@ -51,8 +51,15 @@ public class ConsoleViewManager {
         sb.append(String.format("│  Latency:  %d ms\n", result.getLatency()));
         
         if (result.getBanner() != null && !result.getBanner().isEmpty()) {
-            // Show full banner without truncation
-            sb.append(String.format("│  Banner:   %s\n", result.getBanner()));
+            // Show full banner — prefix every line with box border for clean formatting
+            String[] bannerLines = result.getBanner().split("\n");
+            for (int i = 0; i < bannerLines.length; i++) {
+                if (i == 0) {
+                    sb.append(String.format("│  Banner:   %s\n", bannerLines[i]));
+                } else {
+                    sb.append(String.format("│            %s\n", bannerLines[i]));
+                }
+            }
         }
         
         sb.append("└─────────────────────────────────────────────────────────────────────\n\n");
