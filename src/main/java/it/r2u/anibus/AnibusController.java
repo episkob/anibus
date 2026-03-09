@@ -482,7 +482,17 @@ public class AnibusController {
         detailedResults.append(result.getSummary()).append("\n\n");
         
         // Add endpoints
-        detailedResults.append("=== DISCOVERED ENDPOINTS ===\n");
+        // Add discovered JS sources
+        detailedResults.append("=== DISCOVERED SOURCES ===\n");
+        if (result.getJsFiles() != null && !result.getJsFiles().isEmpty()) {
+            result.getJsFiles().forEach(file -> 
+                detailedResults.append("• ").append(file).append("\n"));
+        } else {
+            detailedResults.append("• No JavaScript sources found\n");
+        }
+        
+        // Add endpoints
+        detailedResults.append("\n=== DISCOVERED ENDPOINTS ===\n");
         result.getEndpoints().forEach(endpoint -> 
             detailedResults.append("• ").append(endpoint.toString()).append("\n"));
         

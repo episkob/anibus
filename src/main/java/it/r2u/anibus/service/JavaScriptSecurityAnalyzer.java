@@ -2,10 +2,15 @@ package it.r2u.anibus.service;
 
 import it.r2u.anibus.model.*;
 
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.security.cert.X509Certificate;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -77,6 +82,9 @@ public class JavaScriptSecurityAnalyzer {
         long startTime = System.currentTimeMillis();
         List<String> errors = new ArrayList<>();
         
+        // Clear inline cache from previous runs
+        inlineScriptContents.clear();
+        
         try {
             // Discover JavaScript files
             List<String> jsFiles = discoverJavaScriptFiles(targetUrl);
@@ -121,71 +129,193 @@ public class JavaScriptSecurityAnalyzer {
 
     /**
      * Discovers JavaScript files from the target URL including common paths and HTML references.
+     * Also extracts inline script content from the HTML page.
      */
     private List<String> discoverJavaScriptFiles(String baseUrl) throws Exception {
         Set<String> jsFiles = new LinkedHashSet<>();
-        
-        // Common JavaScript file paths
-        String[] commonPaths = {
-            "/js/app.js", "/js/main.js", "/js/bundle.js", "/js/vendor.js",
-            "/assets/js/app.js", "/assets/js/main.js", "/assets/application.js",
-            "/static/js/main.js", "/static/js/bundle.js", "/dist/main.js",
-            "/build/static/js/main.js", "/public/js/app.js",
-            "/app.js", "/main.js", "/bundle.js", "/chunk.js",
-            "/config.js", "/settings.js", "/env.js"
-        };
 
-        // Add common paths
-        for (String path : commonPaths) {
-            String fullUrl = normalizeUrl(baseUrl + path);
-            if (isJavaScriptAccessible(fullUrl)) {
-                jsFiles.add(fullUrl);
-            }
-        }
-
-        // Parse HTML to find additional JS references
-        try {
-            HttpURLConnection conn = (HttpURLConnection) new URI(baseUrl).toURL().openConnection();
-            conn.setConnectTimeout(TIMEOUT);
-            conn.setReadTimeout(TIMEOUT);
-            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
-            
-            if (conn.getResponseCode() == 200) {
-                StringBuilder html = new StringBuilder();
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        html.append(line);
-                    }
-                }
-                
-                // Extract JS file references from HTML
-                Pattern jsPattern = Pattern.compile("<script[^>]+src=[\"']([^\"']+\\.js[^\"']*)[\"'][^>]*>", Pattern.CASE_INSENSITIVE);
-                Matcher matcher = jsPattern.matcher(html.toString());
-                while (matcher.find()) {
-                    String jsPath = matcher.group(1);
-                    String fullUrl = jsPath.startsWith("http") ? jsPath : 
-                                   normalizeUrl(baseUrl + (jsPath.startsWith("/") ? "" : "/") + jsPath);
+        // Step 1: Fetch the HTML page (with HTTPS + redirect support)
+        String htmlContent = fetchPageContent(baseUrl);
+        if (htmlContent != null && !htmlContent.isEmpty()) {
+            // Step 2: Extract external <script src="..."> references (handles hashed filenames, query strings, CDN URLs)
+            Pattern srcPattern = Pattern.compile(
+                "<script[^>]+src\\s*=\\s*[\"']([^\"']+)[\"'][^>]*>",
+                Pattern.CASE_INSENSITIVE);
+            Matcher srcMatcher = srcPattern.matcher(htmlContent);
+            while (srcMatcher.find()) {
+                String src = srcMatcher.group(1).trim();
+                String fullUrl = resolveUrl(baseUrl, src);
+                if (fullUrl != null) {
                     jsFiles.add(fullUrl);
                 }
             }
-        } catch (Exception e) {
-            // Continue with common paths if HTML parsing fails
+
+            // Step 3: Also extract <link rel="modulepreload" href="..."> references (Vite, modern bundlers)
+            Pattern modulePattern = Pattern.compile(
+                "<link[^>]+rel\\s*=\\s*[\"']modulepreload[\"'][^>]+href\\s*=\\s*[\"']([^\"']+)[\"'][^>]*>",
+                Pattern.CASE_INSENSITIVE);
+            Matcher moduleMatcher = modulePattern.matcher(htmlContent);
+            while (moduleMatcher.find()) {
+                String href = moduleMatcher.group(1).trim();
+                String fullUrl = resolveUrl(baseUrl, href);
+                if (fullUrl != null) {
+                    jsFiles.add(fullUrl);
+                }
+            }
+
+            // Step 4: Extract inline <script>...</script> content and store as virtual entries
+            Pattern inlinePattern = Pattern.compile(
+                "<script(?:\\s[^>]*)?>([\\s\\S]*?)</script>",
+                Pattern.CASE_INSENSITIVE);
+            Matcher inlineMatcher = inlinePattern.matcher(htmlContent);
+            int inlineIdx = 0;
+            while (inlineMatcher.find()) {
+                String content = inlineMatcher.group(1).trim();
+                // Skip empty scripts and scripts that are just src references (already handled above)
+                if (!content.isEmpty() && content.length() > 10) {
+                    String key = "inline://" + baseUrl + "#script-" + (inlineIdx++);
+                    inlineScriptContents.put(key, content);
+                    jsFiles.add(key);
+                }
+            }
+
+            // Step 5: Store HTML itself for analysis (meta tags, data-attributes, JSON-LD, embedded configs)
+            String htmlKey = "html://" + baseUrl + "#page-source";
+            inlineScriptContents.put(htmlKey, htmlContent);
+            jsFiles.add(htmlKey);
+        }
+
+        // Step 6: Try common paths as fallback (only if nothing found from HTML)
+        if (jsFiles.isEmpty()) {
+            String[] commonPaths = {
+                "/js/app.js", "/js/main.js", "/js/bundle.js", "/js/vendor.js",
+                "/assets/js/app.js", "/assets/js/main.js", "/assets/application.js",
+                "/static/js/main.js", "/static/js/bundle.js", "/dist/main.js",
+                "/build/static/js/main.js", "/public/js/app.js",
+                "/app.js", "/main.js", "/bundle.js"
+            };
+            for (String path : commonPaths) {
+                String fullUrl = normalizeUrl(baseUrl + path);
+                if (isJavaScriptAccessible(fullUrl)) {
+                    jsFiles.add(fullUrl);
+                }
+            }
         }
 
         return new ArrayList<>(jsFiles);
     }
 
     /**
-     * Downloads JavaScript files concurrently.
+     * Resolves a potentially relative URL against a base URL.
+     */
+    private String resolveUrl(String baseUrl, String ref) {
+        if (ref == null || ref.isEmpty()) return null;
+        // Already absolute
+        if (ref.startsWith("http://") || ref.startsWith("https://")) return ref;
+        // Protocol-relative
+        if (ref.startsWith("//")) {
+            String protocol = baseUrl.startsWith("https") ? "https:" : "http:";
+            return protocol + ref;
+        }
+        // Absolute path
+        if (ref.startsWith("/")) {
+            try {
+                URI uri = new URI(baseUrl);
+                return uri.getScheme() + "://" + uri.getHost()
+                       + (uri.getPort() > 0 ? ":" + uri.getPort() : "") + ref;
+            } catch (Exception e) {
+                return normalizeUrl(baseUrl + ref);
+            }
+        }
+        // Relative path
+        String base = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
+        return base + ref;
+    }
+
+    /**
+     * Fetches page content with HTTPS support and redirect following.
+     */
+    private String fetchPageContent(String url) {
+        try {
+            HttpURLConnection conn = openConnection(url);
+            conn.setConnectTimeout(TIMEOUT);
+            conn.setReadTimeout(TIMEOUT);
+            conn.setInstanceFollowRedirects(true);
+            conn.setRequestProperty("User-Agent",
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+            conn.setRequestProperty("Accept", "text/html,application/xhtml+xml,*/*");
+
+            int code = conn.getResponseCode();
+
+            // Handle manual redirect (e.g. HTTP→HTTPS)
+            if (code == 301 || code == 302 || code == 307 || code == 308) {
+                String location = conn.getHeaderField("Location");
+                if (location != null) {
+                    conn.disconnect();
+                    return fetchPageContent(resolveUrl(url, location));
+                }
+            }
+
+            if (code == 200) {
+                StringBuilder html = new StringBuilder();
+                try (BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(conn.getInputStream()))) {
+                    String line;
+                    int totalBytes = 0;
+                    while ((line = reader.readLine()) != null && totalBytes < MAX_FILE_SIZE) {
+                        html.append(line).append("\n");
+                        totalBytes += line.length();
+                    }
+                }
+                return html.toString();
+            }
+        } catch (Exception e) {
+            // Silently continue
+        }
+        return null;
+    }
+
+    /**
+     * Opens an HTTP(S) connection with SSL trust-all for scanning purposes.
+     */
+    private HttpURLConnection openConnection(String url) throws Exception {
+        HttpURLConnection conn = (HttpURLConnection) new URI(url).toURL().openConnection();
+        if (conn instanceof HttpsURLConnection httpsConn) {
+            TrustManager[] trustAll = {new X509TrustManager() {
+                public X509Certificate[] getAcceptedIssuers() { return null; }
+                public void checkClientTrusted(X509Certificate[] c, String t) {}
+                public void checkServerTrusted(X509Certificate[] c, String t) {}
+            }};
+            SSLContext sc = SSLContext.getInstance("TLS");
+            sc.init(null, trustAll, new java.security.SecureRandom());
+            httpsConn.setSSLSocketFactory(sc.getSocketFactory());
+            httpsConn.setHostnameVerifier((h, s) -> true);
+        }
+        return conn;
+    }
+
+    // Storage for inline script content (keyed by virtual URL)
+    private final Map<String, String> inlineScriptContents = new ConcurrentHashMap<>();
+
+    /**
+     * Downloads JavaScript files concurrently. Inline scripts and HTML page content
+     * are resolved from the in-memory cache instead of HTTP.
      */
     private Map<String, String> downloadJavaScriptFiles(List<String> jsFiles) {
         Map<String, String> contents = new ConcurrentHashMap<>();
         
         List<CompletableFuture<Void>> futures = jsFiles.stream()
-            .limit(20) // Limit to first 20 files
+            .limit(30)
             .map(url -> CompletableFuture.runAsync(() -> {
                 try {
+                    // Inline scripts and HTML page source are already in memory
+                    if (url.startsWith("inline://") || url.startsWith("html://")) {
+                        String content = inlineScriptContents.get(url);
+                        if (content != null && !content.trim().isEmpty()) {
+                            contents.put(url, content);
+                        }
+                        return;
+                    }
                     String content = downloadJavaScriptFile(url);
                     if (content != null && !content.trim().isEmpty()) {
                         contents.put(url, content);
@@ -201,13 +331,15 @@ public class JavaScriptSecurityAnalyzer {
     }
 
     /**
-     * Downloads a single JavaScript file.
+     * Downloads a single JavaScript file with HTTPS support.
      */
     private String downloadJavaScriptFile(String url) throws Exception {
-        HttpURLConnection conn = (HttpURLConnection) new URI(url).toURL().openConnection();
+        HttpURLConnection conn = openConnection(url);
         conn.setConnectTimeout(TIMEOUT);
         conn.setReadTimeout(TIMEOUT);
-        conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
+        conn.setInstanceFollowRedirects(true);
+        conn.setRequestProperty("User-Agent",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
         
         if (conn.getResponseCode() == 200) {
             StringBuilder content = new StringBuilder();
@@ -501,10 +633,11 @@ public class JavaScriptSecurityAnalyzer {
     
     private boolean isJavaScriptAccessible(String url) {
         try {
-            HttpURLConnection conn = (HttpURLConnection) new URI(url).toURL().openConnection();
+            HttpURLConnection conn = openConnection(url);
             conn.setRequestMethod("HEAD");
             conn.setConnectTimeout(3000);
             conn.setReadTimeout(3000);
+            conn.setInstanceFollowRedirects(true);
             int responseCode = conn.getResponseCode();
             return responseCode >= 200 && responseCode < 400;
         } catch (Exception e) {
