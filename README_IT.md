@@ -34,7 +34,12 @@ Un'applicazione desktop moderna per la scansione delle porte con analisi di sicu
 - **Rilevamento dispositivi IoT** — telecamere IP, DVR, router con avvisi credenziali predefinite
 
 ### Estrazione Informazioni
-- **Analisi codice sorgente web** — rileva credenziali trapelate, chiavi API, file di configurazione  
+- **Analisi codice sorgente web** — rileva credenziali trapelate, chiavi API, file di configurazione
+- **Analisi approfondita JavaScript** — scansione avanzata del codice sorgente JS con due modalità: **Basic** (controllo rapido endpoint + sicurezza) e **Deep** (rilevamento pattern completo, estrazione credenziali DB, analisi flusso dati)
+- **Mappatura endpoint** — estrae automaticamente endpoint REST/GraphQL, metodi HTTP, URL e parametri dai bundle JavaScript
+- **Inferenza schema database** — rileva nomi di tabelle, colonne e relazioni dai pattern di query nel codice JS
+- **Estrazione credenziali database** — trova stringhe di connessione per MongoDB, MySQL, PostgreSQL, Redis e altri DB nei file JS (classificate per criticità)
+- **Rilevamento pattern architetturali** — identifica pattern MVC, SPA, micro-servizi e serverless dalla struttura JS
 - **Rilevamento servizi cloud** — Cloudflare, AWS, Azure, Akamai, identificazione WAF/CDN
 - **Analisi stack software** — Kubernetes, Docker, Jenkins CI/CD, strumenti HashiCorp
 
@@ -81,7 +86,12 @@ src/
     │       │
     │       ├── model/
     │       │   ├── PortScanResult.java          # Modello dati (7 campi)
-    │       │   └── PortRegistry.java            # Tabelle di servizi e protocolli/cifratura
+    │       │   ├── PortRegistry.java            # Tabelle di servizi e protocolli/cifratura
+    │       │   ├── ArchitectureInfo.java        # Risultato analisi pattern architetturali JS
+    │       │   ├── DataStructureInfo.java       # Strutture dati rilevate dal codice JS
+    │       │   ├── DatabaseSchemaInfo.java      # Schema DB inferito dalle query JS
+    │       │   ├── EndpointInfo.java            # Dettagli degli endpoint API estratti
+    │       │   └── JavaScriptAnalysisResult.java # Risultato aggregato dell'analisi sicurezza JS
     │       │
     │       ├── network/
     │       │   ├── HostResolver.java            # Risoluzione DNS e rilevamento SSL
@@ -102,7 +112,9 @@ src/
     │       │   ├── TracerouteService.java       # Tracciamento percorso rete
     │       │   ├── IoTDetector.java             # Rilevamento telecamere IP e dispositivi IoT
     │       │   ├── KeycloakDetector.java        # Rilevamento Keycloak IAM ed estrazione chiavi
-    │       │   └── SoftwareStackDetector.java   # Analisi stack tecnologico
+    │       │   ├── SoftwareStackDetector.java   # Analisi stack tecnologico
+    │       │   ├── JavaScriptSecurityAnalyzer.java # Analisi sicurezza JS avanzata (mappatura endpoint, architettura, inferenza schema)
+    │       │   └── JavaScriptDatabaseAnalyzer.java # Estrazione credenziali DB e stringhe di connessione da JS
     │       │
     │       └── ui/
     │           ├── AlertHelper.java             # Dialoghi di avviso Anibus Design System

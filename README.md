@@ -35,6 +35,11 @@ A modern desktop port scanning application with enhanced security analysis, buil
 
 ### Information Extraction
 - **Web source code analysis** — detects leaked credentials, API keys, configuration files
+- **JavaScript deep analysis** — advanced JS source code scanning with two depth modes: **Basic** (quick endpoint + security check) and **Deep** (full pattern matching, DB credential extraction, data-flow analysis)
+- **Endpoint mapping** — automatically extracts REST/GraphQL endpoints, HTTP methods, URL patterns and parameters from JavaScript bundles
+- **Database schema inference** — detects table names, column names and relationships from query patterns inside JS code
+- **Database credential extraction** — finds connection strings for MongoDB, MySQL, PostgreSQL, Redis and other databases buried in JS files (ranked by criticality)
+- **Architectural pattern detection** — identifies MVC, SPA, micro-service and serverless patterns from JS structure
 - **Cloud service detection** — Cloudflare, AWS, Azure, Akamai, WAF/CDN identification  
 - **Software stack analysis** — Kubernetes, Docker, Jenkins CI/CD, HashiCorp tools
 
@@ -81,7 +86,12 @@ src/
     │       │
     │       ├── model/
     │       │   ├── PortScanResult.java          # Data model (7 fields)
-    │       │   └── PortRegistry.java            # Service name & protocol/encryption lookup tables
+    │       │   ├── PortRegistry.java            # Service name & protocol/encryption lookup tables
+    │       │   ├── ArchitectureInfo.java        # JS architectural pattern analysis result
+    │       │   ├── DataStructureInfo.java       # Detected data structures from JS
+    │       │   ├── DatabaseSchemaInfo.java      # Inferred database schema from JS queries
+    │       │   ├── EndpointInfo.java            # Extracted API endpoint details
+    │       │   └── JavaScriptAnalysisResult.java # Aggregated JS security analysis result
     │       │
     │       ├── network/
     │       │   ├── HostResolver.java            # DNS resolution & SSL detection
@@ -102,7 +112,9 @@ src/
     │       │   ├── TracerouteService.java       # Network path tracing
     │       │   ├── IoTDetector.java             # IP camera & IoT device detection
     │       │   ├── KeycloakDetector.java        # Keycloak IAM detection & key extraction
-    │       │   └── SoftwareStackDetector.java   # Technology stack analysis
+    │       │   ├── SoftwareStackDetector.java   # Technology stack analysis
+    │       │   ├── JavaScriptSecurityAnalyzer.java # Deep JS security analysis (endpoint mapping, architecture, schema inference)
+    │       │   └── JavaScriptDatabaseAnalyzer.java # DB credential & connection-string extraction from JS
     │       │
     │       └── ui/
     │           ├── AlertHelper.java             # Anibus design modal alert dialogs
