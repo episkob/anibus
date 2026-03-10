@@ -44,6 +44,14 @@ A modern desktop port scanning application with enhanced security analysis, buil
 - **Container platform detection** — Docker, Kubernetes, Podman, and container orchestration detection via passive HTTP header fingerprinting (Envoy/Istio, Kong, Traefik) and active API probing (Docker API, K8s API, Kubelet, cAdvisor, Portainer, OCI Registry)
 - **Software stack analysis** — Kubernetes, Docker, Jenkins CI/CD, HashiCorp tools
 
+### SQL Injection Analysis
+- **Automated SQL injection testing** — CMS-aware endpoint testing with 110+ payloads across 12 categories (error-based, UNION, time-based, boolean-based, auth-bypass, stacked queries, encoding evasion, integer injection, NoSQL, XPath, LDAP)
+- **CMS-specific injection profiles** — pre-configured vulnerable endpoints for WordPress, Joomla, Drupal, Magento, 1C-Bitrix, OpenCart, PrestaShop, ModX, Shopify, plus generic targets
+- **Auto CMS detection** — automatically identifies the target CMS from HTTP responses and selects the matching injection profile
+- **HTML form auto-discovery** — parses `<form>`, `<a href>`, `<input>`, `<select>` and `<textarea>` elements to discover injectable endpoints
+- **Modular payload system** — per-category and per-CMS text files with `index.txt` discovery for easy maintenance and extensibility
+- **Response analysis** — detects SQL errors from 7 database engines (MySQL, PostgreSQL, Oracle, MSSQL, SQLite, MongoDB, MariaDB), data leak patterns, and time-based delays
+
 ### UI & Workflow
 - **Dark theme** — complete dark mode design with optimized contrast and readability
 - **Console view** — toggle between table and terminal-style console output with formatted results
@@ -118,7 +126,8 @@ src/
     │       │   ├── SubnetScanner.java            # Subnet range scanning
     │       │   ├── WebSourceAnalyzer.java        # Web page source code leak analysis
     │       │   ├── JavaScriptSecurityAnalyzer.java # Deep JS security analysis (HTTPS, inline scripts, hashed files, architecture)
-    │       │   └── JavaScriptDatabaseAnalyzer.java # DB credential & connection-string extraction from JS
+    │       │   ├── JavaScriptDatabaseAnalyzer.java # DB credential & connection-string extraction from JS
+    │       │   └── SQLInjectionAnalyzer.java     # SQL injection testing with CMS profiles & HTML form discovery
     │       │
     │       └── ui/
     │           ├── AlertHelper.java             # Anibus design modal alert dialogs
@@ -131,7 +140,18 @@ src/
         └── it/r2u/anibus/
             ├── hello-view.fxml                  # UI layout
             ├── anibus-style.css                 # Anibus Design System stylesheet
-            └── app.properties                   # Maven-filtered runtime version
+            ├── app.properties                   # Maven-filtered runtime version
+            └── injections/                      # SQL injection payloads & CMS profiles
+                ├── payloads/                    # 12 category files (error-based, UNION, time-based, etc.)
+                │   ├── index.txt
+                │   ├── error-based.txt
+                │   ├── union-based.txt
+                │   └── ...                      # boolean-based, auth-bypass, nosql, xpath, ldap, etc.
+                └── cms/                         # 10 CMS-specific endpoint profiles
+                    ├── index.txt
+                    ├── wordpress.txt
+                    ├── joomla.txt
+                    └── ...                      # drupal, magento, bitrix, opencart, etc.
 ```
 
 ---

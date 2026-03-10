@@ -44,6 +44,14 @@
 - **Определение контейнерных платформ** — Docker, Kubernetes, Podman и обнаружение оркестрации через пассивное снятие отпечатков HTTP-заголовков (Envoy/Istio, Kong, Traefik) и активное зондирование API (Docker API, K8s API, Kubelet, cAdvisor, Portainer, OCI Registry)
 - **Анализ программного стека** — Kubernetes, Docker, Jenkins CI/CD, инструменты HashiCorp
 
+### Анализ SQL-инъекций
+- **Автоматическое тестирование SQL-инъекций** — CMS-ориентированное тестирование эндпоинтов с 110+ полезными нагрузками в 12 категориях (ошибочные, UNION, временные, булевы, обход авторизации, стековые запросы, обход кодировок, целочисленные, NoSQL, XPath, LDAP)
+- **CMS-специфичные профили инъекций** — предварительно настроенные уязвимые эндпоинты для WordPress, Joomla, Drupal, Magento, 1C-Bitrix, OpenCart, PrestaShop, ModX, Shopify и универсальные цели
+- **Автоопределение CMS** — автоматически распознаёт целевую CMS из HTTP-ответов и выбирает соответствующий профиль инъекций
+- **Автообнаружение HTML-форм** — парсит `<form>`, `<a href>`, `<input>`, `<select>` и `<textarea>` для обнаружения инъектируемых эндпоинтов
+- **Модульная система нагрузок** — файлы по категориям и по CMS с обнаружением через `index.txt` для удобного обновления и расширения
+- **Анализ ответов** — определяет SQL-ошибки от 7 СУБД (MySQL, PostgreSQL, Oracle, MSSQL, SQLite, MongoDB, MariaDB), паттерны утечки данных и временные задержки
+
 ### Интерфейс и рабочий процесс
 - **Тёмная тема** — полный дизайн в тёмном режиме с оптимизированным контрастом и читаемостью
 - **Консольный вид** — переключение между табличным и консольным отображением результатов в стиле терминала
@@ -118,7 +126,8 @@ src/
     │       │   ├── SubnetScanner.java            # Сканирование подсетей
     │       │   ├── WebSourceAnalyzer.java        # Анализ утечек в исходном коде веб-страниц
     │       │   ├── JavaScriptSecurityAnalyzer.java # Глубокий JS-анализ (HTTPS, inline-скрипты, хэшированные файлы, архитектура)
-    │       │   └── JavaScriptDatabaseAnalyzer.java # Извлечение учётных данных БД и строк подключения из JS
+    │       │   ├── JavaScriptDatabaseAnalyzer.java # Извлечение учётных данных БД и строк подключения из JS
+    │       │   └── SQLInjectionAnalyzer.java     # Тестирование SQL-инъекций с CMS-профилями и автообнаружением форм
     │       │
     │       └── ui/
     │           ├── AlertHelper.java             # Стилизованные диалоги Anibus Design System
@@ -131,7 +140,18 @@ src/
         └── it/r2u/anibus/
             ├── hello-view.fxml                  # Макет интерфейса
             ├── anibus-style.css                 # Таблица стилей Anibus Design System
-            └── app.properties                   # Версия приложения (фильтруется Maven)
+            ├── app.properties                   # Версия приложения (фильтруется Maven)
+            └── injections/                      # SQL-инъекции и CMS-профили
+                ├── payloads/                    # 12 файлов по категориям (error-based, UNION, time-based и др.)
+                │   ├── index.txt
+                │   ├── error-based.txt
+                │   ├── union-based.txt
+                │   └── ...                      # boolean-based, auth-bypass, nosql, xpath, ldap и др.
+                └── cms/                         # 10 CMS-специфичных профилей
+                    ├── index.txt
+                    ├── wordpress.txt
+                    ├── joomla.txt
+                    └── ...                      # drupal, magento, bitrix, opencart и др.
 ```
 
 ---
