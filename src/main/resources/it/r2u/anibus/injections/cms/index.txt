@@ -1,0 +1,10 @@
+wordpress
+joomla
+drupal
+magento
+bitrix
+opencart
+prestashop
+modx
+shopify
+generic

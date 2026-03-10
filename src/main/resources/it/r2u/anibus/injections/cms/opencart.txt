@@ -1,0 +1,9 @@
+# OpenCart injection targets
+# Format: METHOD|PATH|PARAMETERS|DESCRIPTION
+GET|/index.php?route=product/search|search,category_id,sort,order,limit|Product search
+GET|/index.php?route=product/product&product_id=|product_id|Product by ID
+GET|/index.php?route=product/category&path=|path|Category path
+GET|/index.php?route=account/login|email,password|Login
+GET|/index.php?route=information/information&information_id=|information_id|Info page by ID
+POST|/index.php?route=account/login|email,password|Login POST
+GET|/index.php?route=product/manufacturer/info&manufacturer_id=|manufacturer_id|Manufacturer

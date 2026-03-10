@@ -1,0 +1,11 @@
+# Magento injection targets
+# Format: METHOD|PATH|PARAMETERS|DESCRIPTION
+GET|/catalogsearch/result/|q|Product search — reflected input
+GET|/catalog/product/view/id/|id|Product by ID — integer injection
+GET|/catalog/category/view/id/|id|Category by ID
+GET|/customer/account/login|login[username],login[password]|Login form
+GET|/checkout/cart/add|product,qty|Cart manipulation
+GET|/rest/V1/products|searchCriteria[filterGroups][0][filters][0][field],searchCriteria[filterGroups][0][filters][0][value]|REST API product search
+GET|/rest/V1/categories|searchCriteria|REST API categories
+POST|/customer/account/loginPost|login[username],login[password]|Login POST
+GET|/catalog/product_compare/add/product/|product|Compare product

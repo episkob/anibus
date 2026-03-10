@@ -9,6 +9,7 @@ import it.r2u.anibus.network.NetworkStatusMonitor;
 import it.r2u.anibus.service.EnhancedServiceDetector;
 import it.r2u.anibus.service.JavaScriptSecurityAnalyzer;
 import it.r2u.anibus.service.PortScannerService;
+import it.r2u.anibus.service.SQLInjectionAnalyzer;
 import it.r2u.anibus.ui.AlertHelper;
 import it.r2u.anibus.ui.ConsoleViewManager;
 import it.r2u.anibus.ui.InfoCardManager;
@@ -22,6 +23,8 @@ import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.Circle;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 /**
@@ -76,6 +79,7 @@ public class AnibusController {
     @FXML private Label             jsArchitectureLabel;
     @FXML private Button            jsExportButton;
     @FXML private Button            jsClearButton;
+    @FXML private CheckBox           jsInjectionCheckBox;
     
     /* -- Unified Console FXML fields ------------------------- */
     @FXML private Label             consoleHeaderLabel;
@@ -96,6 +100,7 @@ public class AnibusController {
     private ConsoleViewManager     consoleViewManager;
     private InfoCardManager        infoCardManager;
     private JavaScriptSecurityAnalyzer jsAnalyzer;
+    private SQLInjectionAnalyzer injectionAnalyzer;
     
     /* -- Coordinators and Handlers (SOLID refactoring) -------- */
     private ScanCoordinator        scanCoordinator;
@@ -122,6 +127,7 @@ public class AnibusController {
         detector = new EnhancedServiceDetector();
         hostResolver = new HostResolver();
         jsAnalyzer = new JavaScriptSecurityAnalyzer();
+        injectionAnalyzer = new SQLInjectionAnalyzer();
         
         // Create and configure UI managers
         Tooltip networkTooltip = new Tooltip("Checking network");
@@ -437,6 +443,7 @@ public class AnibusController {
     }
     
     private Task<Void> createJavaScriptAnalysisTask(String targetUrl) {
+        final boolean runInjections = jsInjectionCheckBox != null && jsInjectionCheckBox.isSelected();
         return new Task<Void>() {
             @Override
             protected Void call() throws Exception {
@@ -446,10 +453,29 @@ public class AnibusController {
                     // Always use comprehensive analysis
                     JavaScriptAnalysisResult result = jsAnalyzer.analyzeTarget(targetUrl, JavaScriptSecurityAnalyzer.AnalysisDepth.COMPREHENSIVE);
                     
+                    // Run injection testing if checkbox is enabled
+                    final Map<String, List<SQLInjectionAnalyzer.InjectionResult>> injectionResults;
+                    if (runInjections) {
+                        Platform.runLater(() -> setStatus("Running SQL injection tests (with CMS detection & form discovery)..."));
+
+                        // Full scan: JS endpoints + CMS profiles + HTML form/link auto-discovery
+                        injectionResults = injectionAnalyzer.fullScan(
+                                result.getEndpoints(), targetUrl,
+                                msg -> Platform.runLater(() -> setStatus(msg))
+                        );
+                    } else {
+                        injectionResults = null;
+                    }
+                    
                     Platform.runLater(() -> {
                         lastJsAnalysisResult = result;
-                        displayJsAnalysisResults(result);
-                        setStatus("JavaScript analysis completed (Full analysis)");
+                        displayJsAnalysisResults(result, injectionResults);
+                        String statusMsg = "JavaScript analysis completed (Full analysis)";
+                        if (runInjections) {
+                            int vulnCount = injectionResults != null ? injectionResults.size() : 0;
+                            statusMsg += " + Injection testing (" + vulnCount + " vulnerable endpoints)";
+                        }
+                        setStatus(statusMsg);
                         jsAnalysisInProgress = false;
                         enablePortScannerControls();
                         resetJsAnalysisUI();
@@ -468,7 +494,8 @@ public class AnibusController {
         };
     }
     
-    private void displayJsAnalysisResults(JavaScriptAnalysisResult result) {
+    private void displayJsAnalysisResults(JavaScriptAnalysisResult result, 
+            Map<String, List<SQLInjectionAnalyzer.InjectionResult>> injectionResults) {
         // Update summary labels
         jsEndpointsLabel.setText(String.valueOf(result.getEndpoints().size()));
         jsDataStructuresLabel.setText(String.valueOf(result.getDataStructures().size()));
@@ -517,6 +544,11 @@ public class AnibusController {
             detailedResults.append("• ").append(result.getArchitecture().toString()).append("\n");
             detailedResults.append("• Services: ").append(result.getArchitecture().getServices()).append("\n");
             detailedResults.append("• Middlewares: ").append(result.getArchitecture().getMiddlewares()).append("\n");
+        }
+        
+        // Add injection testing results if available
+        if (injectionResults != null) {
+            detailedResults.append("\n").append(injectionAnalyzer.formatResults(injectionResults));
         }
         
         // Add errors if any
@@ -600,6 +632,7 @@ public class AnibusController {
         Platform.runLater(() -> {
             jsTargetUrlField.setDisable(true);
             jsAnalyzeButton.setDisable(true);
+            if (jsInjectionCheckBox != null) jsInjectionCheckBox.setDisable(true);
         });
     }
     
@@ -611,6 +644,7 @@ public class AnibusController {
             Platform.runLater(() -> {
                 jsTargetUrlField.setDisable(false);
                 jsAnalyzeButton.setDisable(false);
+                if (jsInjectionCheckBox != null) jsInjectionCheckBox.setDisable(false);
             });
         }
     }
@@ -684,6 +718,9 @@ public class AnibusController {
         }
         if (jsAnalyzer != null) {
             jsAnalyzer.shutdown();
+        }
+        if (injectionAnalyzer != null) {
+            injectionAnalyzer.shutdown();
         }
     }
 }

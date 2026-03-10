@@ -1,0 +1,9 @@
+# PrestaShop injection targets
+# Format: METHOD|PATH|PARAMETERS|DESCRIPTION
+GET|/index.php?controller=search&s=|s|Product search
+GET|/index.php?id_product=|id_product|Product by ID
+GET|/index.php?id_category=|id_category|Category by ID
+GET|/index.php?controller=authentication|email,passwd|Login
+GET|/api/products|filter[name],display,output_format|Web service API
+GET|/index.php?id_cms=|id_cms|CMS page by ID
+POST|/index.php?controller=authentication|email,passwd,back|Login POST

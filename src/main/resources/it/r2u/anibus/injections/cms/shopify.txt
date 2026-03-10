@@ -1,0 +1,6 @@
+# Shopify injection targets
+# Format: METHOD|PATH|PARAMETERS|DESCRIPTION
+GET|/search|q,type|Product search
+GET|/collections/all|sort_by,page|Collection filter
+GET|/products.json|limit,page|Products JSON API
+GET|/admin/api/2023-01/products.json|title,vendor|Admin API (if accessible)

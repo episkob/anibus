@@ -1,0 +1,4 @@
+# XML/XPath injection probes
+' or '1'='1' or ''='
+" or "1"="1" or ""="
+' or count(//*)>0 or ''='

@@ -1,0 +1,28 @@
+# Generic injection targets (unknown CMS / any site)
+# Format: METHOD|PATH|PARAMETERS|DESCRIPTION
+GET|/search|q,query,s,search,keyword,term|Search functionality
+GET|/login|username,password,email,user,login|Login form
+POST|/login|username,password,email,user,login|Login POST
+GET|/api/search|q,query,term|API search
+GET|/api/users|id,name,email|API user lookup
+GET|/api/products|id,name,category|API product lookup
+GET|/register|username,email,password|Registration form
+POST|/register|username,email,password|Registration POST
+GET|/contact|name,email,message,subject|Contact form
+POST|/contact|name,email,message,subject|Contact POST
+GET|/forgot-password|email|Password reset
+GET|/profile|id,user_id|Profile page
+GET|/page|id,page_id,slug|Generic page
+GET|/article|id,article_id,slug|Article page
+GET|/news|id,category|News page
+GET|/blog|id,category,tag|Blog page
+GET|/product|id,product_id,sku|Product page
+GET|/category|id,cat_id,slug|Category page
+GET|/download|file,id|Download handler
+GET|/export|type,format,id|Export handler
+GET|/ajax|action,id,data|AJAX endpoint
+POST|/ajax|action,id,data|AJAX POST
+GET|/api/v1/|id,filter,search,sort,page,limit|REST API v1
+GET|/api/v2/|id,filter,search,sort,page,limit|REST API v2
+GET|/graphql|query|GraphQL endpoint
+POST|/graphql|query,variables|GraphQL POST

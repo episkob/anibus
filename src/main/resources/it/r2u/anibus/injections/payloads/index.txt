@@ -1,0 +1,12 @@
+error-based
+union-based
+info-extraction
+time-based
+boolean-based
+auth-bypass
+stacked-queries
+encoding-evasion
+integer-injection
+nosql
+xpath
+ldap

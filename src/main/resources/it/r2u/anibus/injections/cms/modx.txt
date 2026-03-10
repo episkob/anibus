@@ -1,0 +1,6 @@
+# ModX injection targets
+# Format: METHOD|PATH|PARAMETERS|DESCRIPTION
+GET|/index.php?id=|id|Page by resource ID
+GET|/?s=|s|Search
+GET|/assets/components/|component|Component assets
+POST|/connectors/index.php|action|MODX connector

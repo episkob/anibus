@@ -1,0 +1,14 @@
+# Drupal injection targets
+# Format: METHOD|PATH|PARAMETERS|DESCRIPTION
+GET|/node/|nid|Node by ID — common injection point
+GET|/?q=node/|nid|Clean URL disabled — node access
+GET|/user/login|name,pass|Login form
+GET|/?q=search/node/|keys|Search — reflected input
+GET|/search/node|keys|Search with clean URLs
+GET|/?q=taxonomy/term/|tid|Taxonomy term by ID
+GET|/taxonomy/term/|tid|Taxonomy term (clean URL)
+GET|/jsonapi/node/article|filter[title],filter[status],sort|JSON API — content filter
+GET|/jsonapi/node/page|filter[title]|JSON API — page filter
+GET|/views/ajax|view_name,view_display_id,view_args|Views AJAX handler
+POST|/user/login|name,pass,form_id|Login submission
+GET|/admin/content|title,status,type|Admin content filter

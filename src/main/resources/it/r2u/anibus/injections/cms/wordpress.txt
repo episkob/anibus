@@ -1,0 +1,21 @@
+# WordPress injection targets
+# Format: METHOD|PATH|PARAMETERS|DESCRIPTION
+GET|/wp-admin/admin-ajax.php|action,post_id,nonce|AJAX handler — many plugins pass unvalidated params
+GET|/?s=|s|Search query — often reflected unfiltered
+GET|/?p=|p|Post by ID — integer injection
+GET|/?cat=|cat|Category by ID — integer injection
+GET|/?author=|author|Author enumeration/injection
+GET|/?page_id=|page_id|Page by ID — integer injection
+GET|/?tag=|tag|Tag filter — possible injection
+GET|/wp-json/wp/v2/posts|search,per_page,page,categories,tags|REST API — search param injection
+GET|/wp-json/wp/v2/users|search,per_page|REST API — user enumeration
+GET|/wp-json/wp/v2/pages|search,per_page|REST API — page search
+GET|/wp-json/wp/v2/comments|post,search|REST API — comments
+POST|/wp-login.php|log,pwd|Login form — auth bypass
+POST|/wp-comments-post.php|author,email,url,comment|Comment submission
+GET|/xmlrpc.php||XML-RPC — pingback/auth brute force
+GET|/?feed=rss2&cat=|cat|RSS feed with category filter
+GET|/wp-admin/edit.php|s,post_status,post_type|Admin search (if accessible)
+GET|/wp-content/plugins/||Plugin directory traversal
+POST|/wp-admin/admin-ajax.php|action=heartbeat,data|Heartbeat API
+GET|/?rest_route=/wp/v2/search|search,type,subtype|Search REST route

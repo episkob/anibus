@@ -1,0 +1,13 @@
+# Joomla injection targets
+# Format: METHOD|PATH|PARAMETERS|DESCRIPTION
+GET|/index.php|option,view,id,Itemid,layout|Core component params — common injection points
+GET|/index.php?option=com_content&view=article&id=|id|Article by ID — classic injection target
+GET|/index.php?option=com_contact&view=contact&id=|id|Contact component
+GET|/index.php?option=com_users&view=login|username,password|Login form
+GET|/index.php?option=com_search&searchword=|searchword,ordering|Search — reflected input
+GET|/index.php?option=com_content&view=category&id=|id,limit,start|Category listing
+POST|/index.php?option=com_users&task=user.login|username,password|Login task
+GET|/index.php?option=com_content&view=featured|limit,start,filter_order|Featured articles
+GET|/administrator/index.php|username,passwd|Admin login
+GET|/index.php?option=com_finder&q=|q|Smart search
+GET|/api/index.php/v1/content/articles|filter[search]|API search

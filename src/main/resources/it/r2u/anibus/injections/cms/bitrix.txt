@@ -1,0 +1,10 @@
+# 1C-Bitrix injection targets
+# Format: METHOD|PATH|PARAMETERS|DESCRIPTION
+GET|/bitrix/components/bitrix/search.page/|q|Search
+GET|/?q=|q|Search query
+GET|/bitrix/admin/|login,password|Admin panel login
+GET|/index.php?ID=|ID|Element by ID
+GET|/catalog/|SECTION_ID,ELEMENT_ID|Catalog filter
+POST|/bitrix/tools/ajax_form.php|form_id,data|AJAX form handler
+GET|/personal/order/|ORDER_ID|Order details
+GET|/bitrix/urlrewrite.php|SEF_APPLICATION_CUR_PAGE_URL|URL rewriter
