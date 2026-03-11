@@ -90,7 +90,7 @@ public class HostResolver {
      * Resolves a hostname to IP address asynchronously and updates the label with SSL status.
      */
     public void resolveHostAsync(String host, Label resolvedHostLabel, Runnable onUpdate) {
-        new Thread(() -> {
+        Thread t = new Thread(() -> {
             try {
                 String ip = InetAddress.getByName(host).getHostAddress();
                 String sslStatus = checkSSL(host);
@@ -128,7 +128,9 @@ public class HostResolver {
                     if (onUpdate != null) onUpdate.run();
                 });
             }
-        }).start();
+        });
+        t.setDaemon(true);
+        t.start();
     }
     
     /**

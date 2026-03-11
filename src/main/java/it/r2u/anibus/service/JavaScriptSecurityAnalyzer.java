@@ -16,6 +16,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -84,10 +85,15 @@ public class JavaScriptSecurityAnalyzer {
         
         // Clear inline cache from previous runs
         inlineScriptContents.clear();
+        lastFetchedHtml = null;
         
         try {
             // Discover JavaScript files
-            List<String> jsFiles = discoverJavaScriptFiles(targetUrl);
+            List<String> jsFiles = discoverJavaScriptFiles(targetUrl, errors);
+
+            if (jsFiles.isEmpty()) {
+                errors.add("No JavaScript sources discovered. Target may be unreachable, blocked by WAF/CDN, or loading JS dynamically.");
+            }
             
             // Download and analyze all JS files concurrently
             Map<String, String> jsContents = downloadJavaScriptFiles(jsFiles);
@@ -114,7 +120,7 @@ public class JavaScriptSecurityAnalyzer {
             return new JavaScriptAnalysisResult(
                 targetUrl, analysisTime, endpoints, dataStructures, 
                 databaseSchemas, sensitiveInfo, architecture, 
-                new ArrayList<>(jsFiles), errors
+                new ArrayList<>(jsFiles), errors, lastFetchedHtml
             );
             
         } catch (Exception e) {
@@ -131,11 +137,12 @@ public class JavaScriptSecurityAnalyzer {
      * Discovers JavaScript files from the target URL including common paths and HTML references.
      * Also extracts inline script content from the HTML page.
      */
-    private List<String> discoverJavaScriptFiles(String baseUrl) throws Exception {
+    private List<String> discoverJavaScriptFiles(String baseUrl, List<String> errors) throws Exception {
         Set<String> jsFiles = new LinkedHashSet<>();
 
         // Step 1: Fetch the HTML page (with HTTPS + redirect support)
-        String htmlContent = fetchPageContent(baseUrl);
+        String htmlContent = fetchPageContentWithFallbacks(baseUrl);
+        lastFetchedHtml = htmlContent;
         if (htmlContent != null && !htmlContent.isEmpty()) {
             // Step 2: Extract external <script src="..."> references (handles hashed filenames, query strings, CDN URLs)
             Pattern srcPattern = Pattern.compile(
@@ -183,6 +190,8 @@ public class JavaScriptSecurityAnalyzer {
             String htmlKey = "html://" + baseUrl + "#page-source";
             inlineScriptContents.put(htmlKey, htmlContent);
             jsFiles.add(htmlKey);
+        } else if (errors != null) {
+            errors.add("Unable to fetch HTML from target URL: " + baseUrl);
         }
 
         // Step 6: Try common paths as fallback (only if nothing found from HTML)
@@ -200,9 +209,58 @@ public class JavaScriptSecurityAnalyzer {
                     jsFiles.add(fullUrl);
                 }
             }
+
+            if (jsFiles.isEmpty() && errors != null) {
+                errors.add("Fallback JS path scan returned no accessible files.");
+            }
         }
 
         return new ArrayList<>(jsFiles);
+    }
+
+    /**
+     * Tries several URL variants because some targets only answer on a specific host/scheme.
+     */
+    private String fetchPageContentWithFallbacks(String baseUrl) {
+        LinkedHashSet<String> candidates = new LinkedHashSet<>();
+        candidates.add(baseUrl);
+
+        try {
+            URI uri = new URI(baseUrl);
+            String scheme = uri.getScheme() != null ? uri.getScheme() : "https";
+            String host = uri.getHost();
+            int port = uri.getPort();
+            String portPart = port > 0 ? ":" + port : "";
+
+            if (host != null && !host.isBlank()) {
+                String path = uri.getRawPath();
+                String query = uri.getRawQuery();
+                String suffix = (path == null || path.isEmpty() ? "" : path)
+                        + (query != null ? "?" + query : "");
+
+                if (!host.startsWith("www.")) {
+                    candidates.add(scheme + "://www." + host + portPart + suffix);
+                } else {
+                    candidates.add(scheme + "://" + host.substring(4) + portPart + suffix);
+                }
+
+                String altScheme = "https".equalsIgnoreCase(scheme) ? "http" : "https";
+                candidates.add(altScheme + "://" + host + portPart + suffix);
+                if (!host.startsWith("www.")) {
+                    candidates.add(altScheme + "://www." + host + portPart + suffix);
+                }
+            }
+        } catch (Exception ignored) {
+            // Keep original candidate only
+        }
+
+        for (String candidate : candidates) {
+            String html = fetchPageContent(candidate);
+            if (html != null && !html.isBlank()) {
+                return html;
+            }
+        }
+        return null;
     }
 
     /**
@@ -244,6 +302,7 @@ public class JavaScriptSecurityAnalyzer {
             conn.setRequestProperty("User-Agent",
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
             conn.setRequestProperty("Accept", "text/html,application/xhtml+xml,*/*");
+            conn.setRequestProperty("Accept-Language", "en-US,en;q=0.9");
 
             int code = conn.getResponseCode();
 
@@ -256,7 +315,7 @@ public class JavaScriptSecurityAnalyzer {
                 }
             }
 
-            if (code == 200) {
+            if (code >= 200 && code < 300) {
                 StringBuilder html = new StringBuilder();
                 try (BufferedReader reader = new BufferedReader(
                         new InputStreamReader(conn.getInputStream()))) {
@@ -268,6 +327,24 @@ public class JavaScriptSecurityAnalyzer {
                     }
                 }
                 return html.toString();
+            }
+
+            // Some WAF/CDN pages return useful HTML even on non-2xx responses.
+            if (code >= 400 && conn.getErrorStream() != null) {
+                StringBuilder html = new StringBuilder();
+                try (BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(conn.getErrorStream()))) {
+                    String line;
+                    int totalBytes = 0;
+                    while ((line = reader.readLine()) != null && totalBytes < MAX_FILE_SIZE) {
+                        html.append(line).append("\n");
+                        totalBytes += line.length();
+                    }
+                }
+                String body = html.toString();
+                if (body.contains("<html") || body.contains("<script") || body.contains("<!DOCTYPE")) {
+                    return body;
+                }
             }
         } catch (Exception e) {
             // Silently continue
@@ -296,6 +373,8 @@ public class JavaScriptSecurityAnalyzer {
 
     // Storage for inline script content (keyed by virtual URL)
     private final Map<String, String> inlineScriptContents = new ConcurrentHashMap<>();
+    // Last fetched HTML from target page (reused by SQL injection analyzer)
+    private volatile String lastFetchedHtml;
 
     /**
      * Downloads JavaScript files concurrently. Inline scripts and HTML page content
@@ -411,15 +490,9 @@ public class JavaScriptSecurityAnalyzer {
             String url, method = "GET";
             
             if (matcher.groupCount() >= 2) {
-                if (pattern.toString().contains("axios") || pattern.toString().contains("router")) {
-                    method = matcher.group(1).toUpperCase();
-                    url = matcher.group(2);
-                } else {
-                    url = matcher.group(1);
-                    if (matcher.group(2) != null) {
-                        method = matcher.group(2).toUpperCase();
-                    }
-                }
+                // All 2-group patterns use group(1)=method, group(2)=URL
+                method = matcher.group(1).toUpperCase();
+                url = matcher.group(2);
             } else {
                 url = matcher.group(1);
             }
@@ -634,10 +707,12 @@ public class JavaScriptSecurityAnalyzer {
     private boolean isJavaScriptAccessible(String url) {
         try {
             HttpURLConnection conn = openConnection(url);
-            conn.setRequestMethod("HEAD");
-            conn.setConnectTimeout(3000);
-            conn.setReadTimeout(3000);
+            // HEAD is blocked on many setups; GET is more reliable for discovery.
+            conn.setRequestMethod("GET");
+            conn.setConnectTimeout(1200);
+            conn.setReadTimeout(1200);
             conn.setInstanceFollowRedirects(true);
+            conn.setRequestProperty("User-Agent", "Mozilla/5.0");
             int responseCode = conn.getResponseCode();
             return responseCode >= 200 && responseCode < 400;
         } catch (Exception e) {
@@ -788,11 +863,20 @@ public class JavaScriptSecurityAnalyzer {
 
     private ArchitectureInfo.Framework detectFramework(String jsContent) {
         String lowerContent = jsContent.toLowerCase();
-        if (lowerContent.contains("react") || lowerContent.contains("jsx")) return ArchitectureInfo.Framework.REACT;
-        if (lowerContent.contains("vue") || lowerContent.contains("$vue")) return ArchitectureInfo.Framework.VUE;
-        if (lowerContent.contains("angular") || lowerContent.contains("@angular")) return ArchitectureInfo.Framework.ANGULAR;
+        // React: require specific identifiers (not just 'react' which matches generic text)
+        if (lowerContent.contains("reactdom") || lowerContent.contains("react-dom")
+                || lowerContent.contains("react.component") || lowerContent.contains("react.createelement")
+                || lowerContent.contains("usestate") || lowerContent.contains("useeffect")
+                || lowerContent.contains("__react")) return ArchitectureInfo.Framework.REACT;
+        // Vue
+        if (lowerContent.contains("vue.js") || lowerContent.contains("vuejs")
+                || lowerContent.contains("$vue") || lowerContent.contains("v-model")
+                || lowerContent.contains("v-bind") || lowerContent.contains("vue.component")) return ArchitectureInfo.Framework.VUE;
+        // Angular
+        if (lowerContent.contains("@angular") || lowerContent.contains("ng-app")
+                || lowerContent.contains("ng-model") || lowerContent.contains("angular.module")) return ArchitectureInfo.Framework.ANGULAR;
         if (lowerContent.contains("svelte")) return ArchitectureInfo.Framework.SVELTE;
-        return ArchitectureInfo.Framework.VANILLA;
+        return ArchitectureInfo.Framework.UNKNOWN;
     }
 
     private ArchitectureInfo.CMS detectCms(String jsContent) {
@@ -817,9 +901,9 @@ public class JavaScriptSecurityAnalyzer {
             return ArchitectureInfo.CMS.DRUPAL;
         }
         
-        // Joomla detection
+        // Joomla detection (removed 'mod_' — too generic)
         if (lowerContent.contains("joomla") || lowerContent.contains("jform") || 
-            lowerContent.contains("com_content") || lowerContent.contains("mod_")) {
+            lowerContent.contains("com_content") || lowerContent.contains("com_users")) {
             return ArchitectureInfo.CMS.JOOMLA;
         }
         
@@ -835,9 +919,9 @@ public class JavaScriptSecurityAnalyzer {
             return ArchitectureInfo.CMS.MAGENTO;
         }
         
-        // Next.js detection
-        if (lowerContent.contains("__next") || lowerContent.contains("next/") || 
-            lowerContent.contains("nextjs") || lowerContent.contains("_next/")) {
+        // Next.js detection (removed 'next/' — too generic, matches any path with 'next/')
+        if (lowerContent.contains("__next") || lowerContent.contains("_next/static") || 
+            lowerContent.contains("nextjs") || lowerContent.contains("_next/data")) {
             return ArchitectureInfo.CMS.NEXTJS;
         }
         
@@ -853,8 +937,8 @@ public class JavaScriptSecurityAnalyzer {
         }
         
         // Laravel detection
-        if (lowerContent.contains("laravel") || lowerContent.contains("csrf-token") || 
-            lowerContent.contains("laravel_") || lowerContent.contains("blade")) {
+        if (lowerContent.contains("laravel") || lowerContent.contains("laravel_") ||
+            (lowerContent.contains("csrf-token") && lowerContent.contains("blade"))) {
             return ArchitectureInfo.CMS.LARAVEL;
         }
         
@@ -865,13 +949,15 @@ public class JavaScriptSecurityAnalyzer {
         }
         
         // Rails detection
-        if (lowerContent.contains("rails") || lowerContent.contains("ruby") || 
-            lowerContent.contains("authenticity_token")) {
+        if (lowerContent.contains("rails") || lowerContent.contains("ruby-on-rails") ||
+            lowerContent.contains("authenticity_token") || lowerContent.contains("turbolinks")) {
             return ArchitectureInfo.CMS.RAILS;
         }
         
         // Strapi detection
-        if (lowerContent.contains("strapi") || lowerContent.contains("/api/")) {
+        if (lowerContent.contains("strapi") || 
+            (lowerContent.contains("/api/") && lowerContent.contains("content-type")
+             && lowerContent.contains("entries"))) {
             return ArchitectureInfo.CMS.STRAPI;
         }
         
@@ -880,9 +966,9 @@ public class JavaScriptSecurityAnalyzer {
             return ArchitectureInfo.CMS.CONTENTFUL;
         }
         
-        // Custom/API-first indicators
-        if (lowerContent.contains("/api/v") || lowerContent.contains("rest") || 
-            lowerContent.contains("graphql")) {
+        // Custom/API-first indicators (require '/api/v' specifically, not just 'rest' or 'graphql')
+        if (lowerContent.contains("/api/v1") || lowerContent.contains("/api/v2")
+                || lowerContent.contains("graphql")) {
             return ArchitectureInfo.CMS.CUSTOM;
         }
         
@@ -894,8 +980,8 @@ public class JavaScriptSecurityAnalyzer {
         if (lowerContent.contains("redux") || lowerContent.contains("store.dispatch")) return ArchitectureInfo.StateManagement.REDUX;
         if (lowerContent.contains("vuex") || lowerContent.contains("$store")) return ArchitectureInfo.StateManagement.VUEX;
         if (lowerContent.contains("mobx")) return ArchitectureInfo.StateManagement.MOBX;
-        if (lowerContent.contains("usecontext") || lowerContent.contains("context")) return ArchitectureInfo.StateManagement.CONTEXT_API;
-        return ArchitectureInfo.StateManagement.VANILLA;
+        if (lowerContent.contains("usecontext") || lowerContent.contains("createcontext")) return ArchitectureInfo.StateManagement.CONTEXT_API;
+        return ArchitectureInfo.StateManagement.UNKNOWN;
     }
 
     private ArchitectureInfo.ArchitecturePattern detectArchitecturePattern(List<EndpointInfo> endpoints, String jsContent) {
@@ -1096,6 +1182,218 @@ public class JavaScriptSecurityAnalyzer {
         }
         
         return priority;
+    }
+
+    // ───────────────────────────────────────────────────────────
+    //  Schema Data Probing — attempts to fetch real data for
+    //  discovered schemas by correlating with known endpoints
+    // ───────────────────────────────────────────────────────────
+
+    /**
+     * Probes discovered database schemas by correlating them with API endpoints
+     * and making HTTP requests to retrieve actual data matching schema columns.
+     *
+     * @param schemas    Inferred database schemas from JS analysis
+     * @param endpoints  Discovered API endpoints from JS analysis
+     * @param baseUrl    The target site base URL
+     * @param progress   Optional progress callback
+     * @return Map of schema name to probe results
+     */
+    public Map<String, SchemaProbeResult> probeSchemaData(
+            List<DatabaseSchemaInfo> schemas,
+            List<EndpointInfo> endpoints,
+            String baseUrl,
+            Consumer<String> progress) {
+
+        Map<String, SchemaProbeResult> results = new LinkedHashMap<>();
+
+        for (DatabaseSchemaInfo schema : schemas) {
+            if (progress != null) {
+                progress.accept("Probing schema: " + schema.getTableName() + "…");
+            }
+
+            List<String> candidateUrls = buildCandidateUrls(schema, endpoints, baseUrl);
+            List<SchemaProbeResult.ProbeHit> hits = new ArrayList<>();
+
+            for (String url : candidateUrls) {
+                try {
+                    SchemaProbeResult.ProbeHit hit = probeUrlForSchema(url, schema);
+                    if (hit != null) {
+                        hits.add(hit);
+                    }
+                } catch (Exception ignored) {
+                    // continue to next URL
+                }
+            }
+
+            results.put(schema.getTableName(), new SchemaProbeResult(schema.getTableName(), hits));
+        }
+        return results;
+    }
+
+    /**
+     * Builds a ranked list of candidate URLs that might serve data for this schema.
+     */
+    private List<String> buildCandidateUrls(DatabaseSchemaInfo schema,
+                                             List<EndpointInfo> endpoints,
+                                             String baseUrl) {
+        // Use LinkedHashSet to preserve insertion order and deduplicate
+        Set<String> candidates = new LinkedHashSet<>();
+        String tableName = schema.getTableName();
+
+        // 1) Extract URLs from schema evidence (JS code context near the schema)
+        if (schema.getEvidence() != null) {
+            Matcher urlInCtx = Pattern.compile(
+                    "['\"`]((?:https?://[^'\"` ]+)|(?:/[a-zA-Z0-9/_.-]+[a-zA-Z0-9]))['\"`]")
+                    .matcher(schema.getEvidence());
+            while (urlInCtx.find()) {
+                String found = urlInCtx.group(1);
+                candidates.add(found.startsWith("http") ? found : resolveToBase(baseUrl, found));
+            }
+        }
+
+        // 2) Match endpoints whose path contains the table name
+        for (EndpointInfo ep : endpoints) {
+            String epUrl = ep.getUrl();
+            if (epUrl == null) continue;
+            String lower = epUrl.toLowerCase();
+            if (lower.contains(tableName.toLowerCase())) {
+                candidates.add(epUrl.startsWith("http") ? epUrl : resolveToBase(baseUrl, epUrl));
+            }
+        }
+
+        // 3) Match endpoints that share parameters with schema columns
+        Set<String> columns = schema.getColumns().keySet();
+        for (EndpointInfo ep : endpoints) {
+            if (ep.getParameters() == null) continue;
+            long overlap = ep.getParameters().stream()
+                    .filter(p -> columns.contains(p))
+                    .count();
+            if (overlap >= 2 || (overlap >= 1 && columns.size() <= 3)) {
+                String epUrl = ep.getUrl();
+                candidates.add(epUrl.startsWith("http") ? epUrl : resolveToBase(baseUrl, epUrl));
+            }
+        }
+
+        // 4) REST convention URLs based on table name
+        String base = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
+        candidates.add(base + "/api/" + tableName);
+        candidates.add(base + "/" + tableName);
+        // Try with dashes: requestpayload10 → request-payload-10
+        String dashed = tableName.replaceAll("(\\d+)$", "-$1")
+                .replaceAll("([a-z])([A-Z])", "$1-$2").toLowerCase();
+        if (!dashed.equals(tableName)) {
+            candidates.add(base + "/api/" + dashed);
+        }
+
+        return new ArrayList<>(candidates);
+    }
+
+    /**
+     * Resolves a relative path against the base URL.
+     */
+    private String resolveToBase(String baseUrl, String path) {
+        try {
+            URI base = new URI(baseUrl);
+            String root = base.getScheme() + "://" + base.getHost()
+                    + (base.getPort() > 0 ? ":" + base.getPort() : "");
+            return path.startsWith("/") ? root + path : root + "/" + path;
+        } catch (Exception e) {
+            return baseUrl + (path.startsWith("/") ? "" : "/") + path;
+        }
+    }
+
+    /**
+     * Probes a single URL and checks if the JSON response contains keys matching
+     * the schema's columns. Returns null if no match or non-JSON response.
+     */
+    private SchemaProbeResult.ProbeHit probeUrlForSchema(String url, DatabaseSchemaInfo schema) {
+        try {
+            HttpURLConnection conn = openConnection(url);
+            conn.setRequestMethod("GET");
+            conn.setConnectTimeout(6000);
+            conn.setReadTimeout(6000);
+            conn.setInstanceFollowRedirects(true);
+            conn.setRequestProperty("User-Agent",
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
+            conn.setRequestProperty("Accept", "application/json, text/plain, */*");
+
+            int code = conn.getResponseCode();
+            if (code != 200) return null;
+
+            String contentType = conn.getContentType();
+            if (contentType != null && !contentType.contains("json") && !contentType.contains("javascript")
+                    && !contentType.contains("text/plain")) {
+                return null;
+            }
+
+            StringBuilder body = new StringBuilder();
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(conn.getInputStream()))) {
+                String line;
+                int total = 0;
+                while ((line = reader.readLine()) != null && total < 500_000) {
+                    body.append(line).append("\n");
+                    total += line.length();
+                }
+            }
+
+            String json = body.toString().trim();
+            if (json.isEmpty() || (!json.startsWith("{") && !json.startsWith("["))) {
+                return null;
+            }
+
+            // Extract JSON key-value pairs that match schema columns
+            Map<String, String> matched = extractMatchingValues(json, schema.getColumns().keySet());
+            int totalKeys = countJsonKeys(json);
+
+            if (!matched.isEmpty()) {
+                return new SchemaProbeResult.ProbeHit(url, code, matched, totalKeys);
+            }
+        } catch (Exception ignored) {
+            // timeout, connection refused, SSL error, etc.
+        }
+        return null;
+    }
+
+    /**
+     * Extracts values from JSON text for keys that match the given column names.
+     * Uses regex-based extraction (no external JSON library).
+     */
+    private Map<String, String> extractMatchingValues(String json, Set<String> columnNames) {
+        Map<String, String> matched = new LinkedHashMap<>();
+
+        for (String col : columnNames) {
+            // Match "columnName": value  or  "columnName" : value
+            // Value can be: string, number, boolean, null, or start of object/array
+            Pattern p = Pattern.compile(
+                    "\"" + Pattern.quote(col) + "\"\\s*:\\s*" +
+                    "(?:\"([^\"]{0,500})\"|(-?[\\d.]+(?:[eE][+-]?\\d+)?)|" +
+                    "(true|false|null)|(\\{[^}]{0,300}\\}?)|(\\[[^\\]]{0,300}\\]?))",
+                    Pattern.CASE_INSENSITIVE);
+            Matcher m = p.matcher(json);
+            if (m.find()) {
+                String val;
+                if (m.group(1) != null) val = m.group(1);      // string
+                else if (m.group(2) != null) val = m.group(2);  // number
+                else if (m.group(3) != null) val = m.group(3);  // bool/null
+                else if (m.group(4) != null) val = m.group(4);  // object
+                else if (m.group(5) != null) val = m.group(5);  // array
+                else continue;
+                matched.put(col, val);
+            }
+        }
+        return matched;
+    }
+
+    /**
+     * Counts total keys in a JSON response (heuristic: count "key": patterns).
+     */
+    private int countJsonKeys(String json) {
+        Matcher m = Pattern.compile("\"[a-zA-Z_][a-zA-Z0-9_]*\"\\s*:").matcher(json);
+        int count = 0;
+        while (m.find()) count++;
+        return count;
     }
 
     public void shutdown() {

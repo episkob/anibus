@@ -1,9 +1,14 @@
 package it.r2u.anibus.service;
 
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -54,6 +59,7 @@ public class WebSourceAnalyzer {
             String urlStr = protocol + "://" + host + (port == 80 || port == 443 ? "" : ":" + port);
             
             HttpURLConnection conn = (HttpURLConnection) new URI(urlStr).toURL().openConnection();
+            installTrustAll(conn);
             conn.setRequestMethod("GET");
             conn.setConnectTimeout(TIMEOUT);
             conn.setReadTimeout(TIMEOUT);
@@ -195,6 +201,7 @@ public class WebSourceAnalyzer {
         for (String path : commonPaths) {
             try {
                 HttpURLConnection conn = (HttpURLConnection) new URI(baseUrl + path).toURL().openConnection();
+                installTrustAll(conn);
                 conn.setRequestMethod("GET");
                 conn.setConnectTimeout(TIMEOUT);
                 conn.setReadTimeout(TIMEOUT);
@@ -222,5 +229,24 @@ public class WebSourceAnalyzer {
         }
         
         return leaks;
+    }
+
+    /**
+     * Installs a trust-all SSL context on HTTPS connections for scanning purposes.
+     */
+    private static void installTrustAll(HttpURLConnection conn) {
+        if (conn instanceof HttpsURLConnection httpsConn) {
+            try {
+                TrustManager[] trustAll = { new X509TrustManager() {
+                    public X509Certificate[] getAcceptedIssuers() { return null; }
+                    public void checkClientTrusted(X509Certificate[] c, String t) {}
+                    public void checkServerTrusted(X509Certificate[] c, String t) {}
+                }};
+                SSLContext sc = SSLContext.getInstance("TLS");
+                sc.init(null, trustAll, new java.security.SecureRandom());
+                httpsConn.setSSLSocketFactory(sc.getSocketFactory());
+                httpsConn.setHostnameVerifier((h, s) -> true);
+            } catch (Exception ignored) {}
+        }
     }
 }

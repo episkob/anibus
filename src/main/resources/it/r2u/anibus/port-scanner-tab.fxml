@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ProgressBar?>
+<?import javafx.scene.control.Spinner?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="it.r2u.anibus.PortScannerController"
+      spacing="10" styleClass="content-area">
+    <padding><Insets top="10" right="10" bottom="10" left="10" /></padding>
+    <children>
+
+        <!-- Input Card -->
+        <VBox spacing="10" styleClass="card">
+            <children>
+                <HBox spacing="12" alignment="CENTER_LEFT">
+                    <children>
+                        <Label text="Port Scanner" styleClass="title-label" />
+                        <Region HBox.hgrow="ALWAYS" />
+                        <Label text="SCAN TYPE" styleClass="subtitle-label" />
+                        <ComboBox fx:id="scanTypeComboBox" prefWidth="160" />
+                    </children>
+                </HBox>
+
+                <!-- Host & Port Range & Threads in one row -->
+                <HBox spacing="12" alignment="BOTTOM_LEFT">
+                    <children>
+                        <VBox spacing="3" HBox.hgrow="ALWAYS">
+                            <children>
+                                <Label text="TARGET HOST" styleClass="subtitle-label" />
+                                <TextField fx:id="hostTextField"
+                                           promptText="hostname or IP address" />
+                            </children>
+                        </VBox>
+                        <VBox spacing="3" prefWidth="150">
+                            <children>
+                                <Label text="PORT RANGE" styleClass="subtitle-label" />
+                                <TextField fx:id="portsTextField"
+                                           promptText="e.g. 1-65535" />
+                            </children>
+                        </VBox>
+                        <VBox spacing="3" prefWidth="80">
+                            <children>
+                                <Label text="THREADS" styleClass="subtitle-label" />
+                                <Spinner fx:id="threadSpinner" editable="true" />
+                            </children>
+                        </VBox>
+                    </children>
+                </HBox>
+
+                <Label fx:id="resolvedHostLabel" text="" styleClass="host-resolved-label" />
+
+                <!-- Actions -->
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <children>
+                        <Button fx:id="scanButton" onAction="#onScanButtonClick"
+                                text="Start Scan" styleClass="scan-button" />
+                        <Button fx:id="stopButton" onAction="#onStopButtonClick"
+                                text="Stop" disable="true" styleClass="stop-button" />
+                        <Region HBox.hgrow="ALWAYS" />
+                        <ProgressBar fx:id="progressBar" visible="false"
+                                     prefWidth="140" prefHeight="6" />
+                    </children>
+                </HBox>
+            </children>
+        </VBox>
+
+        <!-- Host Info Card -->
+        <VBox fx:id="infoCard" spacing="12" styleClass="card" visible="false">
+            <children>
+                <Label text="Host Information" styleClass="section-title" />
+                <HBox spacing="24">
+                    <children>
+                        <VBox spacing="4" styleClass="info-item">
+                            <children>
+                                <Label text="IP ADDRESS" styleClass="info-key" />
+                                <Label fx:id="infoIpLabel" text="-" styleClass="info-value" />
+                            </children>
+                        </VBox>
+                        <VBox spacing="4" styleClass="info-item">
+                            <children>
+                                <Label text="HOSTNAME" styleClass="info-key" />
+                                <Label fx:id="infoHostnameLabel" text="-" styleClass="info-value" />
+                            </children>
+                        </VBox>
+                        <VBox spacing="4" styleClass="info-item">
+                            <children>
+                                <Label text="SCAN TIME" styleClass="info-key" />
+                                <Label fx:id="infoScanTimeLabel" text="-" styleClass="info-value" />
+                            </children>
+                        </VBox>
+                        <VBox spacing="4" styleClass="info-item">
+                            <children>
+                                <Label text="PORTS SCANNED" styleClass="info-key" />
+                                <Label fx:id="infoPortsScannedLabel" text="-" styleClass="info-value" />
+                            </children>
+                        </VBox>
+                        <VBox spacing="4" styleClass="info-item">
+                            <children>
+                                <Label text="OPEN PORTS" styleClass="info-key" />
+                                <Label fx:id="infoOpenPortsLabel" text="-" styleClass="info-value" />
+                            </children>
+                        </VBox>
+                        <VBox spacing="4" styleClass="info-item">
+                            <children>
+                                <Label text="AVG LATENCY" styleClass="info-key" />
+                                <Label fx:id="infoAvgLatencyLabel" text="-" styleClass="info-value" />
+                            </children>
+                        </VBox>
+                    </children>
+                </HBox>
+            </children>
+        </VBox>
+
+        <!-- Console Tabs: switch between Live Log and Scan Output -->
+        <TabPane tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS" styleClass="anibus-tab-pane">
+            <tabs>
+                <Tab text="Live Log">
+                    <content>
+                        <VBox spacing="8" styleClass="card">
+                            <children>
+                                <Label text="Live Log" styleClass="section-title" />
+                                <TextArea fx:id="liveLogArea"
+                                    editable="false" wrapText="false"
+                                    styleClass="console-view"
+                                    VBox.vgrow="ALWAYS" />
+                            </children>
+                        </VBox>
+                    </content>
+                </Tab>
+
+                <Tab text="Console Output">
+                    <content>
+                        <VBox spacing="14" styleClass="card">
+                            <children>
+                                <HBox alignment="CENTER_LEFT" spacing="10">
+                                    <children>
+                                        <Label text="Console Output" styleClass="section-title" />
+                                        <Label fx:id="resultCountLabel" text="No results"
+                                               styleClass="counter-label" />
+                                        <Region HBox.hgrow="ALWAYS" />
+                                        <Button fx:id="exportButton" text="Export"
+                                                onAction="#onExportClick"
+                                                styleClass="secondary-button" disable="true" />
+                                        <Button fx:id="clearButton" text="Clear"
+                                                onAction="#onClearClick"
+                                                styleClass="secondary-button" disable="true" />
+                                    </children>
+                                </HBox>
+
+                                <TextArea fx:id="consoleTextArea"
+                                    editable="false" wrapText="false"
+                                    styleClass="console-view"
+                                    VBox.vgrow="ALWAYS" />
+                            </children>
+                        </VBox>
+                    </content>
+                </Tab>
+            </tabs>
+        </TabPane>
+
+    </children>
+</VBox>

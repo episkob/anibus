@@ -15,8 +15,6 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
 
 import java.net.URL;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.function.Consumer;
 
 /**
@@ -35,6 +33,11 @@ public class ScanActionHandler {
     private final Consumer<String> statusSetter;
     private final UIComponents uiComponents;
     private final URL cssUrl;
+    private Consumer<String> logCallback; // optional live-log sink
+
+    public void setLogCallback(Consumer<String> logCallback) {
+        this.logCallback = logCallback;
+    }
     
     public ScanActionHandler(
             ScanCoordinator scanCoordinator,
@@ -129,27 +132,38 @@ public class ScanActionHandler {
                 @Override
                 public void onScanStarted(String ip, String hostname, int totalPorts) {
                     infoCardManager.showInfoCard(ip, hostname, totalPorts);
+                    if (logCallback != null) logCallback.accept(
+                            "Scanning " + host + " (" + ip + ") – ports " + startPort + "–" + endPort);
+                    Platform.runLater(() -> consoleViewManager.writeHeader(host, ip, startPort, endPort));
                 }
                 
                 @Override
                 public void onResult(PortScanResult result) {
                     results.add(result);
                     consoleViewManager.appendToConsole(result);
+                    if (logCallback != null) {
+                        String svc = result.getService() != null ? result.getService() : "unknown";
+                        logCallback.accept("PORT " + result.getPort() + " OPEN — " + svc +
+                                " (" + result.getLatency() + " ms)");
+                    }
                 }
                 
                 @Override
                 public void onStatus(String message) {
                     statusSetter.accept(message);
+                    if (logCallback != null) logCallback.accept(message);
                 }
                 
                 @Override
                 public void onCompleted() {
                     infoCardManager.finalizeScanTime();
-                    analyzeSoftwareStackIfNeeded();
                     String prefix = scanCoordinator.getCurrentStatusPrefix();
                     String mode = scanCoordinator.getCurrentStrategyName();
-                    statusSetter.accept(prefix + " " + mode + " complete — " + 
-                        results.size() + " open port(s) found");
+                    String msg = prefix + " " + mode + " complete — " +
+                            results.size() + " open port(s) found";
+                    statusSetter.accept(msg);
+                    if (logCallback != null) logCallback.accept(msg);
+                    Platform.runLater(() -> consoleViewManager.updateConsoleWithAllResults(results));
                     resetUI();
                 }
                 
@@ -158,7 +172,10 @@ public class ScanActionHandler {
                     infoCardManager.finalizeScanTime();
                     String prefix = scanCoordinator.getCurrentStatusPrefix();
                     String mode = scanCoordinator.getCurrentStrategyName();
-                    statusSetter.accept(prefix + " " + mode + " stopped by user");
+                    String msg = prefix + " " + mode + " stopped by user";
+                    statusSetter.accept(msg);
+                    if (logCallback != null) logCallback.accept(msg);
+                    Platform.runLater(() -> consoleViewManager.updateConsoleWithAllResults(results));
                     resetUI();
                 }
                 
@@ -167,29 +184,13 @@ public class ScanActionHandler {
                     infoCardManager.finalizeScanTime();
                     String prefix = scanCoordinator.getCurrentStatusPrefix();
                     String mode = scanCoordinator.getCurrentStrategyName();
-                    statusSetter.accept(prefix + " " + mode + " failed: " + error);
+                    String msg = prefix + " " + mode + " failed: " + error;
+                    statusSetter.accept(msg);
+                    if (logCallback != null) logCallback.accept("ERROR: " + error);
                     resetUI();
                 }
             })
             .build();
-    }
-    
-    /**
-     * Analyze software stack for service detection scans.
-     */
-    private void analyzeSoftwareStackIfNeeded() {
-        if (results.isEmpty()) return;
-        
-        // Collect open ports with banners
-        Map<Integer, String> openPortsWithBanners = new HashMap<>();
-        for (PortScanResult result : results) {
-            String banner = result.getBanner() != null ? result.getBanner() : "";
-            banner = banner + " " + (result.getService() != null ? result.getService() : "");
-            openPortsWithBanners.put(result.getPort(), banner);
-        }
-        
-        // Software stack detection disabled by user request
-        // Could be re-enabled here if needed
     }
     
     /**

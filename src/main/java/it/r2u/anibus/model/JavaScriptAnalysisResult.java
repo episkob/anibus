@@ -17,6 +17,7 @@ public class JavaScriptAnalysisResult {
     private final ArchitectureInfo architecture;
     private final List<String> jsFiles;
     private final List<String> errors;
+    private final String htmlSource;
 
     public JavaScriptAnalysisResult(String targetUrl, long analysisTime,
                                   List<EndpointInfo> endpoints,
@@ -26,6 +27,19 @@ public class JavaScriptAnalysisResult {
                                   ArchitectureInfo architecture,
                                   List<String> jsFiles,
                                   List<String> errors) {
+        this(targetUrl, analysisTime, endpoints, dataStructures, databaseSchemas,
+                sensitiveInfo, architecture, jsFiles, errors, null);
+    }
+
+    public JavaScriptAnalysisResult(String targetUrl, long analysisTime,
+                                  List<EndpointInfo> endpoints,
+                                  List<DataStructureInfo> dataStructures,
+                                  List<DatabaseSchemaInfo> databaseSchemas,
+                                  List<WebSourceAnalyzer.LeakInfo> sensitiveInfo,
+                                  ArchitectureInfo architecture,
+                                  List<String> jsFiles,
+                                  List<String> errors,
+                                  String htmlSource) {
         this.targetUrl = targetUrl;
         this.analysisTime = analysisTime;
         this.endpoints = endpoints;
@@ -35,6 +49,7 @@ public class JavaScriptAnalysisResult {
         this.architecture = architecture;
         this.jsFiles = jsFiles;
         this.errors = errors;
+        this.htmlSource = htmlSource;
     }
 
     public String getTargetUrl() { return targetUrl; }
@@ -46,6 +61,7 @@ public class JavaScriptAnalysisResult {
     public ArchitectureInfo getArchitecture() { return architecture; }
     public List<String> getJsFiles() { return jsFiles; }
     public List<String> getErrors() { return errors; }
+    public String getHtmlSource() { return htmlSource; }
 
     public String getSummary() {
         try {

@@ -15,6 +15,10 @@ import java.nio.charset.StandardCharsets;
 public class EnhancedServiceDetector {
 
     private static final int TIMEOUT = 500;  // Longer timeout for service detection
+    
+    // Cached geolocation per host to avoid rate-limiting (ip-api.com allows 45 req/min)
+    private String lastGeoHost = null;
+    private GeolocationService.GeoInfo cachedGeoInfo = null;
 
     public PortScanResult detectService(String host, int port) {
         try (Socket socket = new Socket()) {
@@ -70,8 +74,12 @@ public class EnhancedServiceDetector {
                 }
             }
             
-            // 3. Geolocation (only for first scan to avoid rate limits)
-            GeolocationService.GeoInfo geoInfo = GeolocationService.getGeoInfo(host);
+            // 3. Geolocation (cached per host to avoid rate limits)
+            if (!host.equals(lastGeoHost)) {
+                lastGeoHost = host;
+                cachedGeoInfo = GeolocationService.getGeoInfo(host);
+            }
+            GeolocationService.GeoInfo geoInfo = cachedGeoInfo;
             if (geoInfo != null && !geoInfo.isPrivate()) {
                 enhancedBanner.append("\n").append(geoInfo.toString());
             }

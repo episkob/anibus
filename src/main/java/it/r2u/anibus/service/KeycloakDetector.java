@@ -4,10 +4,14 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.net.ssl.HttpsURLConnection;
 
 /**
  * Keycloak Detection and Key Extraction Service
@@ -26,6 +30,12 @@ public class KeycloakDetector {
         private List<String> exposedEndpoints;
         private boolean hasAdminConsole;
         private String adminUrl;
+        private boolean hasAccountConsole;
+        private String accountConsoleUrl;
+        private boolean selfRegistrationEnabled;
+        private boolean sslValid;
+        private String sslIssue;
+        private final List<String> securityWarnings = new ArrayList<>();
         
         public KeycloakInfo() {
             this.keys = new ArrayList<>();
@@ -44,6 +54,17 @@ public class KeycloakDetector {
         public void setHasAdminConsole(boolean hasAdminConsole) { this.hasAdminConsole = hasAdminConsole; }
         public String getAdminUrl() { return adminUrl; }
         public void setAdminUrl(String adminUrl) { this.adminUrl = adminUrl; }
+        public boolean hasAccountConsole() { return hasAccountConsole; }
+        public void setHasAccountConsole(boolean v) { this.hasAccountConsole = v; }
+        public String getAccountConsoleUrl() { return accountConsoleUrl; }
+        public void setAccountConsoleUrl(String url) { this.accountConsoleUrl = url; }
+        public boolean isSelfRegistrationEnabled() { return selfRegistrationEnabled; }
+        public void setSelfRegistrationEnabled(boolean v) { this.selfRegistrationEnabled = v; }
+        public boolean isSslValid() { return sslValid; }
+        public void setSslValid(boolean v) { this.sslValid = v; }
+        public String getSslIssue() { return sslIssue; }
+        public void setSslIssue(String v) { this.sslIssue = v; }
+        public List<String> getSecurityWarnings() { return securityWarnings; }
         
         @Override
         public String toString() {
@@ -63,7 +84,26 @@ public class KeycloakDetector {
             }
             
             if (hasAdminConsole && adminUrl != null) {
-                sb.append("  [WARN] Admin Console: ").append(adminUrl).append("\n");
+                sb.append("  [WARN] Admin Console EXPOSED: ").append(adminUrl).append("\n");
+            }
+            
+            if (hasAccountConsole && accountConsoleUrl != null) {
+                sb.append("  [WARN] Account Console EXPOSED: ").append(accountConsoleUrl).append("\n");
+            }
+            
+            if (selfRegistrationEnabled) {
+                sb.append("  [CRITICAL] Self-Registration is ENABLED — anyone can create accounts!\n");
+            }
+            
+            if (!sslValid && sslIssue != null) {
+                sb.append("  [WARN] SSL Certificate Issue: ").append(sslIssue).append("\n");
+            }
+            
+            if (!securityWarnings.isEmpty()) {
+                sb.append("  [SECURITY WARNINGS]\n");
+                for (String warn : securityWarnings) {
+                    sb.append("    ⚠ ").append(warn).append("\n");
+                }
             }
             
             if (!exposedEndpoints.isEmpty()) {
@@ -150,6 +190,13 @@ public class KeycloakDetector {
         extractKeysFromJavaScript(baseUrl, info);
         extractKeysFromRealmConfig(baseUrl, info);
         extractKeysFromWellKnown(baseUrl, info);
+        
+        // Enhanced checks
+        checkAdminConsole(baseUrl, info);
+        checkAccountConsole(baseUrl, info);
+        checkSelfRegistration(baseUrl, info);
+        checkSslCertificate(host, port, info);
+        extractVersionFromHtml(baseUrl, info);
         
         return info;
     }
@@ -417,20 +464,212 @@ public class KeycloakDetector {
      * Extract keys from config files
      */
     private static void extractKeysFromConfig(String content, String url, KeycloakInfo info) {
-        // Client credentials
         Pattern credentialsPattern = Pattern.compile("\"credentials\"\\s*:\\s*\\{[^}]*\"secret\"\\s*:\\s*\"([^\"]+)\"");
         Matcher matcher = credentialsPattern.matcher(content);
-        
         if (matcher.find()) {
             String secret = matcher.group(1);
             ExtractedKey key = new ExtractedKey("client_secret", secret, url);
             info.getKeys().add(key);
         }
-        
-        // Also extract using generic method
         extractKeysFromContent(content, url, info);
     }
-    
+
+    // ═══════════════════════════════════════════════════════════
+    //  Enhanced Keycloak Security Checks
+    // ═══════════════════════════════════════════════════════════
+
+    /**
+     * Check if Admin Console is publicly accessible.
+     */
+    private static void checkAdminConsole(String baseUrl, KeycloakInfo info) {
+        String[] adminPaths = {
+            "/keycloak/admin/", "/auth/admin/", "/admin/",
+            "/keycloak/admin/master/console/", "/auth/admin/master/console/"
+        };
+        for (String path : adminPaths) {
+            try {
+                String url = baseUrl + path;
+                String content = fetchUrl(url);
+                if (content != null) {
+                    String lower = content.toLowerCase();
+                    if (lower.contains("keycloak") || lower.contains("admin console")
+                            || lower.contains("sign in") || lower.contains("login-actions")) {
+                        info.setHasAdminConsole(true);
+                        info.setAdminUrl(url);
+                        info.getExposedEndpoints().add(url);
+                        info.getSecurityWarnings().add(
+                            "Admin Console is publicly accessible at " + url
+                            + " — restrict via reverse proxy / IP allowlist");
+                        return;
+                    }
+                }
+            } catch (Exception ignored) {}
+        }
+    }
+
+    /**
+     * Check if Account Console is publicly accessible for each realm.
+     */
+    private static void checkAccountConsole(String baseUrl, KeycloakInfo info) {
+        String[] realms = {"master", "main", "default", "demo", "ready2tools"};
+        String[] bases  = {"/keycloak/realms/", "/auth/realms/", "/realms/"};
+        for (String bp : bases) {
+            for (String realm : realms) {
+                try {
+                    String url = baseUrl + bp + realm + "/account/";
+                    String content = fetchUrl(url);
+                    if (content != null) {
+                        String lower = content.toLowerCase();
+                        if (lower.contains("account console") || lower.contains("account management")
+                                || lower.contains("keycloak")) {
+                            info.setHasAccountConsole(true);
+                            info.setAccountConsoleUrl(url);
+                            info.getExposedEndpoints().add(url);
+                            info.getSecurityWarnings().add(
+                                "Account Console exposed for realm '" + realm + "' at " + url);
+                            return;
+                        }
+                    }
+                } catch (Exception ignored) {}
+            }
+        }
+    }
+
+    /**
+     * Check if self-registration is enabled on any discovered realm.
+     */
+    private static void checkSelfRegistration(String baseUrl, KeycloakInfo info) {
+        String[] realms = {"master", "main", "default", "demo", "ready2tools"};
+        String[] bases  = {"/keycloak/realms/", "/auth/realms/", "/realms/"};
+        for (String bp : bases) {
+            for (String realm : realms) {
+                try {
+                    // The registration page returns HTTP 200 when self-reg is on
+                    String regUrl = baseUrl + bp + realm + "/login-actions/registration";
+                    HttpURLConnection conn = openConnection(regUrl);
+                    conn.setRequestMethod("GET");
+                    conn.setConnectTimeout(TIMEOUT);
+                    conn.setReadTimeout(TIMEOUT);
+                    conn.setInstanceFollowRedirects(true);
+                    conn.setRequestProperty("User-Agent", "Mozilla/5.0");
+                    int code = conn.getResponseCode();
+                    if (code == 200) {
+                        StringBuilder body = new StringBuilder();
+                        try (BufferedReader r = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+                            String line;
+                            while ((line = r.readLine()) != null && body.length() < 50_000) body.append(line);
+                        }
+                        String lower = body.toString().toLowerCase();
+                        if (lower.contains("register") || lower.contains("sign up")
+                                || lower.contains("create account")
+                                || lower.contains("kc-register-form")) {
+                            info.setSelfRegistrationEnabled(true);
+                            info.getSecurityWarnings().add(
+                                "Self-registration is ENABLED on realm '" + realm
+                                + "' — anyone can create accounts");
+                            return;
+                        }
+                    }
+                    conn.disconnect();
+                } catch (Exception ignored) {}
+            }
+        }
+    }
+
+    /**
+     * Validate SSL certificate (expiry, issuer, self-signed).
+     */
+    private static void checkSslCertificate(String host, int port, KeycloakInfo info) {
+        try {
+            URI uri = new URI("https://" + host + ":" + port);
+            HttpURLConnection raw = (HttpURLConnection) uri.toURL().openConnection();
+            if (!(raw instanceof HttpsURLConnection httpsConn)) {
+                return; // not HTTPS
+            }
+            // Use default trust-manager so we can detect real cert issues
+            httpsConn.setConnectTimeout(TIMEOUT);
+            httpsConn.setReadTimeout(TIMEOUT);
+            httpsConn.setRequestProperty("User-Agent", "Mozilla/5.0");
+            try {
+                httpsConn.connect();
+                Certificate[] certs = httpsConn.getServerCertificates();
+                if (certs.length > 0 && certs[0] instanceof X509Certificate x509) {
+                    Date now = new Date();
+                    if (now.after(x509.getNotAfter())) {
+                        info.setSslValid(false);
+                        info.setSslIssue("Certificate EXPIRED on " + x509.getNotAfter());
+                        info.getSecurityWarnings().add("SSL certificate expired: " + x509.getNotAfter());
+                    } else if (now.before(x509.getNotBefore())) {
+                        info.setSslValid(false);
+                        info.setSslIssue("Certificate not yet valid (starts " + x509.getNotBefore() + ")");
+                    } else {
+                        info.setSslValid(true);
+                        // Check if self-signed
+                        if (x509.getIssuerX500Principal().equals(x509.getSubjectX500Principal())) {
+                            info.setSslIssue("Self-signed certificate");
+                            info.getSecurityWarnings().add(
+                                "Self-signed SSL certificate — traffic can be MITM-intercepted");
+                        }
+                    }
+                }
+                httpsConn.disconnect();
+            } catch (javax.net.ssl.SSLHandshakeException e) {
+                info.setSslValid(false);
+                info.setSslIssue("SSL handshake failed: " + e.getMessage());
+                info.getSecurityWarnings().add("SSL handshake failure (self-signed / expired / mismatched CN)");
+            }
+        } catch (Exception ignored) {}
+    }
+
+    /**
+     * Try to extract Keycloak version from HTML pages or server headers.
+     */
+    private static void extractVersionFromHtml(String baseUrl, KeycloakInfo info) {
+        if (info.getVersion() != null) return; // already found
+        String[] paths = {
+            "/keycloak/", "/auth/", "/keycloak/admin/", "/auth/admin/",
+            "/keycloak/welcome-content/", "/auth/welcome-content/"
+        };
+        Pattern[] versionPatterns = {
+            Pattern.compile("Keycloak[\\s\\-/]v?(\\d+\\.\\d+\\.\\d+)", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("\"version\"\\s*:\\s*\"(\\d+\\.\\d+\\.\\d+)\""),
+            Pattern.compile("kc-logo-text[^>]*>[^<]*?(\\d+\\.\\d+\\.\\d+)", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("/resources/(\\d+\\.\\d+\\.\\d+)/")
+        };
+        for (String path : paths) {
+            try {
+                String content = fetchUrl(baseUrl + path);
+                if (content == null) continue;
+                for (Pattern p : versionPatterns) {
+                    Matcher m = p.matcher(content);
+                    if (m.find()) {
+                        info.setVersion(m.group(1));
+                        return;
+                    }
+                }
+            } catch (Exception ignored) {}
+        }
+    }
+
+    /**
+     * Opens an HTTP(S) connection with SSL trust-all for scanning.
+     */
+    private static HttpURLConnection openConnection(String url) throws Exception {
+        HttpURLConnection conn = (HttpURLConnection) new URI(url).toURL().openConnection();
+        if (conn instanceof HttpsURLConnection httpsConn) {
+            javax.net.ssl.TrustManager[] trustAll = {new javax.net.ssl.X509TrustManager() {
+                public java.security.cert.X509Certificate[] getAcceptedIssuers() { return null; }
+                public void checkClientTrusted(java.security.cert.X509Certificate[] c, String t) {}
+                public void checkServerTrusted(java.security.cert.X509Certificate[] c, String t) {}
+            }};
+            javax.net.ssl.SSLContext sc = javax.net.ssl.SSLContext.getInstance("TLS");
+            sc.init(null, trustAll, new java.security.SecureRandom());
+            httpsConn.setSSLSocketFactory(sc.getSocketFactory());
+            httpsConn.setHostnameVerifier((h, s) -> true);
+        }
+        return conn;
+    }
+
     /**
      * Fetch URL content
      */

@@ -257,26 +257,27 @@ public class ConsoleViewManager {
     }
     
     /**
+     * Writes a scan-start header to the console (called before first result arrives).
+     */
+    public void writeHeader(String host, String ip, int startPort, int endPort) {
+        if (consoleTextArea == null) return;
+        consoleTextArea.setText(
+            "╔══════════════════════════════════════════════════════╗\n" +
+            "║                  PORT SCAN RESULTS                 ║\n" +
+            "╚══════════════════════════════════════════════════════╝\n\n" +
+            "  Target:  " + host + "  (" + ip + ")\n" +
+            "  Range:   " + startPort + "–" + endPort + "\n\n"
+        );
+    }
+
+    /**
      * Appends a single result to console (for live updates during scanning).
      */
     public void appendToConsole(PortScanResult result) {
         if (consoleTextArea == null || !isConsoleView) return;
-        
+
         Platform.runLater(() -> {
-            String current = consoleTextArea.getText();
-            if (current.isEmpty()) {
-                // First result - add header
-                consoleTextArea.setText(
-                    "═══════════════════════════════════════════════════════════════════════\n" +
-                    "                        ANIBUS SCAN RESULTS                            \n" +
-                    "═══════════════════════════════════════════════════════════════════════\n\n" +
-                    formatConsoleResult(result)
-                );
-            } else {
-                consoleTextArea.appendText(formatConsoleResult(result));
-            }
-            
-            // Auto-scroll to bottom
+            consoleTextArea.appendText(formatConsoleResult(result));
             consoleTextArea.setScrollTop(Double.MAX_VALUE);
         });
     }

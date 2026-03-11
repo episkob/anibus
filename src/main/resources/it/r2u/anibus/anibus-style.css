@@ -30,6 +30,47 @@
     -apple-surface:     #1C1C1E;
 }
 
+/* ── TabPane (Anibus dark theme) ─────────────────────── */
+.anibus-tab-pane > .tab-header-area {
+    -fx-padding: 0;
+}
+
+.anibus-tab-pane > .tab-header-area > .tab-header-background {
+    -fx-background-color: #1C1C1E;
+}
+
+.anibus-tab-pane > .tab-header-area > .headers-region > .tab {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-background-radius: 0;
+    -fx-padding: 10 24;
+    -fx-border-color: transparent transparent #38383A transparent;
+    -fx-border-width: 0 0 2 0;
+}
+
+.anibus-tab-pane > .tab-header-area > .headers-region > .tab .tab-label {
+    -fx-text-fill: #8E8E93;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+}
+
+.anibus-tab-pane > .tab-header-area > .headers-region > .tab:selected {
+    -fx-border-color: transparent transparent #0A84FF transparent;
+}
+
+.anibus-tab-pane > .tab-header-area > .headers-region > .tab:selected .tab-label {
+    -fx-text-fill: #0A84FF;
+}
+
+.anibus-tab-pane > .tab-header-area > .headers-region > .tab:hover .tab-label {
+    -fx-text-fill: #EBEBF5;
+}
+
+.anibus-tab-pane > .tab-content-area {
+    -fx-background-color: #000000;
+    -fx-padding: 0;
+}
+
 /* ── Navigation Bar (frosted glass) ──────────────────── */
 .nav-bar {
     -fx-background-color: rgba(28,28,30,0.92);
