@@ -183,6 +183,27 @@ cd anibus
 mvnw.cmd javafx:run
 ```
 
+На Linux (Wayland + XWayland):
+
+JavaFX использует бэкенд GTK/X11 и требует переменную `DISPLAY`. На Wayland-десктопах (GNOME, KDE) обычно работает XWayland на `:0`.
+
+```bash
+# 1. Разрешить локальным процессам доступ к X-дисплею (один раз за сессию)
+xhost +local:
+
+# 2. Запуск с указанием DISPLAY
+DISPLAY=:0 ./mvnw javafx:run
+```
+
+Если VS Code (или другая IDE) запущен через **Flatpak**, песочница не наследует `DISPLAY`. Используйте `flatpak-spawn` для вызова `xhost` на хосте:
+
+```bash
+flatpak-spawn --host xhost +local:
+DISPLAY=:0 ./mvnw javafx:run
+```
+
+> **Примечание:** предупреждения GTK вида `Failed to load module "canberra-gtk-module"` — косметические и не влияют на работу приложения.
+
 ---
 
 ## Использование

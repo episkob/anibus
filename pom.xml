@@ -6,11 +6,10 @@
 
     <groupId>it.r2u</groupId>
     <artifactId>anibus</artifactId>
-    <version>1.3.0</version>
+    <version>1.4.0</version>
 
     <properties>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
+        <maven.compiler.release>21</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <javafx.version>21.0.5</javafx.version>
     </properties>
@@ -41,8 +40,7 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.11.0</version>
                 <configuration>
-                    <source>${maven.compiler.source}</source>
-                    <target>${maven.compiler.target}</target>
+                    <release>${maven.compiler.release}</release>
                 </configuration>
             </plugin>
             <plugin>
@@ -50,7 +48,10 @@
                 <artifactId>javafx-maven-plugin</artifactId>
                 <version>0.0.8</version>
                 <configuration>
-                    <mainClass>it.r2u.anibus.AnibusLauncher</mainClass>
+                    <mainClass>it.r2u.anibus/it.r2u.anibus.AnibusLauncher</mainClass>
+                    <options>
+                        <option>-Djdk.gtk.verbose=false</option>
+                    </options>
                 </configuration>
                 <executions>
                     <execution>

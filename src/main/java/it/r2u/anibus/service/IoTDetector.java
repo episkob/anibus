@@ -1,6 +1,9 @@
 package it.r2u.anibus.service;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.Socket;
 import java.net.URI;
@@ -28,7 +31,7 @@ public class IoTDetector {
         private boolean hasRTSPStream;
         private String rtspUrl;
         private boolean hasONVIF;
-        private List<String> vulnerabilities;
+        private final List<String> vulnerabilities;
         private String additionalInfo;
         
         public IoTDevice() {
@@ -119,29 +122,22 @@ public class IoTDetector {
         IoTDevice device = null;
         
         // Port-specific detection
-        if (port == 554) {
-            device = detectRTSPCamera(host, port, banner);
-        } else if (port == 80 || port == 8080 || port == 8081 || port == 8000) {
-            device = detectWebCamera(host, port, banner);
-        } else if (port == 37777) {
-            device = detectDahuaCamera(host, port, banner);
-        } else if (port == 34567) {
-            device = detectXiongmaiCamera(host, port, banner);
-        } else if (port == 9527) {
-            device = detectGossipCamera(host, port, banner);
-        } else if (port == 5000 || port == 5001) {
-            device = detectSynologyNAS(host, port, banner);
-        } else if (port == 8443 || port == 443) {
-            device = detectWebCamera(host, port, banner);
-        } else if (port == 23 || port == 2323) {
-            device = detectTelnetIoT(host, port, banner);
-        } else if (port == 1883 || port == 8883) {
-            device = detectMQTTDevice(host, port, banner);
+        switch (port) {
+            case 554 -> device = detectRTSPCamera(host, port);
+            case 80, 8080, 8081, 8000 -> device = detectWebCamera(host, port);
+            case 37777 -> device = detectDahuaCamera(host);
+            case 34567 -> device = detectXiongmaiCamera(host);
+            case 9527 -> device = detectGossipCamera();
+            case 5000, 5001 -> device = detectSynologyNAS(host, port);
+            case 8443, 443 -> device = detectWebCamera(host, port);
+            case 23, 2323 -> device = detectTelnetIoT(port, banner);
+            case 1883, 8883 -> device = detectMQTTDevice(port);
+            default -> { }
         }
         
         // Banner-based detection even if port is not typical
         if (device == null && banner != null && !banner.isEmpty()) {
-            device = detectFromBanner(host, port, banner);
+            device = detectFromBanner(banner);
         }
         
         return device;
@@ -150,7 +146,7 @@ public class IoTDetector {
     /**
      * Detect RTSP camera (port 554)
      */
-    private static IoTDevice detectRTSPCamera(String host, int port, String banner) {
+    private static IoTDevice detectRTSPCamera(String host, int port) {
         IoTDevice device = new IoTDevice();
         device.setDeviceType("IP Camera (RTSP)");
         device.setHasRTSPStream(true);
@@ -225,7 +221,7 @@ public class IoTDetector {
     /**
      * Detect IP camera via web interface
      */
-    private static IoTDevice detectWebCamera(String host, int port, String banner) {
+    private static IoTDevice detectWebCamera(String host, int port) {
         IoTDevice device = null;
         
         try {
@@ -241,13 +237,12 @@ public class IoTDetector {
             conn.setInstanceFollowRedirects(true);
             
             // For HTTPS, trust all certificates
-            if (conn instanceof javax.net.ssl.HttpsURLConnection) {
-                javax.net.ssl.HttpsURLConnection httpsConn = (javax.net.ssl.HttpsURLConnection) conn;
+            if (conn instanceof javax.net.ssl.HttpsURLConnection httpsConn) {
                 javax.net.ssl.TrustManager[] trustAll = new javax.net.ssl.TrustManager[]{
                     new javax.net.ssl.X509TrustManager() {
-                        public java.security.cert.X509Certificate[] getAcceptedIssuers() { return null; }
-                        public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType) {}
-                        public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType) {}
+                        @Override public java.security.cert.X509Certificate[] getAcceptedIssuers() { return null; }
+                        @Override public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType) {}
+                        @Override public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType) {}
                     }
                 };
                 javax.net.ssl.SSLContext sc = javax.net.ssl.SSLContext.getInstance("TLS");
@@ -259,17 +254,17 @@ public class IoTDetector {
             int responseCode = conn.getResponseCode();
             
             // Read response
-            BufferedReader in = new BufferedReader(new InputStreamReader(
-                responseCode < 400 ? conn.getInputStream() : conn.getErrorStream()));
             StringBuilder content = new StringBuilder();
-            String line;
-            int totalSize = 0;
-            
-            while ((line = in.readLine()) != null && totalSize < MAX_RESPONSE_SIZE) {
-                content.append(line).append("\n");
-                totalSize += line.length();
+            try (BufferedReader in = new BufferedReader(new InputStreamReader(
+                responseCode < 400 ? conn.getInputStream() : conn.getErrorStream()))) {
+                String line;
+                int totalSize = 0;
+                
+                while ((line = in.readLine()) != null && totalSize < MAX_RESPONSE_SIZE) {
+                    content.append(line).append("\n");
+                    totalSize += line.length();
+                }
             }
-            in.close();
             
             String pageContent = content.toString().toLowerCase();
             String headers = getHeadersString(conn).toLowerCase();
@@ -410,7 +405,7 @@ public class IoTDetector {
             
             conn.disconnect();
             
-        } catch (Exception e) {
+        } catch (java.io.IOException | java.security.GeneralSecurityException | java.net.URISyntaxException e) {
             // Silently fail
         }
         
@@ -420,7 +415,7 @@ public class IoTDetector {
     /**
      * Detect Dahua camera on custom port 37777
      */
-    private static IoTDevice detectDahuaCamera(String host, int port, String banner) {
+    private static IoTDevice detectDahuaCamera(String host) {
         IoTDevice device = new IoTDevice();
         device.setDeviceType("IP Camera");
         device.setManufacturer("Dahua");
@@ -437,7 +432,7 @@ public class IoTDetector {
     /**
      * Detect Xiongmai/XMEye camera on port 34567
      */
-    private static IoTDevice detectXiongmaiCamera(String host, int port, String banner) {
+    private static IoTDevice detectXiongmaiCamera(String host) {
         IoTDevice device = new IoTDevice();
         device.setDeviceType("IP Camera/DVR");
         device.setManufacturer("Xiongmai (XMEye)");
@@ -453,7 +448,7 @@ public class IoTDetector {
     /**
      * Detect Gossip camera on port 9527
      */
-    private static IoTDevice detectGossipCamera(String host, int port, String banner) {
+    private static IoTDevice detectGossipCamera() {
         IoTDevice device = new IoTDevice();
         device.setDeviceType("IP Camera");
         device.setManufacturer("Generic (Gossip Protocol)");
@@ -464,7 +459,7 @@ public class IoTDetector {
     /**
      * Detect Synology NAS
      */
-    private static IoTDevice detectSynologyNAS(String host, int port, String banner) {
+    private static IoTDevice detectSynologyNAS(String host, int port) {
         IoTDevice device = new IoTDevice();
         device.setDeviceType("NAS (Network Attached Storage)");
         device.setManufacturer("Synology");
@@ -476,7 +471,7 @@ public class IoTDetector {
     /**
      * Detect IoT devices via Telnet
      */
-    private static IoTDevice detectTelnetIoT(String host, int port, String banner) {
+    private static IoTDevice detectTelnetIoT(int port, String banner) {
         if (banner == null || banner.isEmpty()) {
             return null;
         }
@@ -507,7 +502,7 @@ public class IoTDetector {
     /**
      * Detect MQTT broker (IoT communication protocol)
      */
-    private static IoTDevice detectMQTTDevice(String host, int port, String banner) {
+    private static IoTDevice detectMQTTDevice(int port) {
         IoTDevice device = new IoTDevice();
         device.setDeviceType("MQTT Broker (IoT Hub)");
         device.setAdditionalInfo("MQTT message broker on port " + port);
@@ -522,7 +517,7 @@ public class IoTDetector {
     /**
      * Detect from banner when port is not typical
      */
-    private static IoTDevice detectFromBanner(String host, int port, String banner) {
+    private static IoTDevice detectFromBanner(String banner) {
         String lower = banner.toLowerCase();
         
         if (lower.contains("hikvision")) {

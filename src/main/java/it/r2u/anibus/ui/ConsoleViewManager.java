@@ -1,13 +1,13 @@
 package it.r2u.anibus.ui;
 
-import it.r2u.anibus.model.PortScanResult;
-import javafx.application.Platform;
-import javafx.scene.control.TextArea;
-
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import it.r2u.anibus.model.PortScanResult;
+import javafx.application.Platform;
+import javafx.scene.control.TextArea;
 
 /**
  * Manages console view formatting and updates.
@@ -266,17 +266,28 @@ public class ConsoleViewManager {
             String current = consoleTextArea.getText();
             if (current.isEmpty()) {
                 // First result - add header
-                consoleTextArea.setText(
-                    "═══════════════════════════════════════════════════════════════════════\n" +
-                    "                        ANIBUS SCAN RESULTS                            \n" +
-                    "═══════════════════════════════════════════════════════════════════════\n\n" +
-                    formatConsoleResult(result)
-                );
+                consoleTextArea.setText("""
+                    ═══════════════════════════════════════════════════════════════════════
+                                            ANIBUS SCAN RESULTS                            
+                    ═══════════════════════════════════════════════════════════════════════
+
+                    """ + formatConsoleResult(result));
             } else {
                 consoleTextArea.appendText(formatConsoleResult(result));
             }
             
             // Auto-scroll to bottom
+            consoleTextArea.setScrollTop(Double.MAX_VALUE);
+        });
+    }
+    
+    /**
+     * Appends raw text to console output.
+     */
+    public void appendRawText(String text) {
+        if (consoleTextArea == null) return;
+        Platform.runLater(() -> {
+            consoleTextArea.appendText(text);
             consoleTextArea.setScrollTop(Double.MAX_VALUE);
         });
     }

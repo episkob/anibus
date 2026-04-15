@@ -1,12 +1,16 @@
 package it.r2u.anibus.service;
 
-import it.r2u.anibus.model.PortScanResult;
-import it.r2u.anibus.model.PortRegistry;
-
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+
+import it.r2u.anibus.model.PortRegistry;
+import it.r2u.anibus.model.PortScanResult;
 
 /**
  * Enhanced service detection with multiple probes and protocol analysis.
@@ -33,7 +37,7 @@ public class EnhancedServiceDetector {
             
             // Enhanced service detection
             if (banner != null && !banner.isEmpty()) {
-                serviceName = enhanceServiceName(serviceName, banner, port);
+                serviceName = enhanceServiceName(serviceName, banner);
                 protocol = enhanceProtocol(protocol, banner);
                 
                 // Detect security services (Cloudflare, WAF, CDN)
@@ -251,7 +255,7 @@ public class EnhancedServiceDetector {
         return read > 0 ? sanitize(new String(buffer, 0, read, StandardCharsets.UTF_8)) : "";
     }
 
-    private String enhanceServiceName(String baseName, String banner, int port) {
+    private String enhanceServiceName(String baseName, String banner) {
         String lower = banner.toLowerCase();
         
         // Web servers

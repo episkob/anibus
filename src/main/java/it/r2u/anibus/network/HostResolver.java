@@ -1,14 +1,16 @@
 package it.r2u.anibus.network;
 
-import javafx.application.Platform;
-import javafx.scene.control.Label;
-
+import java.io.IOException;
+import java.net.IDN;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
-import java.net.IDN;
+
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
+
+import javafx.application.Platform;
+import javafx.scene.control.Label;
 
 /**
  * Handles host resolution, SSL/TLS detection, and URL sanitization.
@@ -62,7 +64,7 @@ public class HostResolver {
                     result.append(IDN.toASCII(parts[i], IDN.ALLOW_UNASSIGNED));
                 }
                 cleaned = result.toString();
-            } catch (Exception ex) {
+            } catch (IllegalArgumentException ex) {
                 // If still fails, return as is
             }
         }
@@ -81,7 +83,7 @@ public class HostResolver {
                 socket.startHandshake();
                 return " [SSL/TLS ✓]";
             }
-        } catch (Exception e) {
+        } catch (IOException e) {
             return " [SSL/TLS ✗]";
         }
     }
@@ -102,27 +104,23 @@ public class HostResolver {
                 Platform.runLater(() -> {
                     // Check if it's an IDN domain by looking for xn-- prefix
                     if (host.contains("xn--")) {
-                        try {
-                            String unicodeDomain = IDN.toUnicode(host);
-                            String errorMsg = "Unable to resolve: " + unicodeDomain;
-                            
-                            // Check for common mistakes with Cyrillic domains
-                            if (unicodeDomain.endsWith(".ру")) {
-                                errorMsg += " (hint: did you mean .рф or .ru?)";
-                            } else if (unicodeDomain.endsWith(".ргф") || unicodeDomain.endsWith(".рг")) {
-                                errorMsg += " (hint: did you mean .рф?)";
-                            }
-                            
-                            resolvedHostLabel.setText(errorMsg);
-                        } catch (Exception e) {
-                            resolvedHostLabel.setText("Unable to resolve: " + host);
+                        String unicodeDomain = IDN.toUnicode(host);
+                        String errorMsg = "Unable to resolve: " + unicodeDomain;
+                        
+                        // Check for common mistakes with Cyrillic domains
+                        if (unicodeDomain.endsWith(".ру")) {
+                            errorMsg += " (hint: did you mean .рф or .ru?)";
+                        } else if (unicodeDomain.endsWith(".ргф") || unicodeDomain.endsWith(".рг")) {
+                            errorMsg += " (hint: did you mean .рф?)";
                         }
+                        
+                        resolvedHostLabel.setText(errorMsg);
                     } else {
                         resolvedHostLabel.setText("Unable to resolve: " + host);
                     }
                     if (onUpdate != null) onUpdate.run();
                 });
-            } catch (Exception ex) {
+            } catch (SecurityException ex) {
                 Platform.runLater(() -> {
                     resolvedHostLabel.setText("Error: " + ex.getMessage());
                     if (onUpdate != null) onUpdate.run();

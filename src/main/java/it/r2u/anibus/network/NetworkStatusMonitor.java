@@ -1,15 +1,15 @@
 package it.r2u.anibus.network;
 
-import javafx.application.Platform;
-import javafx.scene.control.Tooltip;
-import javafx.scene.shape.Circle;
-
 import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.URI;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
+import javafx.application.Platform;
+import javafx.scene.control.Tooltip;
+import javafx.scene.shape.Circle;
 
 /**
  * Monitors network connectivity status and updates UI indicator.
@@ -73,7 +73,7 @@ public class NetworkStatusMonitor {
             int code = conn.getResponseCode();
             conn.disconnect();
             if (code == 200) return NetworkStatus.CONNECTED;
-        } catch (Exception ignored) {
+        } catch (java.io.IOException ignored) {
             // Internet not available, check local network
         }
         
@@ -83,7 +83,7 @@ public class NetworkStatusMonitor {
             if (addr.isReachable(1000)) {
                 return NetworkStatus.LOCAL_ONLY;
             }
-        } catch (Exception ignored) {
+        } catch (java.io.IOException ignored) {
         }
         
         return NetworkStatus.DISCONNECTED;

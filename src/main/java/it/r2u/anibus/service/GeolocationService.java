@@ -17,7 +17,7 @@ public class GeolocationService {
     private static final int TIMEOUT = 5000;
     
     public static class GeoInfo {
-        private String ip;
+        private final String ip;
         private String country;
         private String city;
         private String isp;
@@ -145,7 +145,7 @@ public class GeolocationService {
         try {
             InetAddress addr = InetAddress.getByName(ip);
             return addr.isSiteLocalAddress() || addr.isLoopbackAddress() || addr.isLinkLocalAddress();
-        } catch (Exception e) {
+        } catch (java.net.UnknownHostException e) {
             return false;
         }
     }
@@ -174,21 +174,21 @@ public class GeolocationService {
             
             int responseCode = conn.getResponseCode();
             if (responseCode == 200) {
-                BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                StringBuilder response = new StringBuilder();
-                String line;
-                
-                while ((line = in.readLine()) != null) {
-                    response.append(line);
+                try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+                    StringBuilder response = new StringBuilder();
+                    String line;
+                    
+                    while ((line = in.readLine()) != null) {
+                        response.append(line);
+                    }
+                    
+                    parseIPApiResponse(response.toString(), geoInfo);
                 }
-                in.close();
-                
-                parseIPApiResponse(response.toString(), geoInfo);
             }
             
             conn.disconnect();
             
-        } catch (Exception e) {
+        } catch (java.io.IOException | java.net.URISyntaxException e) {
             // Silently fail, return partial info
         }
         

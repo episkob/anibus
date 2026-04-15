@@ -1,6 +1,5 @@
 package it.r2u.anibus.service;
 
-import javax.net.ssl.*;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
@@ -8,9 +7,18 @@ import java.net.URI;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 
 /**
  * Advanced HTTP Analyzer
@@ -22,13 +30,13 @@ public class HTTPAnalyzer {
     private static final int MAX_PAGE_SIZE = 5 * 1024 * 1024; // 5 MB
     
     public static class HTTPInfo {
-        private String url;
+        private final String url;
         private String pageTitle;
         private SSLCertInfo sslCert;
-        private Map<String, String> securityHeaders;
-        private Map<String, String> rawHeaders;
+        private final Map<String, String> securityHeaders;
+        private final Map<String, String> rawHeaders;
         private String cms;
-        private List<String> technologies;
+        private final List<String> technologies;
         private int statusCode;
         private String server;
         
@@ -186,14 +194,13 @@ public class HTTPAnalyzer {
             conn.setInstanceFollowRedirects(true);
             
             // For HTTPS, get SSL certificate info
-            if (isSSL && conn instanceof HttpsURLConnection) {
-                HttpsURLConnection httpsConn = (HttpsURLConnection) conn;
+            if (isSSL && conn instanceof HttpsURLConnection httpsConn) {
                 
                 // Trust all certificates for scanning purposes
                 TrustManager[] trustAll = new TrustManager[]{new X509TrustManager() {
-                    public X509Certificate[] getAcceptedIssuers() { return null; }
-                    public void checkClientTrusted(X509Certificate[] certs, String authType) {}
-                    public void checkServerTrusted(X509Certificate[] certs, String authType) {}
+                    @Override public X509Certificate[] getAcceptedIssuers() { return null; }
+                    @Override public void checkClientTrusted(X509Certificate[] certs, String authType) {}
+                    @Override public void checkServerTrusted(X509Certificate[] certs, String authType) {}
                 }};
                 
                 SSLContext sc = SSLContext.getInstance("TLS");
@@ -250,32 +257,32 @@ public class HTTPAnalyzer {
             
             // Read page content
             if (info.getStatusCode() == 200) {
-                BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                StringBuilder content = new StringBuilder();
-                String line;
-                int totalSize = 0;
-                
-                while ((line = in.readLine()) != null && totalSize < MAX_PAGE_SIZE) {
-                    content.append(line).append("\n");
-                    totalSize += line.length();
+                try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+                    StringBuilder content = new StringBuilder();
+                    String line;
+                    int totalSize = 0;
+                    
+                    while ((line = in.readLine()) != null && totalSize < MAX_PAGE_SIZE) {
+                        content.append(line).append("\n");
+                        totalSize += line.length();
+                    }
+                    
+                    String pageContent = content.toString();
+                    
+                    // Extract page title
+                    info.setPageTitle(extractPageTitle(pageContent));
+                    
+                    // Detect CMS
+                    info.setCms(detectCMS(pageContent));
+                    
+                    // Detect technologies
+                    detectTechnologies(info, pageContent);
                 }
-                in.close();
-                
-                String pageContent = content.toString();
-                
-                // Extract page title
-                info.setPageTitle(extractPageTitle(pageContent));
-                
-                // Detect CMS
-                info.setCms(detectCMS(pageContent, headers));
-                
-                // Detect technologies
-                detectTechnologies(info, pageContent);
             }
             
             conn.disconnect();
             
-        } catch (Exception e) {
+        } catch (java.io.IOException | java.security.GeneralSecurityException | java.net.URISyntaxException e) {
             // Silently fail
         }
         
@@ -342,7 +349,7 @@ public class HTTPAnalyzer {
     /**
      * Detect CMS from page content and headers
      */
-    private static String detectCMS(String content, Map<String, List<String>> headers) {
+    private static String detectCMS(String content) {
         String lowerContent = content.toLowerCase();
         
         // WordPress

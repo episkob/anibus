@@ -1,10 +1,17 @@
 package it.r2u.anibus.handlers;
 
-import it.r2u.anibus.coordinator.ScanCoordinator;
+import java.net.URL;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
+
 import it.r2u.anibus.coordinator.ScanContext;
+import it.r2u.anibus.coordinator.ScanCoordinator;
 import it.r2u.anibus.model.PortScanResult;
 import it.r2u.anibus.network.HostResolver;
 import it.r2u.anibus.service.PortScannerService;
+import it.r2u.anibus.service.SoftwareStackDetector;
 import it.r2u.anibus.ui.AlertHelper;
 import it.r2u.anibus.ui.ConsoleViewManager;
 import it.r2u.anibus.ui.InfoCardManager;
@@ -13,11 +20,6 @@ import javafx.collections.ObservableList;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
-
-import java.net.URL;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Consumer;
 
 /**
  * Handler for scan operations.
@@ -188,8 +190,12 @@ public class ScanActionHandler {
             openPortsWithBanners.put(result.getPort(), banner);
         }
         
-        // Software stack detection disabled by user request
-        // Could be re-enabled here if needed
+        // Detect software stack from ports and banners
+        List<String> detectedSoftware = SoftwareStackDetector.detectSoftwareStack(openPortsWithBanners);
+        if (!detectedSoftware.isEmpty()) {
+            String summary = SoftwareStackDetector.generateStackSummary(detectedSoftware);
+            Platform.runLater(() -> consoleViewManager.appendRawText("\n" + summary + "\n"));
+        }
     }
     
     /**

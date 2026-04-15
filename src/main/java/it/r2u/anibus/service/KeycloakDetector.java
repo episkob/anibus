@@ -22,8 +22,8 @@ public class KeycloakDetector {
         private boolean isKeycloak;
         private String version;
         private String realmUrl;
-        private List<ExtractedKey> keys;
-        private List<String> exposedEndpoints;
+        private final List<ExtractedKey> keys;
+        private final List<String> exposedEndpoints;
         private boolean hasAdminConsole;
         private String adminUrl;
         
@@ -87,8 +87,8 @@ public class KeycloakDetector {
     public static class ExtractedKey {
         private String keyType; // "public", "private", "client_secret"
         private String algorithm; // "RS256", "HS256", etc.
-        private String keyValue;
-        private String source; // URL where found
+        private final String keyValue;
+        private final String source; // URL where found
         private String context; // Additional context (realm name, client ID, etc.)
         
         public ExtractedKey(String keyType, String keyValue, String source) {
@@ -445,13 +445,12 @@ public class KeycloakDetector {
             conn.setInstanceFollowRedirects(true);
             
             // For HTTPS, trust all certificates
-            if (conn instanceof javax.net.ssl.HttpsURLConnection) {
-                javax.net.ssl.HttpsURLConnection httpsConn = (javax.net.ssl.HttpsURLConnection) conn;
+            if (conn instanceof javax.net.ssl.HttpsURLConnection httpsConn) {
                 javax.net.ssl.TrustManager[] trustAll = new javax.net.ssl.TrustManager[]{
                     new javax.net.ssl.X509TrustManager() {
-                        public java.security.cert.X509Certificate[] getAcceptedIssuers() { return null; }
-                        public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType) {}
-                        public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType) {}
+                        @Override public java.security.cert.X509Certificate[] getAcceptedIssuers() { return null; }
+                        @Override public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType) {}
+                        @Override public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType) {}
                     }
                 };
                 javax.net.ssl.SSLContext sc = javax.net.ssl.SSLContext.getInstance("TLS");
@@ -463,23 +462,23 @@ public class KeycloakDetector {
             int responseCode = conn.getResponseCode();
             
             if (responseCode == 200) {
-                BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                StringBuilder content = new StringBuilder();
-                String line;
-                int totalSize = 0;
-                
-                while ((line = in.readLine()) != null && totalSize < MAX_FILE_SIZE) {
-                    content.append(line).append("\n");
-                    totalSize += line.length();
+                try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+                    StringBuilder content = new StringBuilder();
+                    String line;
+                    int totalSize = 0;
+                    
+                    while ((line = in.readLine()) != null && totalSize < MAX_FILE_SIZE) {
+                        content.append(line).append("\n");
+                        totalSize += line.length();
+                    }
+                    conn.disconnect();
+                    
+                    return content.toString();
                 }
-                in.close();
-                conn.disconnect();
-                
-                return content.toString();
             }
             
             conn.disconnect();
-        } catch (Exception e) {
+        } catch (java.io.IOException | java.security.GeneralSecurityException | java.net.URISyntaxException e) {
             // Silently fail
         }
         

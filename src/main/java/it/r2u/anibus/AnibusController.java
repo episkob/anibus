@@ -56,7 +56,6 @@ public class AnibusController {
     @FXML private Button            stopButton;
     @FXML private Button            exportButton;
     @FXML private Button            clearButton;
-    @FXML private ComboBox<String>  scanTypeComboBox;
     @FXML private TextArea          consoleTextArea;
     @FXML private VBox              infoCard;
     @FXML private Label             infoIpLabel;
@@ -67,10 +66,7 @@ public class AnibusController {
     @FXML private Label             infoAvgLatencyLabel;
 
     /* -- JavaScript Analysis FXML fields ---------------------- */
-    @FXML private TextField         jsTargetUrlField;
-    @FXML private Button            jsAnalyzeButton;
-    @FXML private Button            jsStopButton;
-    @FXML private ProgressBar       jsProgressBar;
+    @FXML private CheckBox          jsAnalysisCheckBox;
     @FXML private VBox              jsResultsCard;
     @FXML private Label             jsEndpointsLabel;
     @FXML private Label             jsDataStructuresLabel;
@@ -78,8 +74,7 @@ public class AnibusController {
     @FXML private Label             jsSensitiveInfoLabel;
     @FXML private Label             jsArchitectureLabel;
     @FXML private Button            jsExportButton;
-    @FXML private Button            jsClearButton;
-    @FXML private CheckBox           jsInjectionCheckBox;
+    @FXML private CheckBox          jsInjectionCheckBox;
     
     /* -- Unified Console FXML fields ------------------------- */
     @FXML private Label             consoleHeaderLabel;
@@ -152,7 +147,7 @@ public class AnibusController {
             new StandardScanStrategy(scanner));
         scanCoordinator.registerStrategy("Service Detection", 
             new ServiceDetectionStrategy(detector));
-        scanCoordinator.setActiveStrategy("Standard Scanning");
+        scanCoordinator.setActiveStrategy("Service Detection");
         
         // Create action handlers
         scanActionHandler = new ScanActionHandler(
@@ -188,9 +183,7 @@ public class AnibusController {
         consoleTextArea.textProperty().addListener((obs, oldText, newText) -> adjustConsoleHeight());
         consoleTextArea.setPrefRowCount(2);
         
-        // Setup scan type combo box
-        scanTypeComboBox.getItems().addAll("Standard Scanning", "Service Detection");
-        scanTypeComboBox.getSelectionModel().selectFirst();
+
         
         // Setup thread spinner
         threadSpinner.setValueFactory(
@@ -206,17 +199,12 @@ public class AnibusController {
      * Setup event handlers and listeners.
      */
     private void setupEventHandlers() {
-        // Scan mode changes
-        scanTypeComboBox.getSelectionModel().selectedItemProperty()
-            .addListener((obs, oldVal, newVal) -> onScanModeChanged(newVal));
-        onScanModeChanged(scanTypeComboBox.getSelectionModel().getSelectedItem());
+
         
         // Monitor scan button state to detect scanning completion
         scanButton.disableProperty().addListener((obs, wasDisabled, isDisabled) -> {
             if (scanningInProgress && !isDisabled) {
-                // Scanning has completed, re-enable JS analysis
                 scanningInProgress = false;
-                enableJsAnalysisControls();
             }
         });
         
@@ -270,14 +258,18 @@ public class AnibusController {
     }
 
     /* -- Event handlers --------------------------------------- */
-    private void onScanModeChanged(String mode) {
-        if (mode == null) return;
-        scanCoordinator.setActiveStrategy(mode);
-        setStatus(scanCoordinator.getStrategyDescription(mode));
-    }
+
     
     private void handleHostFieldFocusLost() {
         String originalHost = hostTextField.getText().trim();
+        
+        // Skip sanitization if JS analysis is selected or input looks like a URL
+        if ((jsAnalysisCheckBox != null && jsAnalysisCheckBox.isSelected()) 
+                || originalHost.toLowerCase().startsWith("http://")
+                || originalHost.toLowerCase().startsWith("https://")) {
+            return;
+        }
+        
         String sanitizedHost = hostResolver.sanitizeHost(originalHost);
         
         if (!sanitizedHost.isEmpty()) {
@@ -293,29 +285,36 @@ public class AnibusController {
     /* -- FXML button actions ---------------------------------- */
     @FXML
     protected void onScanButtonClick() {
-        if (jsAnalysisInProgress) {
-            setStatus("JavaScript analysis is running. Please stop it first.");
-            return;
+        boolean runJsAnalysis = jsAnalysisCheckBox != null && jsAnalysisCheckBox.isSelected();
+        boolean runInjections = jsInjectionCheckBox != null && jsInjectionCheckBox.isSelected();
+        
+        if (runJsAnalysis || runInjections) {
+            // Run JavaScript analysis (and/or SQL injection) using the host field
+            startJsAnalysis();
+        } else {
+            // Run port scan
+            scanningInProgress = true;
+            switchToPortScannerMode();
+            
+            scanActionHandler.startScan(
+                hostTextField.getText(),
+                portsTextField.getText(),
+                threadSpinner.getValue()
+            );
         }
-        
-        scanningInProgress = true;
-        disableJsAnalysisControls();
-        
-        // Switch to port scanner mode
-        switchToPortScannerMode();
-        
-        scanActionHandler.startScan(
-            hostTextField.getText(),
-            portsTextField.getText(),
-            threadSpinner.getValue()
-        );
     }
 
     @FXML
     protected void onStopButtonClick() {
-        scanActionHandler.stopScan();
-        scanningInProgress = false;
-        enableJsAnalysisControls();
+        if (jsAnalysisInProgress && jsAnalysisTask != null && !jsAnalysisTask.isDone()) {
+            jsAnalysisTask.cancel(true);
+            jsAnalysisInProgress = false;
+            setStatus("JavaScript analysis stopped");
+            resetScanUI();
+        } else {
+            scanActionHandler.stopScan();
+            scanningInProgress = false;
+        }
     }
 
     @FXML
@@ -373,16 +372,10 @@ public class AnibusController {
         return getClass().getResource("anibus-style.css");
     }
     
-    /* -- JavaScript Analysis Event Handlers ------------------ */
+    /* -- JavaScript Analysis --------------------------------- */
     
-    @FXML
-    void onJsAnalyzeButtonClick() {
-        if (scanningInProgress) {
-            setStatus("Port scanning is running. Please stop it first.");
-            return;
-        }
-        
-        String targetUrl = jsTargetUrlField.getText().trim();
+    private void startJsAnalysis() {
+        String targetUrl = hostTextField.getText().trim();
         
         if (targetUrl.isEmpty()) {
             setStatus("Please enter a target URL");
@@ -392,19 +385,18 @@ public class AnibusController {
         // Add protocol if missing
         if (!targetUrl.startsWith("http://") && !targetUrl.startsWith("https://")) {
             targetUrl = "https://" + targetUrl;
-            jsTargetUrlField.setText(targetUrl);
+            hostTextField.setText(targetUrl);
         }
         
         jsAnalysisInProgress = true;
-        disablePortScannerControls();
         
         setStatus("Starting JavaScript analysis...");
         jsAnalysisTask = createJavaScriptAnalysisTask(targetUrl);
         
         // UI updates
-        jsAnalyzeButton.setDisable(true);
-        jsStopButton.setDisable(false);
-        jsProgressBar.setVisible(true);
+        scanButton.setDisable(true);
+        stopButton.setDisable(false);
+        progressBar.setVisible(true);
         jsResultsCard.setVisible(false);
         
         // Start the task
@@ -413,17 +405,7 @@ public class AnibusController {
         thread.start();
     }
     
-    @FXML
-    void onJsStopButtonClick() {
-        if (jsAnalysisTask != null && !jsAnalysisTask.isDone()) {
-            jsAnalysisTask.cancel(true);
-            setStatus("JavaScript analysis stopped");
-        }
-        jsAnalysisInProgress = false;
-        enablePortScannerControls();
-        resetJsAnalysisUI();
-    }
-    
+    @SuppressWarnings("unused") // Referenced from FXML
     @FXML
     void onJsExportClick() {
         if (lastJsAnalysisResult != null) {
@@ -477,16 +459,14 @@ public class AnibusController {
                         }
                         setStatus(statusMsg);
                         jsAnalysisInProgress = false;
-                        enablePortScannerControls();
-                        resetJsAnalysisUI();
+                        resetScanUI();
                     });
                     
                 } catch (Exception e) {
                     Platform.runLater(() -> {
                         setStatus("JavaScript analysis failed: " + e.getMessage());
                         jsAnalysisInProgress = false;
-                        enablePortScannerControls();
-                        resetJsAnalysisUI();
+                        resetScanUI();
                     });
                 }
                 return null;
@@ -566,11 +546,11 @@ public class AnibusController {
         switchToJsAnalysisMode();
     }
     
-    private void resetJsAnalysisUI() {
+    private void resetScanUI() {
         Platform.runLater(() -> {
-            jsAnalyzeButton.setDisable(false);
-            jsStopButton.setDisable(true);
-            jsProgressBar.setVisible(false);
+            scanButton.setDisable(false);
+            stopButton.setDisable(true);
+            progressBar.setVisible(false);
         });
     }
     
@@ -593,60 +573,6 @@ public class AnibusController {
             int lineCount = text.split("\n", -1).length;
             consoleTextArea.setPrefRowCount(Math.max(2, lineCount + 1));
         });
-    }
-    
-    /* -- Mutual Exclusion Control Methods -------------------- */
-    
-    /**
-     * Disables port scanner controls when JavaScript analysis is running.
-     */
-    private void disablePortScannerControls() {
-        Platform.runLater(() -> {
-            hostTextField.setDisable(true);
-            portsTextField.setDisable(true);
-            threadSpinner.setDisable(true);
-            scanTypeComboBox.setDisable(true);
-            scanButton.setDisable(true);
-        });
-    }
-    
-    /**
-     * Enables port scanner controls when JavaScript analysis stops.
-     */
-    private void enablePortScannerControls() {
-        if (!scanningInProgress) { // Only enable if scanning is not running
-            Platform.runLater(() -> {
-                hostTextField.setDisable(false);
-                portsTextField.setDisable(false);
-                threadSpinner.setDisable(false);
-                scanTypeComboBox.setDisable(false);
-                scanButton.setDisable(false);
-            });
-        }
-    }
-    
-    /**
-     * Disables JavaScript analysis controls when port scanning is running.
-     */
-    private void disableJsAnalysisControls() {
-        Platform.runLater(() -> {
-            jsTargetUrlField.setDisable(true);
-            jsAnalyzeButton.setDisable(true);
-            if (jsInjectionCheckBox != null) jsInjectionCheckBox.setDisable(true);
-        });
-    }
-    
-    /**
-     * Enables JavaScript analysis controls when port scanning stops.
-     */
-    private void enableJsAnalysisControls() {
-        if (!jsAnalysisInProgress) { // Only enable if JS analysis is not running
-            Platform.runLater(() -> {
-                jsTargetUrlField.setDisable(false);
-                jsAnalyzeButton.setDisable(false);
-                if (jsInjectionCheckBox != null) jsInjectionCheckBox.setDisable(false);
-            });
-        }
     }
     
     /* -- Console Mode Management Methods ---------------------- */

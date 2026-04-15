@@ -1,12 +1,7 @@
 package it.r2u.anibus.service;
 
-import it.r2u.anibus.model.EndpointInfo;
-
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
@@ -14,11 +9,27 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.cert.X509Certificate;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+
+import it.r2u.anibus.model.EndpointInfo;
 
 /**
  * SQL Injection analyzer that tests discovered endpoints with injection payloads.
@@ -558,14 +569,13 @@ public class SQLInjectionAnalyzer {
             Consumer<String> progressCallback) {
 
         // Phase 0: Fetch HTML and detect CMS
-        String htmlSource = null;
         String detectedCms = null;
 
         if (progressCallback != null) {
             progressCallback.accept("Fetching target page for CMS detection and form discovery...");
         }
 
-        htmlSource = fetchHtmlSource(baseUrl);
+        String htmlSource = fetchHtmlSource(baseUrl);
         if (htmlSource != null && !htmlSource.isEmpty()) {
             detectedCms = detectCmsFromHtml(htmlSource);
             if (detectedCms != null && progressCallback != null) {
@@ -781,21 +791,23 @@ public class SQLInjectionAnalyzer {
      * Send HTTP request with SSL bypass for testing.
      */
     private HttpResponse sendRequest(String url, String method, String body) {
+        if (method == null) method = "GET";
         try {
             HttpURLConnection conn = (HttpURLConnection) URI.create(url).toURL().openConnection();
+            if (conn == null) return null;
 
             if (conn instanceof HttpsURLConnection httpsConn) {
                 SSLContext sc = SSLContext.getInstance("TLS");
                 sc.init(null, new TrustManager[]{new X509TrustManager() {
-                    public X509Certificate[] getAcceptedIssuers() { return null; }
-                    public void checkClientTrusted(X509Certificate[] c, String a) {}
-                    public void checkServerTrusted(X509Certificate[] c, String a) {}
+                    @Override public X509Certificate[] getAcceptedIssuers() { return null; }
+                    @Override public void checkClientTrusted(X509Certificate[] c, String a) {}
+                    @Override public void checkServerTrusted(X509Certificate[] c, String a) {}
                 }}, new java.security.SecureRandom());
                 httpsConn.setSSLSocketFactory(sc.getSocketFactory());
                 httpsConn.setHostnameVerifier((h, s) -> true);
             }
 
-            conn.setRequestMethod("GET".equalsIgnoreCase(method) || "DELETE".equalsIgnoreCase(method) ? method : "POST");
+            conn.setRequestMethod("GET".equalsIgnoreCase(method) || "DELETE".equalsIgnoreCase(method) ? method.toUpperCase() : "POST");
             conn.setConnectTimeout(TIMEOUT);
             conn.setReadTimeout(TIMEOUT);
             conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
@@ -827,7 +839,7 @@ public class SQLInjectionAnalyzer {
             conn.disconnect();
             return new HttpResponse(statusCode, responseBody.toString());
 
-        } catch (Exception e) {
+        } catch (IOException | java.security.GeneralSecurityException e) {
             return null;
         }
     }

@@ -1,17 +1,17 @@
 package it.r2u.anibus.service;
 
-import it.r2u.anibus.model.*;
-
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.security.cert.X509Certificate;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -19,6 +19,17 @@ import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+
+import it.r2u.anibus.model.ArchitectureInfo;
+import it.r2u.anibus.model.DataStructureInfo;
+import it.r2u.anibus.model.DatabaseSchemaInfo;
+import it.r2u.anibus.model.EndpointInfo;
+import it.r2u.anibus.model.JavaScriptAnalysisResult;
 
 /**
  * Advanced JavaScript source code analyzer for security research and backend infrastructure mapping.
@@ -48,11 +59,11 @@ public class JavaScriptSecurityAnalyzer {
         
         public static AnalysisDepth fromString(String str) {
             if (str == null) return BASIC;
-            switch (str.trim()) {
-                case "Deep": return DEEP;
-                case "Comprehensive": return COMPREHENSIVE;
-                default: return BASIC;
-            }
+            return switch (str.trim()) {
+                case "Deep" -> DEEP;
+                case "Comprehensive" -> COMPREHENSIVE;
+                default -> BASIC;
+            };
         }
     }
 
@@ -223,7 +234,7 @@ public class JavaScriptSecurityAnalyzer {
                 URI uri = new URI(baseUrl);
                 return uri.getScheme() + "://" + uri.getHost()
                        + (uri.getPort() > 0 ? ":" + uri.getPort() : "") + ref;
-            } catch (Exception e) {
+            } catch (java.net.URISyntaxException e) {
                 return normalizeUrl(baseUrl + ref);
             }
         }
@@ -282,9 +293,9 @@ public class JavaScriptSecurityAnalyzer {
         HttpURLConnection conn = (HttpURLConnection) new URI(url).toURL().openConnection();
         if (conn instanceof HttpsURLConnection httpsConn) {
             TrustManager[] trustAll = {new X509TrustManager() {
-                public X509Certificate[] getAcceptedIssuers() { return null; }
-                public void checkClientTrusted(X509Certificate[] c, String t) {}
-                public void checkServerTrusted(X509Certificate[] c, String t) {}
+                @Override public X509Certificate[] getAcceptedIssuers() { return null; }
+                @Override public void checkClientTrusted(X509Certificate[] c, String t) {}
+                @Override public void checkServerTrusted(X509Certificate[] c, String t) {}
             }};
             SSLContext sc = SSLContext.getInstance("TLS");
             sc.init(null, trustAll, new java.security.SecureRandom());
@@ -326,7 +337,7 @@ public class JavaScriptSecurityAnalyzer {
             }, executor))
             .collect(Collectors.toList());
 
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+        CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).join();
         return contents;
     }
 
@@ -584,6 +595,46 @@ public class JavaScriptSecurityAnalyzer {
             findMatches(jsContent,
                 Pattern.compile("-----BEGIN [A-Z ]+PRIVATE KEY-----[\\s\\S]*?-----END [A-Z ]+PRIVATE KEY-----"),
                 "Private Key", leaks);
+                
+            // Public keys
+            findMatches(jsContent,
+                Pattern.compile("-----BEGIN [A-Z ]*PUBLIC KEY-----[\\s\\S]*?-----END [A-Z ]*PUBLIC KEY-----"),
+                "Public Key", leaks);
+            
+            // RSA/EC keys in JSON Web Key (JWK) format
+            findMatches(jsContent,
+                Pattern.compile("\\{[^}]*\"kty\"\\s*:\\s*\"(RSA|EC)\"[^}]*\\}", Pattern.CASE_INSENSITIVE),
+                "JSON Web Key (JWK)", leaks);
+            
+            // Exposed key material (base64 encoded keys in config)
+            findMatches(jsContent,
+                Pattern.compile("(?:(?:public|private)[_-]?key|signing[_-]?key|encryption[_-]?key)\\s*[:=]\\s*['\"]([A-Za-z0-9+/=]{40,})['\"]", Pattern.CASE_INSENSITIVE),
+                "Cryptographic Key Material", leaks);
+            
+            // Direct DB API calls from JS (fetch/axios to database-related endpoints)
+            findMatches(jsContent,
+                Pattern.compile("(?:fetch|axios|\\$\\.(?:ajax|get|post)|http\\.(?:get|post|put|delete))\\s*\\(\\s*['\"`][^'\"`]*(?:/api/(?:db|database|mongo|mysql|postgres|redis|graphql|query|sql))[^'\"`]*['\"`]", Pattern.CASE_INSENSITIVE),
+                "Database API Endpoint Call", leaks);
+            
+            // GraphQL endpoint calls (often expose DB schema)
+            findMatches(jsContent,
+                Pattern.compile("(?:fetch|axios|\\$\\.(?:ajax|post)|http\\.post)\\s*\\(\\s*['\"`]([^'\"`]*graphql[^'\"`]*)['\"`]", Pattern.CASE_INSENSITIVE),
+                "GraphQL Endpoint", leaks);
+            
+            // Direct SQL queries in JS
+            findMatches(jsContent,
+                Pattern.compile("(?:query|execute|exec)\\s*\\(\\s*['\"`]\\s*(?:SELECT|INSERT|UPDATE|DELETE|CREATE|DROP|ALTER)\\s", Pattern.CASE_INSENSITIVE),
+                "Direct SQL Query in JS", leaks);
+            
+            // ORM model definitions (Sequelize, Mongoose, TypeORM etc.)
+            findMatches(jsContent,
+                Pattern.compile("(?:sequelize\\.define|mongoose\\.model|Schema\\(|Entity\\(|@Entity|createConnection|getRepository)\\s*\\(\\s*['\"]([^'\"]+)['\"]", Pattern.CASE_INSENSITIVE),
+                "ORM Model/Entity Definition", leaks);
+            
+            // Database connection config objects
+            findMatches(jsContent,
+                Pattern.compile("(?:createPool|createConnection|connect)\\s*\\(\\s*\\{[^}]*(?:host|port|database|user)\\s*:", Pattern.CASE_INSENSITIVE),
+                "Database Connection Config", leaks);
         }
         
         return leaks;
@@ -1008,8 +1059,8 @@ public class JavaScriptSecurityAnalyzer {
     private List<EndpointInfo> rankAndFilterEndpoints(List<EndpointInfo> endpoints, AnalysisDepth depth) {
         // Sort by security relevance
         endpoints.sort((a, b) -> Double.compare(
-            calculateEndpointPriority(b, depth),
-            calculateEndpointPriority(a, depth)
+            calculateEndpointPriority(b),
+            calculateEndpointPriority(a)
         ));
         
         // Limit results based on depth
@@ -1065,7 +1116,7 @@ public class JavaScriptSecurityAnalyzer {
     /**
      * Calculates priority score for endpoints.
      */
-    private double calculateEndpointPriority(EndpointInfo endpoint, AnalysisDepth depth) {
+    private double calculateEndpointPriority(EndpointInfo endpoint) {
         double priority = 0;
         String url = endpoint.getUrl().toLowerCase();
         String method = endpoint.getHttpMethod().toLowerCase();

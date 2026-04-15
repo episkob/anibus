@@ -1,13 +1,24 @@
 package it.r2u.anibus.service;
 
-import java.io.*;
-import java.net.URI;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
-import java.util.regex.*;
-import javax.net.ssl.*;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 
 /**
  * Detects containerization and container orchestration platforms.
@@ -343,9 +354,9 @@ public class ContainerDetector {
 
             if (ssl && conn instanceof HttpsURLConnection httpsConn) {
                 TrustManager[] trustAll = {new X509TrustManager() {
-                    public X509Certificate[] getAcceptedIssuers() { return null; }
-                    public void checkClientTrusted(X509Certificate[] c, String a) {}
-                    public void checkServerTrusted(X509Certificate[] c, String a) {}
+                    @Override public X509Certificate[] getAcceptedIssuers() { return null; }
+                    @Override public void checkClientTrusted(X509Certificate[] c, String a) {}
+                    @Override public void checkServerTrusted(X509Certificate[] c, String a) {}
                 }};
                 SSLContext sc = SSLContext.getInstance("TLS");
                 sc.init(null, trustAll, new java.security.SecureRandom());
@@ -369,7 +380,7 @@ public class ContainerDetector {
                 conn.disconnect();
                 return sb.toString();
             }
-        } catch (Exception e) {
+        } catch (IOException | java.security.GeneralSecurityException | java.net.URISyntaxException e) {
             return null;
         }
     }

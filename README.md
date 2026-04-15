@@ -183,6 +183,27 @@ On Windows:
 mvnw.cmd javafx:run
 ```
 
+On Linux (Wayland + XWayland):
+
+JavaFX uses the GTK/X11 backend and requires a valid `DISPLAY` variable. On Wayland desktops (GNOME, KDE) XWayland is usually running on `:0`.
+
+```bash
+# 1. Allow local processes to access the X display (run once per session)
+xhost +local:
+
+# 2. Launch with the DISPLAY variable
+DISPLAY=:0 ./mvnw javafx:run
+```
+
+If you run VS Code (or another IDE) via **Flatpak**, the sandbox does not inherit `DISPLAY`. Use `flatpak-spawn` to call `xhost` on the host:
+
+```bash
+flatpak-spawn --host xhost +local:
+DISPLAY=:0 ./mvnw javafx:run
+```
+
+> **Note:** GTK warnings like `Failed to load module "canberra-gtk-module"` are cosmetic and do not affect functionality.
+
 ---
 
 ## Usage
