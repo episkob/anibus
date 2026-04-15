@@ -2,7 +2,7 @@
 
 Un'applicazione desktop moderna per la scansione delle porte con analisi di sicurezza approfondita, realizzata con **Anibus Design System**, **JavaFX 21.0.5** e **Java 21**.
 
-> **Versione:** 1.3.0 · **Autore:** Iaroslav Tsymbaliuk · **Ruolo:** Intern (2025–2026) @ r2u
+> **Versione:** 1.4.0 · **Autore:** Iaroslav Tsymbaliuk · **Ruolo:** Intern (2025–2026) @ r2u
 
 ---
 
@@ -16,7 +16,7 @@ Un'applicazione desktop moderna per la scansione delle porte con analisi di sicu
 - Interruzione della scansione sicura con architettura SOLID
 
 ### Rilevamento Servizi Avanzato
-- Due modalità di scansione: **Scansione Veloce** e **Rilevamento Servizi**
+- **Modalità di scansione unificata** — tutte le scansioni utilizzano il rilevamento servizi completo con fingerprinting avanzato
 - **Fingerprinting avanzato dei servizi** per oltre 100 servizi (HTTP, SSH, FTP, MySQL, PostgreSQL, Redis, MongoDB, Elasticsearch, Kubernetes API, Jenkins, ecc.)
 - **Acquisizione banner** con sonde specifiche del protocollo (HTTP HEAD, saluto SSH, SMTP, FTP, handshake MySQL)
 - **Estrazione versione software** dai banner (OpenSSH, Apache, nginx, ProFTPD, Postfix, ecc.)
@@ -208,20 +208,17 @@ DISPLAY=:0 ./mvnw javafx:run
 
 ## Utilizzo
 
-1. **Selezionare la modalità di scansione** — «Scansione Veloce» (connettività base) o «Rilevamento Servizi» (analisi completa)
-2. Inserire l'**host di destinazione** (hostname o indirizzo IP)
-3. Inserire l'**intervallo di porte** nel formato `inizio-fine` (es. `1-65535` o `80,443`)
-4. Facoltativamente, regolare il **numero di thread** (più alto = più veloce, ma più aggressivo)
+1. Inserire l'**host di destinazione** (hostname o indirizzo IP)
+2. Inserire l'**intervallo di porte** nel formato `inizio-fine` (es. `1-65535` o `80,443`)
+3. Facoltativamente, regolare il **numero di thread** (più alto = più veloce, ma più aggressivo)
+4. Facoltativamente, abilitare le caselle **JavaScript Analysis** e/o **SQL Injection Testing**
 5. Cliccare su **Start Scan**
 6. Appare il **pannello informazioni host** con statistiche di scansione in tempo reale
-7. I risultati popolano la tabella man mano che le porte vengono scoperte
-8. Con **Rilevamento Servizi**, vedere dati migliorati: rilevamento OS, vulnerabilità, geolocalizzazione, analisi Keycloak
+7. I risultati popolano la tabella con dati completi: OS, vulnerabilità, geolocalizzazione, analisi Keycloak
+8. Al termine della scansione, il **rilevamento stack software** identifica automaticamente le tecnologie (Docker, K8s, Redis, PostgreSQL, ecc.)
 9. Cliccare su **Stop** per interrompere la scansione in qualsiasi momento
-10. Usare **Export** per salvare i risultati come **CSV o XML** con dati di analisi completi, o **Clear** per resettare
+10. Usare **Export** per salvare i risultati come **CSV o XML**, o **Clear** per resettare
 11. Cliccare con il tasto destro su qualsiasi riga per copiare risultati o indirizzi IP
-7. Cliccare **Stop** per interrompere la scansione in qualsiasi momento
-8. Usare **Export** per salvare in **CSV o XML**, oppure **Clear** per azzerare
-9. Fare clic destro per copiare una riga o tutti i risultati
 
 ---
 

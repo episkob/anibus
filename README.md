@@ -2,7 +2,7 @@
 
 A modern desktop port scanning application with enhanced security analysis, built with **Anibus Design System**, **JavaFX 21.0.5** and **Java 21**.
 
-> **Version:** 1.3.0 · **Author:** Iaroslav Tsymbaliuk · **Position:** Intern (2025–2026) @ r2u
+> **Version:** 1.4.0 · **Author:** Iaroslav Tsymbaliuk · **Position:** Intern (2025–2026) @ r2u
 
 ---
 
@@ -16,7 +16,7 @@ A modern desktop port scanning application with enhanced security analysis, buil
 - Graceful scan cancellation with SOLID architecture
 
 ### Enhanced Service Detection
-- Two scan modes: **Fast Port Scan** and **Service Detection**
+- **Unified scan mode** — all scans use full Service Detection with enhanced fingerprinting
 - **Advanced service fingerprinting** for 100+ services (HTTP, SSH, FTP, MySQL, PostgreSQL, Redis, MongoDB, Elasticsearch, Kubernetes API, Jenkins, and more)
 - **Banner grabbing** with protocol-specific probes (HTTP HEAD, SSH greeting, SMTP, FTP, MySQL handshake)
 - **Software version extraction** from banners (OpenSSH, Apache, nginx, ProFTPD, Postfix, etc.)
@@ -208,14 +208,14 @@ DISPLAY=:0 ./mvnw javafx:run
 
 ## Usage
 
-1. **Select scan mode** - Choose between **Fast Port Scan** (basic connectivity) or **Service Detection** (comprehensive analysis)
-2. Enter the **target host** (hostname or IP address)
-3. Enter the **port range** in the format `start-end` (e.g. `1-65535` or `80,443`)
-4. Optionally adjust the **thread count** (higher = faster, but more aggressive)
+1. Enter the **target host** (hostname or IP address)
+2. Enter the **port range** in the format `start-end` (e.g. `1-65535` or `80,443`)
+3. Optionally adjust the **thread count** (higher = faster, but more aggressive)
+4. Optionally enable **JavaScript Analysis** and/or **SQL Injection Testing** checkboxes
 5. Click **Start Scan**
 6. The **Host Information** card appears with live scan statistics
-7. Results populate the table as ports are discovered
-8. With **Service Detection**, see enhanced data: OS detection, vulnerabilities, geolocation, Keycloak analysis
+7. Results populate the table as ports are discovered with full service detection data: OS, vulnerabilities, geolocation, Keycloak analysis
+8. After scan completion, **Software Stack Detection** automatically identifies technologies (Docker, K8s, Redis, PostgreSQL, etc.)
 9. Click **Stop** to abort the scan at any time
 10. Use **Export** to save results as **CSV or XML** with full analysis data, or **Clear** to reset
 11. Right-click any row to copy results or IP addresses
