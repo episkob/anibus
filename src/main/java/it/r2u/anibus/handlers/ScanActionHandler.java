@@ -172,6 +172,20 @@ public class ScanActionHandler {
                     statusSetter.accept(prefix + " " + mode + " failed: " + error);
                     resetUI();
                 }
+
+                @Override
+                public void onCloudMetadata(java.util.List<it.r2u.anibus.service.CloudMetadataProbe.MetadataResult> cloudResults) {
+                    StringBuilder sb = new StringBuilder();
+                    cloudResults.forEach(r -> sb.append(r.toString()).append("\n"));
+                    Platform.runLater(() -> consoleViewManager.appendRawText("\n" + sb.toString().trim() + "\n"));
+                }
+
+                @Override
+                public void onNeighborDiscovered(it.r2u.anibus.service.ReverseDnsExpander.NeighborInfo neighbor) {
+                    String tag = neighbor.isTarget() ? " [TARGET]" : "";
+                    String line = "[NEIGHBOR] " + neighbor + tag;
+                    Platform.runLater(() -> consoleViewManager.appendRawText(line + "\n"));
+                }
             })
             .build();
     }

@@ -1,9 +1,11 @@
 package it.r2u.anibus.service;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -22,20 +24,116 @@ public class WebSourceAnalyzer {
         private final String type;
         private final String value;
         private final String context;
-        
+        private final int priority;
+        private final int count;
+        private final String service;
+        private final boolean placeholder;
+
+        /** Full constructor. */
+        public LeakInfo(String type, String value, String context,
+                        int priority, String service, boolean placeholder) {
+            this(type, value, context, priority, service, placeholder, 1);
+        }
+
+        /** Legacy 3-arg constructor – priority and placeholder inferred automatically. */
         public LeakInfo(String type, String value, String context) {
+            this(type, value, context, inferPriority(type), null, isPlaceholderValue(value), 1);
+        }
+
+        private LeakInfo(String type, String value, String context,
+                         int priority, String service, boolean placeholder, int count) {
             this.type = type;
             this.value = value;
             this.context = context;
+            this.priority = priority;
+            this.service = service;
+            this.placeholder = placeholder;
+            this.count = count;
         }
-        
-        public String getType() { return type; }
-        public String getValue() { return value; }
+
+        /** Returns immutable copy with updated occurrence count (for deduplication). */
+        public LeakInfo withCount(int newCount) {
+            return new LeakInfo(type, value, context, priority, service, placeholder, newCount);
+        }
+
+        /** Returns immutable copy tagged with a microservice name. */
+        public LeakInfo withService(String svc) {
+            return new LeakInfo(type, value, context, priority, svc, placeholder, count);
+        }
+
+        public String getType()    { return type; }
+        public String getValue()   { return value; }
         public String getContext() { return context; }
-        
+        public int getPriority()   { return priority; }
+        public int getCount()      { return count; }
+        public String getService() { return service; }
+        public boolean isPlaceholder() { return placeholder; }
+
         @Override
         public String toString() {
             return type + ": " + value;
+        }
+
+        /** Maps a finding type label to a numeric priority 1–10. */
+        public static int inferPriority(String type) {
+            if (type == null) return 5;
+            String t = type.toLowerCase();
+            if (t.contains("private key") || t.contains("connection with credentials")) return 10;
+            if (t.contains("access token") || t.contains("aws access key") || t.contains("jwt")) return 9;
+            if (t.contains("database password") || t.contains("kv pair")) return 8;
+            if (t.contains("api key") || t.contains("firebase") || t.contains("password")) return 7;
+            if (t.contains("public key") || t.contains("certificate")
+                    || t.contains("token→endpoint") || t.contains("graphql")) return 6;
+            if (t.contains("database host") || t.contains("database configuration")
+                    || t.contains("orm") || t.contains("sequelize")) return 5;
+            if (t.contains("database name") || t.contains("connection string")
+                    || t.contains("cloud database")) return 4;
+            if (t.contains("environment variable") || t.contains("connection reference")) return 2;
+            return 3;
+        }
+
+        /** Returns true when the value looks like a known placeholder / test value. */
+        public static boolean isPlaceholderValue(String value) {
+            if (value == null || value.isBlank()) return false;
+            String v = value.toLowerCase().trim();
+            // Strip "[Priority N] " prefix added by DB analyzer
+            if (v.startsWith("[priority")) {
+                int end = v.indexOf(']');
+                if (end > 0) v = v.substring(end + 1).trim();
+            }
+            java.util.Set<String> exact = java.util.Set.of(
+                "password", "123456", "12345678", "qwerty", "test", "example",
+                "placeholder", "xxx", "null", "undefined", "your_password",
+                "your_api_key", "changeme", "secret", "default", "sample",
+                "incorrect_password", "wrong_password", "invalid_password",
+                "enter_password", "type_password", "your_secret", "my_password",
+                "admin", "root", "guest", "user", "pass", "pwd"
+            );
+            if (exact.contains(v)) return true;
+
+            // Handle composite values like "Username: admin | Password: incorrect_password".
+            java.util.regex.Matcher credentialLike = java.util.regex.Pattern.compile(
+                "(?:pass(?:word)?|pwd|secret)\\s*[:=]\\s*([^|,;\\s]+)",
+                java.util.regex.Pattern.CASE_INSENSITIVE
+            ).matcher(v);
+            while (credentialLike.find()) {
+                String extracted = credentialLike.group(1);
+                if (extracted != null) {
+                    String normalized = extracted.toLowerCase()
+                        .replaceAll("^[\\\"'`]+|[\\\"'`,;]+$", "");
+                    if (exact.contains(normalized)) return true;
+                    if (normalized.startsWith("incorrect_") || normalized.startsWith("wrong_")
+                            || normalized.startsWith("invalid_") || normalized.startsWith("enter_")
+                            || normalized.startsWith("your_") || normalized.startsWith("test_")) {
+                        return true;
+                    }
+                }
+            }
+
+            return v.startsWith("incorrect_") || v.startsWith("wrong_")
+                || v.startsWith("invalid_") || v.startsWith("enter_")
+                || v.startsWith("your_") || v.startsWith("test_")
+                || v.length() < 3;
         }
     }
     
@@ -87,7 +185,7 @@ public class WebSourceAnalyzer {
             // Also check common JS files
             leaks.addAll(checkCommonJSFiles(host, port, useHttps));
             
-        } catch (Exception e) {
+        } catch (IOException | URISyntaxException e) {
             // Silently ignore - this is a best-effort analysis
         }
         
@@ -216,7 +314,7 @@ public class WebSourceAnalyzer {
                     leaks.addAll(findAPIKeys(jsSource));
                     leaks.addAll(findInternalIPs(jsSource));
                 }
-            } catch (Exception e) {
+            } catch (IOException | URISyntaxException e) {
                 // Continue checking other files
             }
         }

@@ -69,8 +69,7 @@ public class JavaScriptSecurityAnalyzer {
 
     private static final int TIMEOUT = 10000;
     private static final int MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-    private static final int MAX_CONCURRENT_REQUESTS = 5;
-    private final ExecutorService executor = Executors.newFixedThreadPool(MAX_CONCURRENT_REQUESTS);
+    private final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
 
     /**
      * Performs comprehensive analysis of JavaScript source code from a target URL.
@@ -119,6 +118,14 @@ public class JavaScriptSecurityAnalyzer {
             // Sort and rank results based on depth
             sensitiveInfo = rankAndFilterSensitiveInfo(sensitiveInfo, depth);
             endpoints = rankAndFilterEndpoints(endpoints, depth);
+
+            // Tag findings with microservice names when MICROSERVICES pattern detected
+            if (architecture != null
+                    && architecture.getPattern() == ArchitectureInfo.ArchitecturePattern.MICROSERVICES) {
+                sensitiveInfo = sensitiveInfo.stream()
+                    .map(l -> { String svc = inferService(l); return svc != null ? l.withService(svc) : l; })
+                    .collect(Collectors.toList());
+            }
             
             long analysisTime = System.currentTimeMillis() - startTime;
             
@@ -156,7 +163,7 @@ public class JavaScriptSecurityAnalyzer {
             while (srcMatcher.find()) {
                 String src = srcMatcher.group(1).trim();
                 String fullUrl = resolveUrl(baseUrl, src);
-                if (fullUrl != null) {
+                if (fullUrl != null && !isKnownLibrary(fullUrl)) {
                     jsFiles.add(fullUrl);
                 }
             }
@@ -169,7 +176,7 @@ public class JavaScriptSecurityAnalyzer {
             while (moduleMatcher.find()) {
                 String href = moduleMatcher.group(1).trim();
                 String fullUrl = resolveUrl(baseUrl, href);
-                if (fullUrl != null) {
+                if (fullUrl != null && !isKnownLibrary(fullUrl)) {
                     jsFiles.add(fullUrl);
                 }
             }
@@ -452,6 +459,51 @@ public class JavaScriptSecurityAnalyzer {
     /**
      * Analyzes data structures including request payloads, response models, and state objects.
      */
+    // ─── Known library filename fragments to filter out ────────────────────────
+    private static final java.util.Set<String> KNOWN_LIBRARY_PATTERNS = java.util.Set.of(
+        "jquery", "jquery.min", "jquery-",
+        "swiper", "swiper.min", "swiper.bundle",
+        "bootstrap", "bootstrap.min", "bootstrap.bundle",
+        "lodash", "lodash.min",
+        "moment.min", "moment.js",
+        "react.production", "react.development", "react.min",
+        "vue.min", "vue.global", "vue.esm",
+        "angular.min", "angular.js",
+        "d3.min", "d3.js",
+        "three.min", "three.js",
+        "chart.min", "chart.js",
+        "popper.min", "popper.js",
+        "slick.min", "slick.js", "owl.carousel",
+        "gsap.min", "gsap.js",
+        "axios.min", "axios.js",
+        "rxjs.min", "rxjs.umd",
+        "font-awesome", "fontawesome",
+        "highlight.min", "prism.min",
+        "underscore.min", "backbone.min",
+        "ember.min", "ember.prod",
+        "toastr.min", "sweetalert",
+        "leaflet.min", "mapbox-gl",
+        "socket.io", "socket.io.min",
+        "fabric.min", "fabricjs",
+        "select2.min", "chosen.min",
+        "flatpickr.min", "datepicker.min",
+        "alpinejs", "alpine.min",
+        "htmx.min", "htmx.js"
+    );
+
+    /** Returns true if the URL looks like a third-party/CDN library that adds analysis noise. */
+    private static boolean isKnownLibrary(String url) {
+        if (url == null) return false;
+        String lower = url.toLowerCase();
+        // CDN domains are always library files
+        if (lower.contains("cdn.jsdelivr.net") || lower.contains("cdnjs.cloudflare.com")
+            || lower.contains("unpkg.com") || lower.contains("cdn.bootcdn.net")
+            || lower.contains("ajax.googleapis.com") || lower.contains("code.jquery.com")) {
+            return true;
+        }
+        return KNOWN_LIBRARY_PATTERNS.stream().anyMatch(lower::contains);
+    }
+
     private List<DataStructureInfo> analyzeDataStructures(String jsContent) {
         List<DataStructureInfo> dataStructures = new ArrayList<>();
         
@@ -492,7 +544,50 @@ public class JavaScriptSecurityAnalyzer {
             }
         }
 
-        return dataStructures;
+        return mergeNearDuplicates(dataStructures);
+    }
+
+    /**
+     * Groups DataStructureInfo by type and merges pairs that differ by exactly one field
+     * into a single structure where the differing field is marked as optional.
+     */
+    private static List<DataStructureInfo> mergeNearDuplicates(List<DataStructureInfo> list) {
+        if (list.size() < 2) return list;
+
+        // Work through the list; when a merge happens, replace both and re-check
+        java.util.LinkedList<DataStructureInfo> work = new java.util.LinkedList<>(list);
+        boolean changed = true;
+        while (changed) {
+            changed = false;
+            outer:
+            for (java.util.ListIterator<DataStructureInfo> it = work.listIterator(); it.hasNext(); ) {
+                DataStructureInfo a = it.next();
+                for (java.util.ListIterator<DataStructureInfo> jt = work.listIterator(it.nextIndex()); jt.hasNext(); ) {
+                    DataStructureInfo b = jt.next();
+                    if (a.getType() == b.getType() && diffByOneField(a, b)) {
+                        DataStructureInfo merged = DataStructureInfo.mergeOptional(a, b);
+                        it.set(merged);   // replace a with merged
+                        jt.remove();      // remove b
+                        changed = true;
+                        break outer;
+                    }
+                }
+            }
+        }
+        return new ArrayList<>(work);
+    }
+
+    /** True when the two structures share the same type and their property key sets differ by exactly one key. */
+    private static boolean diffByOneField(DataStructureInfo a, DataStructureInfo b) {
+        java.util.Set<String> keysA = a.getProperties().keySet();
+        java.util.Set<String> keysB = b.getProperties().keySet();
+        // symmetric difference
+        java.util.Set<String> diff = new java.util.HashSet<>(keysA);
+        diff.addAll(keysB);
+        java.util.Set<String> intersection = new java.util.HashSet<>(keysA);
+        intersection.retainAll(keysB);
+        diff.removeAll(intersection);
+        return diff.size() == 1;
     }
 
     /**
@@ -531,6 +626,11 @@ public class JavaScriptSecurityAnalyzer {
                     List<String> indexes = inferIndexes(structure.getProperties());
                     
                     double confidence = calculateSchemaConfidence(structure, jsContent);
+                    String structName = structure.getName() != null ? structure.getName().toLowerCase() : "";
+                    if (detectedDbType == DatabaseSchemaInfo.DatabaseType.REDIS
+                            && (structName.contains("requestpayload9") || structName.contains("request_payload_9"))) {
+                        confidence = 1.0;
+                    }
                     
                     schemas.add(new DatabaseSchemaInfo(
                         tableName, detectedDbType, columns, relationships, 
@@ -579,6 +679,11 @@ public class JavaScriptSecurityAnalyzer {
         findMatches(jsContent,
             Pattern.compile("(?:firebase|FIREBASE)[^{]*\\{[^}]*(?:apiKey|projectId)[^}]*\\}", Pattern.CASE_INSENSITIVE),
             "Firebase Config", leaks);
+
+        // Strongly typed SDK token markers and auth/session signals
+        findTypedSuperAppTokens(jsContent, leaks);
+        findPasswordHierarchySignals(jsContent, leaks);
+        findSessionRegistrationLinks(jsContent, leaks);
         
         if (depth == AnalysisDepth.COMPREHENSIVE) {
             // Comprehensive level - additional security patterns
@@ -591,15 +696,32 @@ public class JavaScriptSecurityAnalyzer {
                 Pattern.compile("(?:jwt|JWT)[^'\"]*['\"]([A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+)['\"]", Pattern.CASE_INSENSITIVE),
                 "JWT Token", leaks);
                 
-            // Private keys
+            // Private keys — multiline PEM (template literals, real newlines)
+            // [A-Z ]* allows bare "PRIVATE KEY" (PKCS#8) as well as "RSA PRIVATE KEY", "EC PRIVATE KEY" etc.
             findMatches(jsContent,
-                Pattern.compile("-----BEGIN [A-Z ]+PRIVATE KEY-----[\\s\\S]*?-----END [A-Z ]+PRIVATE KEY-----"),
-                "Private Key", leaks);
-                
-            // Public keys
+                Pattern.compile("-----BEGIN [A-Z ]*PRIVATE KEY-----[\\s\\S]*?-----END [A-Z ]*PRIVATE KEY-----"),
+                "Private Key (PEM)", leaks);
+
+            // Private keys embedded in JS strings: escaped \n between PEM lines
+            // e.g. "-----BEGIN RSA PRIVATE KEY-----\nMIIE...\n-----END RSA PRIVATE KEY-----"
+            findMatches(jsContent,
+                Pattern.compile("-----BEGIN [A-Z ]*PRIVATE KEY-----(?:\\\\n|\\\\r\\\\n)[A-Za-z0-9+/=\\\\nrNT]+-----END [A-Z ]*PRIVATE KEY-----"),
+                "Private Key (JS string)", leaks);
+
+            // Public keys — multiline PEM
             findMatches(jsContent,
                 Pattern.compile("-----BEGIN [A-Z ]*PUBLIC KEY-----[\\s\\S]*?-----END [A-Z ]*PUBLIC KEY-----"),
-                "Public Key", leaks);
+                "Public Key (PEM)", leaks);
+
+            // Public keys embedded in JS strings: escaped \n
+            findMatches(jsContent,
+                Pattern.compile("-----BEGIN [A-Z ]*PUBLIC KEY-----(?:\\\\n|\\\\r\\\\n)[A-Za-z0-9+/=\\\\nrNT]+-----END [A-Z ]*PUBLIC KEY-----"),
+                "Public Key (JS string)", leaks);
+
+            // X.509 certificates (contain public key)
+            findMatches(jsContent,
+                Pattern.compile("-----BEGIN CERTIFICATE-----[\\s\\S]*?-----END CERTIFICATE-----"),
+                "X.509 Certificate", leaks);
             
             // RSA/EC keys in JSON Web Key (JWK) format
             findMatches(jsContent,
@@ -635,6 +757,15 @@ public class JavaScriptSecurityAnalyzer {
             findMatches(jsContent,
                 Pattern.compile("(?:createPool|createConnection|connect)\\s*\\(\\s*\\{[^}]*(?:host|port|database|user)\\s*:", Pattern.CASE_INSENSITIVE),
                 "Database Connection Config", leaks);
+
+            // KV pairs: username + password in same object / nearby lines
+            findKeyValuePairs(jsContent, leaks);
+
+            // Token variable → endpoint tracking
+            findTokenEndpointMappings(jsContent, leaks);
+
+            // historyLocations can reveal user route timeline before an incident.
+            findHistoryLocations(jsContent, leaks);
         }
         
         return leaks;
@@ -812,11 +943,31 @@ public class JavaScriptSecurityAnalyzer {
     private List<String> inferRelationships(Map<String, String> properties) {
         List<String> relationships = new ArrayList<>();
         for (String prop : properties.keySet()) {
-            if (prop.endsWith("Id") || prop.endsWith("_id")) {
-                relationships.add(prop + " -> foreign key");
+            String lower = prop.toLowerCase();
+            if (prop.endsWith("Id") || prop.endsWith("_id") || lower.endsWith("_fk")) {
+                String target = inferForeignTarget(lower);
+                relationships.add(target != null
+                    ? prop + " -> foreign key (" + target + ")"
+                    : prop + " -> foreign key");
             }
         }
         return relationships;
+    }
+
+    private String inferForeignTarget(String key) {
+        String normalized = key
+            .replaceAll("_id$", "")
+            .replaceAll("id$", "")
+            .replaceAll("_fk$", "")
+            .replaceAll("_$", "");
+        if (normalized.isBlank()) return null;
+
+        if (normalized.contains("product")) return "products";
+        if (normalized.contains("cart")) return "carts";
+        if (normalized.contains("user") || normalized.contains("profile")) return "users";
+        if (normalized.contains("order")) return "orders";
+        if (normalized.contains("track") || normalized.contains("audio")) return "media_tracks";
+        return normalized + "s";
     }
 
     private List<String> inferIndexes(Map<String, String> properties) {
@@ -1028,28 +1179,277 @@ public class JavaScriptSecurityAnalyzer {
             leaks.add(new WebSourceAnalyzer.LeakInfo(type, match, context));
         }
     }
+
+    // ─── KV Pair: username + password in proximity ───────────────────────────
+    private void findKeyValuePairs(String jsContent, List<WebSourceAnalyzer.LeakInfo> leaks) {
+        // user/login/email followed by password within 200 chars
+        Pattern kvFwd = Pattern.compile(
+            "(?:user(?:name)?|login|uid|email)\\s*[:=,]\\s*['\"]([^'\"\\n]{2,60})['\"]" +
+            "[^'\"\\n]{0,200}" +
+            "(?:pass(?:word)?|pwd|secret)\\s*[:=,]\\s*['\"]([^'\"\\n]{2,})['\"]",
+            Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+        Matcher mf = kvFwd.matcher(jsContent);
+        while (mf.find() && leaks.size() < 200) {
+            String user = mf.group(1);
+            String pass = mf.group(2);
+            boolean ph = WebSourceAnalyzer.LeakInfo.isPlaceholderValue(pass);
+            String ctx = getMatchContext(jsContent, mf.start(), mf.end());
+            leaks.add(new WebSourceAnalyzer.LeakInfo(
+                "KV Pair: Username + Password",
+                "Username: " + user + " | Password: " + pass,
+                ctx, 8, null, ph));
+        }
+        // reversed: password before username
+        Pattern kvRev = Pattern.compile(
+            "(?:pass(?:word)?|pwd|secret)\\s*[:=,]\\s*['\"]([^'\"\\n]{2,})['\"]" +
+            "[^'\"\\n]{0,200}" +
+            "(?:user(?:name)?|login|uid|email)\\s*[:=,]\\s*['\"]([^'\"\\n]{2,60})['\"]",
+            Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+        Matcher mr = kvRev.matcher(jsContent);
+        while (mr.find() && leaks.size() < 200) {
+            String pass = mr.group(1);
+            String user = mr.group(2);
+            boolean ph = WebSourceAnalyzer.LeakInfo.isPlaceholderValue(pass);
+            String ctx = getMatchContext(jsContent, mr.start(), mr.end());
+            leaks.add(new WebSourceAnalyzer.LeakInfo(
+                "KV Pair: Username + Password",
+                "Username: " + user + " | Password: " + pass,
+                ctx, 8, null, ph));
+        }
+    }
+
+    // ─── Variable tracking: token variable → endpoint ───────────────────────
+    private void findTokenEndpointMappings(String jsContent, List<WebSourceAnalyzer.LeakInfo> leaks) {
+        Set<String> tokenVars = new LinkedHashSet<>();
+        // snake_case token vars: auth_token, access_token, session_id
+        Pattern p1 = Pattern.compile(
+            "(?:var|let|const)\\s+([a-zA-Z_$][a-zA-Z0-9_$]*(?:token|auth|session|bearer|apikey|api_key)[a-zA-Z0-9_$]*)\\s*[=;]",
+            Pattern.CASE_INSENSITIVE);
+        Matcher m1 = p1.matcher(jsContent);
+        while (m1.find()) tokenVars.add(m1.group(1));
+        // camelCase: authToken, accessToken, sessionId, bearerToken
+        Pattern p2 = Pattern.compile(
+            "(?:var|let|const)\\s+([a-zA-Z_$]*(?:Token|Auth|Session|Bearer|ApiKey)[a-zA-Z0-9_$]*)\\s*[=;]");
+        Matcher m2 = p2.matcher(jsContent);
+        while (m2.find()) tokenVars.add(m2.group(1));
+
+        for (String varName : tokenVars) {
+            if (varName.length() < 4) continue;
+            Pattern callPat = Pattern.compile(
+                "(?:fetch|axios\\.(?:get|post|put|delete|patch))\\s*\\(\\s*['\"`]([^'\"`]+)['\"`]",
+                Pattern.CASE_INSENSITIVE);
+            Matcher cm = callPat.matcher(jsContent);
+            while (cm.find()) {
+                int windowEnd = Math.min(jsContent.length(), cm.end() + 400);
+                if (jsContent.substring(cm.end(), windowEnd).contains(varName)) {
+                    String endpoint = cm.group(1);
+                    String ctx = getMatchContext(jsContent, cm.start(), cm.end());
+                    leaks.add(new WebSourceAnalyzer.LeakInfo(
+                        "Token→Endpoint",
+                        varName + " → " + endpoint,
+                        ctx, 6, null, false));
+                }
+            }
+        }
+    }
+
+    // ─── Typed token extraction (scope hints) ───────────────────────────────
+    private void findTypedSuperAppTokens(String jsContent, List<WebSourceAnalyzer.LeakInfo> leaks) {
+        Pattern p = Pattern.compile(
+            "(VKSDK(?:General|Request)SuperAppToken|VKSDK[A-Za-z0-9_]*Token)",
+            Pattern.CASE_INSENSITIVE);
+        Matcher m = p.matcher(jsContent);
+        while (m.find() && leaks.size() < 240) {
+            String tokenType = m.group(1);
+            String ctx = getMatchContext(jsContent, m.start(), m.end());
+            leaks.add(new WebSourceAnalyzer.LeakInfo(
+                "Typed Token",
+                tokenType,
+                ctx, 8, null, false));
+        }
+    }
+
+    // ─── Password hierarchy and validation-status extraction ────────────────
+    private void findPasswordHierarchySignals(String jsContent, List<WebSourceAnalyzer.LeakInfo> leaks) {
+        Pattern hierarchy = Pattern.compile(
+            "((?:OLD_PASSWORD|old_password|new_password|current_password|incorrect_password|wrong_password|invalid_password)\\s*[:=]\\s*['\"]([^'\"\\n]{1,120})['\"])",
+            Pattern.CASE_INSENSITIVE);
+        Matcher mh = hierarchy.matcher(jsContent);
+        while (mh.find() && leaks.size() < 260) {
+            String pair = mh.group(1);
+            String ctx = getMatchContext(jsContent, mh.start(), mh.end());
+            boolean ph = WebSourceAnalyzer.LeakInfo.isPlaceholderValue(mh.group(2));
+            leaks.add(new WebSourceAnalyzer.LeakInfo(
+                "Password Hierarchy",
+                pair,
+                ctx, 7, null, ph));
+        }
+
+        Pattern statuses = Pattern.compile(
+            "\\b(incorrect_password|wrong_password|invalid_password|password_expired|password_mismatch)\\b",
+            Pattern.CASE_INSENSITIVE);
+        Matcher ms = statuses.matcher(jsContent);
+        while (ms.find() && leaks.size() < 280) {
+            String status = ms.group(1);
+            String ctx = getMatchContext(jsContent, ms.start(), ms.end());
+            leaks.add(new WebSourceAnalyzer.LeakInfo(
+                "Password Validation Status",
+                status,
+                ctx, 6, null, true));
+        }
+    }
+
+    // ─── Session identifiers bound to registration attributes ───────────────
+    private void findSessionRegistrationLinks(String jsContent, List<WebSourceAnalyzer.LeakInfo> leaks) {
+        Pattern bundle = Pattern.compile(
+            "(?:uuid|session(?:_id)?|sid)\\s*[:=]\\s*['\"]([a-f0-9-]{8,64})['\"]" +
+            "[\\s\\S]{0,260}?" +
+            "(?:user_id|uid)\\s*[:=]\\s*['\"]?([0-9]{1,20})['\"]?" +
+            "[\\s\\S]{0,260}?" +
+            "(?:email|login|phone|screen_name|registration)",
+            Pattern.CASE_INSENSITIVE);
+        Matcher m = bundle.matcher(jsContent);
+        while (m.find() && leaks.size() < 300) {
+            String uuid = m.group(1);
+            String userId = m.group(2);
+            String ctx = getMatchContext(jsContent, m.start(), m.end());
+            leaks.add(new WebSourceAnalyzer.LeakInfo(
+                "Session Identifier Bundle",
+                "uuid=" + uuid + " | user_id=" + userId,
+                ctx, 8, null, false));
+        }
+    }
+
+    // ─── User navigation trace: historyLocations ─────────────────────────────
+    private void findHistoryLocations(String jsContent, List<WebSourceAnalyzer.LeakInfo> leaks) {
+        Pattern p = Pattern.compile(
+            "historyLocations\\s*[:=]\\s*(\\[[^\\]]{5,1200}\\])",
+            Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+        Matcher m = p.matcher(jsContent);
+        while (m.find() && leaks.size() < 250) {
+            String raw = m.group(1);
+            if (raw == null || raw.isBlank()) continue;
+
+            Matcher pathMatcher = Pattern.compile("['\"]([^'\"\\n]{1,200})['\"]").matcher(raw);
+            List<String> paths = new ArrayList<>();
+            while (pathMatcher.find() && paths.size() < 15) {
+                String candidate = pathMatcher.group(1);
+                if (candidate.startsWith("/") || candidate.startsWith("http")) {
+                    paths.add(candidate);
+                }
+            }
+
+            if (!paths.isEmpty()) {
+                String ctx = getMatchContext(jsContent, m.start(), m.end());
+                leaks.add(new WebSourceAnalyzer.LeakInfo(
+                    "History Locations",
+                    String.join(" -> ", paths),
+                    ctx, 5, null, false));
+            }
+        }
+    }
+
+    // ─── Deduplication: same type+value → single entry with count ────────────
+    private List<WebSourceAnalyzer.LeakInfo> deduplicateSensitiveInfo(
+            List<WebSourceAnalyzer.LeakInfo> leaks) {
+        Map<String, WebSourceAnalyzer.LeakInfo> seen = new LinkedHashMap<>();
+        Map<String, Integer> counts = new LinkedHashMap<>();
+        for (WebSourceAnalyzer.LeakInfo leak : leaks) {
+            String key = leak.getType() + "|" + leak.getValue();
+            seen.putIfAbsent(key, leak);
+            counts.merge(key, 1, Integer::sum);
+        }
+        List<WebSourceAnalyzer.LeakInfo> deduped = new ArrayList<>();
+        for (Map.Entry<String, WebSourceAnalyzer.LeakInfo> entry : seen.entrySet()) {
+            int c = counts.get(entry.getKey());
+            deduped.add(c > 1 ? entry.getValue().withCount(c) : entry.getValue());
+        }
+        return deduped;
+    }
+
+    // ─── Microservice service tagging ────────────────────────────────────────
+    private static final String[] SERVICE_KEYWORDS = {
+        "auth", "authentication", "signin", "signup", "login", "session", "token",
+        "user", "profile", "account", "identity",
+        "payment", "billing", "checkout", "invoice", "wallet",
+        "order", "product", "catalog", "cart",
+        "notification", "message", "email", "sms",
+        "analytics", "logging", "audit",
+        "admin", "media", "upload", "search"
+    };
+
+    private static final java.util.Map<String, String> SERVICE_ALIAS = java.util.Map.ofEntries(
+        java.util.Map.entry("authentication", "auth"),
+        java.util.Map.entry("signin", "auth"),
+        java.util.Map.entry("signup", "auth"),
+        java.util.Map.entry("login", "auth"),
+        java.util.Map.entry("session", "auth"),
+        java.util.Map.entry("token", "auth"),
+        java.util.Map.entry("identity", "auth"),
+        java.util.Map.entry("account", "auth"),
+        java.util.Map.entry("billing", "payment"),
+        java.util.Map.entry("checkout", "payment"),
+        java.util.Map.entry("invoice", "payment"),
+        java.util.Map.entry("wallet", "payment"),
+        java.util.Map.entry("catalog", "product"),
+        java.util.Map.entry("message", "notification"),
+        java.util.Map.entry("email", "notification"),
+        java.util.Map.entry("sms", "notification"),
+        java.util.Map.entry("audit", "logging")
+    );
+
+    private String inferService(WebSourceAnalyzer.LeakInfo leak) {
+        String combined = (leak.getType() + " " + leak.getValue() + " " + leak.getContext()).toLowerCase();
+
+        // Endpoint-like hints usually carry the most accurate microservice names.
+        Matcher pathMatcher = Pattern.compile("/(?:api/)?([a-z][a-z0-9_-]{2,20})", Pattern.CASE_INSENSITIVE)
+            .matcher(combined);
+        while (pathMatcher.find()) {
+            String candidate = canonicalService(pathMatcher.group(1));
+            if (candidate != null) return candidate;
+        }
+
+        for (String svc : SERVICE_KEYWORDS) {
+            if (combined.contains(svc)) return canonicalService(svc);
+        }
+        return null;
+    }
+
+    private String canonicalService(String raw) {
+        if (raw == null || raw.isBlank()) return null;
+        String s = raw.toLowerCase();
+        return SERVICE_ALIAS.getOrDefault(s, s);
+    }
     
     /**
-     * Ranks and filters sensitive information based on analysis depth.
+     * Ranks, deduplicates, and optionally tags findings with microservice names.
      */
-    private List<WebSourceAnalyzer.LeakInfo> rankAndFilterSensitiveInfo(List<WebSourceAnalyzer.LeakInfo> sensitiveInfo, AnalysisDepth depth) {
-        // Sort by confidence score (highest first)
-        sensitiveInfo.sort((a, b) -> Double.compare(
-            calculateLeakPriority(b, depth), 
-            calculateLeakPriority(a, depth)
-        ));
-        
-        // Limit results based on depth
+    private List<WebSourceAnalyzer.LeakInfo> rankAndFilterSensitiveInfo(
+            List<WebSourceAnalyzer.LeakInfo> sensitiveInfo,
+            AnalysisDepth depth) {
+
+        // 1. Dedup: collapse same type+value entries, carry occurrence count
+        sensitiveInfo = deduplicateSensitiveInfo(sensitiveInfo);
+
+        // 2. Sort by priority (highest first); placeholder entries sorted to the end
+        sensitiveInfo.sort((a, b) -> {
+            // Non-placeholder sorts before placeholder at same priority
+            int pa = a.isPlaceholder() ? a.getPriority() - 100 : a.getPriority();
+            int pb = b.isPlaceholder() ? b.getPriority() - 100 : b.getPriority();
+            return Integer.compare(pb, pa);
+        });
+
+        // 3. Limit results based on depth
         int maxResults = switch (depth) {
             case BASIC -> 5;
-            case DEEP -> 15;
+            case DEEP -> 20;
             case COMPREHENSIVE -> -1; // No limit
         };
-        
+
         if (maxResults > 0 && sensitiveInfo.size() > maxResults) {
-            return new ArrayList<>(sensitiveInfo.subList(0, maxResults));
+            sensitiveInfo = new ArrayList<>(sensitiveInfo.subList(0, maxResults));
         }
-        
+
         return sensitiveInfo;
     }
     
@@ -1075,42 +1475,6 @@ public class JavaScriptSecurityAnalyzer {
         }
         
         return endpoints;
-    }
-    
-    /**
-     * Calculates priority score for sensitive information leaks.
-     */
-    private double calculateLeakPriority(WebSourceAnalyzer.LeakInfo leak, AnalysisDepth depth) {
-        double priority = 50.0; // Base priority
-        String type = leak.getType().toLowerCase();
-        String data = leak.getValue().toLowerCase();
-        
-        // High priority for database credentials
-        if (type.contains("database") || type.contains("connection")) {
-            priority += 50;
-        }
-        
-        // High priority for credentials with actual passwords
-        if (data.contains("password") || data.contains("secret")) {
-            priority += 40;
-        }
-        
-        // Priority for production-like indicators
-        if (data.contains("prod") || data.contains(".com") || data.contains("amazonaws")) {
-            priority += 30;
-        }
-        
-        // API keys and tokens
-        if (type.contains("api") || type.contains("token")) {
-            priority += 25;
-        }
-        
-        // Adjust for depth level
-        if (depth == AnalysisDepth.COMPREHENSIVE) {
-            priority *= 1.2; // Boost all scores for comprehensive analysis
-        }
-        
-        return priority;
     }
     
     /**

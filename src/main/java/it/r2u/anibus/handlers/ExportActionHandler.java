@@ -1,18 +1,18 @@
 package it.r2u.anibus.handlers;
 
-import it.r2u.anibus.model.JavaScriptAnalysisResult;
-import it.r2u.anibus.model.PortScanResult;
-import it.r2u.anibus.service.ExportService;
-import javafx.collections.ObservableList;
-import javafx.stage.FileChooser;
-import javafx.stage.Window;
-
 import java.io.File;
 import java.io.FileWriter;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.function.Consumer;
+
+import it.r2u.anibus.model.JavaScriptAnalysisResult;
+import it.r2u.anibus.model.PortScanResult;
+import it.r2u.anibus.service.ExportService;
+import javafx.collections.ObservableList;
+import javafx.stage.FileChooser;
+import javafx.stage.Window;
 
 /**
  * Handler for export operations.
@@ -40,6 +40,16 @@ public class ExportActionHandler {
      * Export JavaScript analysis results to file.
      */
     public void exportJavaScriptAnalysis(JavaScriptAnalysisResult result) {
+        exportJavaScriptAnalysis(result, null);
+    }
+
+    /**
+     * Export JavaScript analysis results to file.
+     *
+     * @param result analysis model data
+     * @param renderedReport full pre-rendered report text from UI console (optional)
+     */
+    public void exportJavaScriptAnalysis(JavaScriptAnalysisResult result, String renderedReport) {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Export JavaScript Analysis Results");
         fileChooser.setInitialFileName("js-analysis-" + 
@@ -54,9 +64,9 @@ public class ExportActionHandler {
         if (file != null) {
             try (FileWriter writer = new FileWriter(file)) {
                 if (file.getName().toLowerCase().endsWith(".json")) {
-                    writer.write(generateJsonExport(result));
+                    writer.write(generateJsonExport(result, renderedReport));
                 } else {
-                    writer.write(generateTextExport(result));
+                    writer.write(generateTextExport(result, renderedReport));
                 }
                 statusSetter.accept("JavaScript analysis exported to " + file.getName());
             } catch (Exception e) {
@@ -65,7 +75,19 @@ public class ExportActionHandler {
         }
     }
     
-    private String generateTextExport(JavaScriptAnalysisResult result) {
+    private String generateTextExport(JavaScriptAnalysisResult result, String renderedReport) {
+        if (renderedReport != null && !renderedReport.isBlank()) {
+            StringBuilder export = new StringBuilder();
+            export.append("JavaScript Security Analysis Report\n");
+            export.append("=====================================\n\n");
+            export.append("Target: ").append(result.getTargetUrl()).append("\n");
+            export.append("Analysis Date: ").append(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date())).append("\n");
+            export.append("Analysis Time: ").append(result.getAnalysisTime()).append(" ms\n\n");
+            export.append(renderedReport);
+            if (!renderedReport.endsWith("\n")) export.append("\n");
+            return export.toString();
+        }
+
         StringBuilder export = new StringBuilder();
         export.append("JavaScript Security Analysis Report\n");
         export.append("=====================================\n\n");
@@ -125,11 +147,11 @@ public class ExportActionHandler {
         return export.toString();
     }
     
-    private String generateJsonExport(JavaScriptAnalysisResult result) {
+    private String generateJsonExport(JavaScriptAnalysisResult result, String renderedReport) {
         // Simple JSON generation - in a real application, you'd use a proper JSON library
         StringBuilder json = new StringBuilder();
         json.append("{\n");
-        json.append("  \"targetUrl\": \"").append(result.getTargetUrl()).append("\",\n");
+        json.append("  \"targetUrl\": \"").append(jsonEscape(result.getTargetUrl())).append("\",\n");
         json.append("  \"analysisTime\": ").append(result.getAnalysisTime()).append(",\n");
         json.append("  \"timestamp\": \"").append(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'").format(new Date())).append("\",\n");
         json.append("  \"summary\": {\n");
@@ -144,13 +166,63 @@ public class ExportActionHandler {
             json.append("    \"framework\": \"").append(result.getArchitecture().getFramework()).append("\",\n");
             json.append("    \"stateManagement\": \"").append(result.getArchitecture().getStateManagement()).append("\",\n");
             json.append("    \"pattern\": \"").append(result.getArchitecture().getPattern()).append("\",\n");
-            json.append("    \"confidence\": ").append(result.getArchitecture().getPatternConfidence()).append("\n");
+            json.append("    \"confidence\": ").append(result.getArchitecture().getPatternConfidence()).append(",\n");
+            json.append("    \"services\": [");
+            for (int i = 0; i < result.getArchitecture().getServices().size(); i++) {
+                if (i > 0) json.append(", ");
+                json.append("\"").append(jsonEscape(result.getArchitecture().getServices().get(i))).append("\"");
+            }
+            json.append("],\n");
+            json.append("    \"middlewares\": [");
+            for (int i = 0; i < result.getArchitecture().getMiddlewares().size(); i++) {
+                if (i > 0) json.append(", ");
+                json.append("\"").append(jsonEscape(result.getArchitecture().getMiddlewares().get(i))).append("\"");
+            }
+            json.append("]\n");
             json.append("  }\n");
         } else {
             json.append("null\n");
         }
+        json.append(",\n");
+
+        json.append("  \"endpoints\": [\n");
+        for (int i = 0; i < result.getEndpoints().size(); i++) {
+            var ep = result.getEndpoints().get(i);
+            json.append("    {\"method\":\"").append(jsonEscape(ep.getHttpMethod()))
+                .append("\",\"url\":\"").append(jsonEscape(ep.getUrl()))
+                .append("\",\"dynamic\":").append(ep.isDynamic()).append("}");
+            if (i < result.getEndpoints().size() - 1) json.append(",");
+            json.append("\n");
+        }
+        json.append("  ],\n");
+
+        json.append("  \"sensitiveInfo\": [\n");
+        for (int i = 0; i < result.getSensitiveInfo().size(); i++) {
+            var leak = result.getSensitiveInfo().get(i);
+            json.append("    {\"type\":\"").append(jsonEscape(leak.getType()))
+                .append("\",\"value\":\"").append(jsonEscape(leak.getValue()))
+                .append("\",\"priority\":").append(leak.getPriority())
+                .append(",\"placeholder\":").append(leak.isPlaceholder()).append("}");
+            if (i < result.getSensitiveInfo().size() - 1) json.append(",");
+            json.append("\n");
+        }
+        json.append("  ]");
+
+        if (renderedReport != null && !renderedReport.isBlank()) {
+            json.append(",\n  \"renderedReport\": \"").append(jsonEscape(renderedReport)).append("\"");
+        }
         json.append("}\n");
         
         return json.toString();
+    }
+
+    private String jsonEscape(String value) {
+        if (value == null) return "";
+        return value
+            .replace("\\", "\\\\")
+            .replace("\"", "\\\"")
+            .replace("\n", "\\n")
+            .replace("\r", "\\r")
+            .replace("\t", "\\t");
     }
 }

@@ -1,16 +1,16 @@
 package it.r2u.anibus.service;
 
-import it.r2u.anibus.model.PortScanResult;
-
-import javafx.application.Platform;
-import javafx.concurrent.Task;
-
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
+
+import it.r2u.anibus.model.PortScanResult;
+import javafx.application.Platform;
+import javafx.concurrent.Task;
 
 /**
  * Enhanced scanning task that performs deep service detection with:
@@ -18,6 +18,11 @@ import java.util.concurrent.ThreadFactory;
  * - Enhanced banner analysis
  * - Protocol fingerprinting
  * - Real-time service identification
+ * - Cloud metadata probing (IMDS)
+ * - /24 reverse-DNS neighbor expansion
+ *
+ * Uses virtual threads and a CompletableFuture pipeline so each open port
+ * triggers detection independently without blocking other probes.
  */
 public class ServiceDetectionTask extends Task<Void> {
 
@@ -30,26 +35,30 @@ public class ServiceDetectionTask extends Task<Void> {
         void onCompleted();
         void onCancelled();
         void onFailed(String error);
+
+        /** Called when cloud instance-metadata findings are available. */
+        default void onCloudMetadata(List<CloudMetadataProbe.MetadataResult> results) {}
+
+        /** Called once for each live neighbor discovered in the /24 subnet. */
+        default void onNeighborDiscovered(ReverseDnsExpander.NeighborInfo neighbor) {}
     }
 
     private final String host;
     private final int startPort;
     private final int endPort;
-    private final int threadCount;
     private final EnhancedServiceDetector detector;
     private final SubnetScanner subnetScanner;
     private final Callbacks callbacks;
     private ExecutorService executor;
 
-    public ServiceDetectionTask(String host, int startPort, int endPort, int threadCount,
+    public ServiceDetectionTask(String host, int startPort, int endPort,
                                EnhancedServiceDetector detector, Callbacks callbacks) {
-        this.host        = host;
-        this.startPort   = startPort;
-        this.endPort     = endPort;
-        this.threadCount = threadCount;
-        this.detector    = detector;
+        this.host          = host;
+        this.startPort     = startPort;
+        this.endPort       = endPort;
+        this.detector      = detector;
         this.subnetScanner = new SubnetScanner();
-        this.callbacks   = callbacks;
+        this.callbacks     = callbacks;
     }
 
     @Override
@@ -61,29 +70,30 @@ public class ServiceDetectionTask extends Task<Void> {
             String hostname  = addr.getCanonicalHostName();
 
             Platform.runLater(() -> callbacks.onHostResolved(ip));
-            
-            // Detect subnet information
+
+            // Subnet info + cloud metadata + neighbor expansion (parallel, non-blocking)
             detectSubnetInfo(ip);
-            
+
             callbacks.onScanStarted(ip, hostname, totalPorts);
             callbacks.onStatus("Service Detection: Scanning " + host + " (" + ip + ") — ports " + startPort + "–" + endPort);
 
             CountDownLatch latch = new CountDownLatch(totalPorts);
-            ThreadFactory daemon = r -> { Thread t = new Thread(r); t.setDaemon(true); return t; };
-            executor = Executors.newFixedThreadPool(threadCount, daemon);
+            executor = Executors.newVirtualThreadPerTaskExecutor();
 
             for (int port = startPort; port <= endPort; port++) {
-                if (isCancelled()) break;
+                if (isCancelled()) {
+                    latch.countDown();
+                    continue;
+                }
                 final int p = port;
-                executor.submit(() -> {
-                    try {
-                        // Enhanced service detection
-                        PortScanResult result = detector.detectService(ip, p);
+
+                CompletableFuture
+                    .supplyAsync(() -> detector.detectService(ip, p), executor)
+                    .thenAcceptAsync(result -> {
                         if (result != null) {
                             Platform.runLater(() -> {
                                 callbacks.onResult(result);
                                 String service = result.getService();
-                                // Highlight security services in status message
                                 if (service.contains("[") && service.contains("]")) {
                                     callbacks.onStatus("[SECURITY] Security detected: " + service + " on port " + p);
                                 } else {
@@ -91,11 +101,11 @@ public class ServiceDetectionTask extends Task<Void> {
                                 }
                             });
                         }
-                    } finally {
+                    }, executor)
+                    .whenComplete((v, err) -> {
                         latch.countDown();
                         updateProgress(totalPorts - latch.getCount(), totalPorts);
-                    }
-                });
+                    });
             }
             latch.await();
         } catch (UnknownHostException e) {
@@ -109,17 +119,36 @@ public class ServiceDetectionTask extends Task<Void> {
 
     private void detectSubnetInfo(String ip) {
         try {
-            String subnet = subnetScanner.detectSubnet(ip);
+            // Basic subnet / gateway detection
+            String subnet  = subnetScanner.detectSubnet(ip);
             String gateway = subnetScanner.detectGateway(ip);
             if (subnet != null || gateway != null) {
                 Platform.runLater(() -> callbacks.onSubnetDetected(
-                    subnet != null ? subnet : "Unknown", 
+                    subnet  != null ? subnet  : "Unknown",
                     gateway != null ? gateway : "Unknown"
                 ));
             }
         } catch (Exception e) {
-            // Subnet detection is optional, don't fail the scan
+            // Subnet detection is optional
         }
+
+        // Cloud metadata probe (fire-and-forget on a virtual thread)
+        CompletableFuture.runAsync(() -> {
+            List<CloudMetadataProbe.MetadataResult> cloud = CloudMetadataProbe.probe();
+            if (!cloud.isEmpty()) {
+                Platform.runLater(() -> callbacks.onCloudMetadata(cloud));
+                cloud.forEach(r ->
+                    callbacks.onStatus("[CLOUD] " + r.getProvider() + " metadata exposed — " +
+                                       r.getFindings().size() + " finding(s)"));
+            }
+        });
+
+        // /24 reverse-DNS expansion (fire-and-forget on a virtual thread)
+        CompletableFuture.runAsync(() ->
+            ReverseDnsExpander.expandSubnet(ip, neighbor ->
+                Platform.runLater(() -> callbacks.onNeighborDiscovered(neighbor))
+            )
+        );
     }
 
     @Override protected void succeeded() { super.succeeded(); callbacks.onCompleted(); }

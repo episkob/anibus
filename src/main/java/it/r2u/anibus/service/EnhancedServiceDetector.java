@@ -59,12 +59,33 @@ public class EnhancedServiceDetector {
             StringBuilder enhancedBanner = new StringBuilder();
             enhancedBanner.append(banner);
             
-            // 1. OS Detection
+            // 1. OS Detection (banner + TTL)
             OSDetector.OSInfo osInfo = OSDetector.detectOS(host, banner);
             if (osInfo != null && osInfo.getConfidence() >= 50) {
                 enhancedBanner.append("\n").append(osInfo.toString());
             }
-            
+
+            // 1b. Passive Fingerprinting (Nmap-style behavioral analysis)
+            PassiveFingerprinter.FingerprintResult fp = PassiveFingerprinter.fingerprint(host, port, banner);
+            if (fp != null) {
+                // Upgrade OS guess if passive fingerprint is more confident
+                if (fp.getOs() != null) {
+                    int currentConf = (osInfo != null) ? osInfo.getConfidence() : 0;
+                    if (fp.getConfidence() > currentConf) {
+                        enhancedBanner.append("\n[OS] OS (passive): ").append(fp.getOs())
+                                      .append(" | Confidence: ").append(fp.getConfidence()).append("%");
+                    }
+                }
+                // Always show the behavioral signals and inferred stack
+                if (fp.getServer() != null) {
+                    enhancedBanner.append("\n[FINGERPRINT] Stack (passive): ").append(fp.getServer());
+                }
+                if (!fp.getSignals().isEmpty()) {
+                    enhancedBanner.append("\n[FINGERPRINT] Behavioral signals:");
+                    fp.getSignals().forEach(s -> enhancedBanner.append("\n  • ").append(s));
+                }
+            }
+
             // 2. Vulnerability Scanning
             if (serviceName != null && !serviceName.isEmpty()) {
                 java.util.List<VulnerabilityScanner.Vulnerability> vulns = 

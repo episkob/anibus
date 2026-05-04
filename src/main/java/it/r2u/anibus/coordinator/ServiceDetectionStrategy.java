@@ -1,7 +1,11 @@
 package it.r2u.anibus.coordinator;
 
+import java.util.List;
+
 import it.r2u.anibus.model.PortScanResult;
+import it.r2u.anibus.service.CloudMetadataProbe;
 import it.r2u.anibus.service.EnhancedServiceDetector;
+import it.r2u.anibus.service.ReverseDnsExpander;
 import it.r2u.anibus.service.ServiceDetectionTask;
 import javafx.application.Platform;
 import javafx.beans.property.DoubleProperty;
@@ -27,7 +31,6 @@ public class ServiceDetectionStrategy implements ScanStrategy {
             context.getHost(),
             context.getStartPort(),
             context.getEndPort(),
-            context.getThreadCount(),
             detector,
             new ServiceDetectionTask.Callbacks() {
                 @Override
@@ -54,7 +57,17 @@ public class ServiceDetectionStrategy implements ScanStrategy {
                 public void onSubnetDetected(String subnet, String gateway) {
                     context.getCallbacks().onSubnetDetected(subnet, gateway);
                 }
-                
+
+                @Override
+                public void onCloudMetadata(List<CloudMetadataProbe.MetadataResult> results) {
+                    context.getCallbacks().onCloudMetadata(results);
+                }
+
+                @Override
+                public void onNeighborDiscovered(ReverseDnsExpander.NeighborInfo neighbor) {
+                    context.getCallbacks().onNeighborDiscovered(neighbor);
+                }
+
                 @Override
                 public void onCompleted() {
                     context.getCallbacks().onCompleted();

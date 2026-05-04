@@ -2,7 +2,15 @@
 
 A modern desktop port scanning application with enhanced security analysis, built with **Anibus Design System**, **JavaFX 21.0.5** and **Java 21**.
 
-> **Version:** 1.4.0 · **Author:** Iaroslav Tsymbaliuk · **Position:** Intern (2025–2026) @ r2u
+> **Version:** 1.5.0 · **Author:** Iaroslav Tsymbaliuk · **Position:** Intern (2025–2026) @ r2u
+
+## What's New in 1.5.0
+
+- Expanded **attack-surface analysis** with risk-oriented sections (Auth endpoints, internal microservice hosts, third-party leakage targets)
+- Added **sensitive deep-dive** with module context, token type hints, and history route extraction
+- Improved **deep schema inference** with richer cross-links and semantic field grouping
+- Added **dynamic endpoint/fuzzing targets** and hidden admin path heuristics
+- Fixed **JavaScript report export completeness**: exported reports now keep full rendered analysis content
 
 ---
 

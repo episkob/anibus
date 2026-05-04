@@ -1,6 +1,10 @@
 package it.r2u.anibus.coordinator;
 
+import java.util.List;
+
 import it.r2u.anibus.model.PortScanResult;
+import it.r2u.anibus.service.CloudMetadataProbe;
+import it.r2u.anibus.service.ReverseDnsExpander;
 
 /**
  * Context object encapsulating all scan parameters and callbacks.
@@ -91,5 +95,11 @@ public class ScanContext {
         
         // Optional callback for subnet detection in service detection mode
         default void onSubnetDetected(String subnet, String gateway) {}
+
+        // Optional callback for cloud instance metadata findings
+        default void onCloudMetadata(List<CloudMetadataProbe.MetadataResult> results) {}
+
+        // Optional callback for /24 neighbor discovery with reverse DNS
+        default void onNeighborDiscovered(ReverseDnsExpander.NeighborInfo neighbor) {}
     }
 }

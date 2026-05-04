@@ -114,6 +114,15 @@ public class ConsoleViewManager {
             } else if (line.startsWith("[INDICATORS]")) {
                 currentSection = "CONTAINER";
                 line = line.substring(12).trim();
+            } else if (line.startsWith("[CLOUD]")) {
+                currentSection = "CLOUD METADATA";
+                line = line.substring(7).trim();
+            } else if (line.startsWith("[NEIGHBOR]")) {
+                currentSection = "SUBNET NEIGHBORS";
+                line = line.substring(10).trim();
+            } else if (line.startsWith("[FINGERPRINT]")) {
+                currentSection = "PASSIVE FINGERPRINT";
+                line = line.substring(13).trim();
             } else if (line.contains("[ALERT] LEAKS:")) {
                 currentSection = "LEAKS";
                 line = line.substring(line.indexOf("[ALERT] LEAKS:") + 14).trim();
@@ -157,6 +166,9 @@ public class ConsoleViewManager {
                 case "CONTAINER" -> renderSimpleSection(sb, "Container / Orchestration", lines);
                 case "LEAKS" -> renderLeaksSection(sb, lines);
                 case "CRITICAL WARNINGS" -> renderSimpleSection(sb, "CRITICAL", lines);
+                case "CLOUD METADATA" -> renderSimpleSection(sb, "Cloud Metadata (IMDS)", lines);
+                case "SUBNET NEIGHBORS" -> renderSimpleSection(sb, "Subnet Neighbors (/24)", lines);
+                case "PASSIVE FINGERPRINT" -> renderSimpleSection(sb, "Passive Fingerprint", lines);
                 default -> renderSimpleSection(sb, section, lines);
             }
         }

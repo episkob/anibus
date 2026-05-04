@@ -2,7 +2,15 @@
 
 Un'applicazione desktop moderna per la scansione delle porte con analisi di sicurezza approfondita, realizzata con **Anibus Design System**, **JavaFX 21.0.5** e **Java 21**.
 
-> **Versione:** 1.4.0 · **Autore:** Iaroslav Tsymbaliuk · **Ruolo:** Intern (2025–2026) @ r2u
+> **Versione:** 1.5.0 · **Autore:** Iaroslav Tsymbaliuk · **Ruolo:** Intern (2025–2026) @ r2u
+
+## Novità in 1.5.0
+
+- Analisi **attack surface** estesa: endpoint Auth, host microservizi interni, target di leakage verso terze parti
+- Nuova sezione **Sensitive Deep-Dive** con contesto modulo, tipizzazione token e historyLocations
+- **Deep Schema Inference** migliorata con cross-link più ricchi e raggruppamento semantico dei campi
+- Aggiunti **endpoint dinamici / fuzzing targets** e euristiche per pannelli amministrativi nascosti
+- Corretto l'**export dei report JavaScript**: ora i file salvano il report completo renderizzato
 
 ---
 

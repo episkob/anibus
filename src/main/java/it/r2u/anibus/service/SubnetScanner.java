@@ -1,6 +1,11 @@
 package it.r2u.anibus.service;
 
-import java.net.*;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.InterfaceAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.Enumeration;
 
 /**
@@ -31,7 +36,7 @@ public class SubnetScanner {
             
             // Fallback: estimate based on IP class
             return estimateSubnet(targetIp);
-        } catch (Exception e) {
+        } catch (SocketException | UnknownHostException e) {
             return null;
         }
     }
@@ -52,12 +57,12 @@ public class SubnetScanner {
                         InetAddress addr = ifaceAddr.getAddress();
                         if (addr instanceof Inet4Address && sameSubnet(addr, target, ifaceAddr.getNetworkPrefixLength())) {
                             // Gateway is typically .1 or .254 in the subnet
-                            return estimateGateway(addr, ifaceAddr.getNetworkPrefixLength());
+                            return estimateGateway(addr);
                         }
                     }
                 }
             }
-        } catch (Exception e) {
+        } catch (SocketException | UnknownHostException e) {
             // Ignore
         }
         return null;
@@ -136,7 +141,7 @@ public class SubnetScanner {
         return null;
     }
 
-    private String estimateGateway(InetAddress addr, short prefixLength) {
+    private String estimateGateway(InetAddress addr) {
         byte[] ip = addr.getAddress();
         byte[] gateway = ip.clone();
         

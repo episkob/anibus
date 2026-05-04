@@ -12,10 +12,10 @@ import java.util.regex.Pattern;
 public class OSDetector {
     
     public static class OSInfo {
-        private String osName;
-        private String kernelVersion;
-        private int confidence; // 0-100%
-        private String detectionMethod;
+        private final String osName;
+        private final String kernelVersion;
+        private final int confidence; // 0-100%
+        private final String detectionMethod;
         
         public OSInfo(String osName, String kernelVersion, int confidence, String detectionMethod) {
             this.osName = osName;

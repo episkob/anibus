@@ -26,7 +26,6 @@ public class StandardScanStrategy implements ScanStrategy {
             context.getHost(),
             context.getStartPort(),
             context.getEndPort(),
-            context.getThreadCount(),
             scanner,
             new ScanTask.Callbacks() {
                 @Override

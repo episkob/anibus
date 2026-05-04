@@ -12,6 +12,8 @@
 <?import javafx.scene.control.Spinner?>
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.TreeItem?>
+<?import javafx.scene.control.TreeView?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Priority?>
 <?import javafx.scene.layout.Region?>
@@ -187,6 +189,13 @@
                                         </VBox>
                                     </children>
                                 </HBox>
+
+                                <!-- Collapsible tree view of discovered data structures -->
+                                <Label text="DATA STRUCTURES" styleClass="info-key" />
+                                <TreeView fx:id="jsStructureTree"
+                                          prefHeight="220"
+                                          showRoot="false"
+                                          styleClass="structure-tree" />
                             </children>
                         </VBox>
 
