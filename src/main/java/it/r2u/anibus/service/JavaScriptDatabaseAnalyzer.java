@@ -1,10 +1,11 @@
 package it.r2u.anibus.service;
 
-import it.r2u.anibus.service.WebSourceAnalyzer.LeakInfo;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import it.r2u.anibus.service.WebSourceAnalyzer.LeakInfo;
 
 /**
  * Specialized analyzer for database credentials and connection strings in JavaScript.
@@ -13,63 +14,150 @@ import java.util.regex.Pattern;
 public class JavaScriptDatabaseAnalyzer {
     
     /**
-     * Database credential patterns by priority (higher priority = more critical)
+     * Database credential patterns by priority (higher priority = more critical).
+     * Covers 30+ database engines, ORMs, cloud-managed DBs, and message brokers.
      */
     private static final DatabasePattern[] DB_PATTERNS = {
-        // Priority 10 - Complete connection strings with credentials
+
+        // ── Priority 10: Full connection strings WITH credentials ─────────────
         new DatabasePattern(
-            Pattern.compile("(mongodb://[^:]+:[^@]+@[^/\"'\\s]+(?:/[^\"'\\s]*)?)", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("(mongodb(?:\\+srv)?://[^:]+:[^@]+@[^/\"'\\s]+(?:/[^\"'\\s]*)?)", Pattern.CASE_INSENSITIVE),
             "MongoDB Connection with Credentials", 10),
         new DatabasePattern(
             Pattern.compile("(mysql://[^:]+:[^@]+@[^/\"'\\s]+(?:/[^\"'\\s]*)?)", Pattern.CASE_INSENSITIVE),
             "MySQL Connection with Credentials", 10),
         new DatabasePattern(
+            Pattern.compile("(mariadb://[^:]+:[^@]+@[^/\"'\\s]+(?:/[^\"'\\s]*)?)", Pattern.CASE_INSENSITIVE),
+            "MariaDB Connection with Credentials", 10),
+        new DatabasePattern(
             Pattern.compile("(postgresql://[^:]+:[^@]+@[^/\"'\\s]+(?:/[^\"'\\s]*)?)", Pattern.CASE_INSENSITIVE),
             "PostgreSQL Connection with Credentials", 10),
         new DatabasePattern(
-            Pattern.compile("(redis://[^:]*:[^@]*@[^/\"'\\s]+)", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("(cockroachdb://[^:]+:[^@]+@[^/\"'\\s]+(?:/[^\"'\\s]*)?)", Pattern.CASE_INSENSITIVE),
+            "CockroachDB Connection with Credentials", 10),
+        new DatabasePattern(
+            Pattern.compile("(rediss?://[^:]+:[^@]+@[^/\"'\\s]+)", Pattern.CASE_INSENSITIVE),
             "Redis Connection with Credentials", 10),
-            
-        // Priority 9 - Database passwords in config
+        new DatabasePattern(
+            Pattern.compile("(amqps?://[^:]+:[^@]+@[^/\"'\\s]+(?:/[^\"'\\s]*)?)", Pattern.CASE_INSENSITIVE),
+            "RabbitMQ/AMQP Connection with Credentials", 10),
+        new DatabasePattern(
+            Pattern.compile("(couchdb://[^:]+:[^@]+@[^/\"'\\s]+(?:/[^\"'\\s]*)?)", Pattern.CASE_INSENSITIVE),
+            "CouchDB Connection with Credentials", 10),
+        new DatabasePattern(
+            Pattern.compile("(neo4j(?:\\+s)?://[^:]+:[^@]+@[^/\"'\\s]+(?:/[^\"'\\s]*)?)", Pattern.CASE_INSENSITIVE),
+            "Neo4j Connection with Credentials", 10),
+        new DatabasePattern(
+            Pattern.compile("(clickhouse://[^:]+:[^@]+@[^/\"'\\s]+(?:/[^\"'\\s]*)?)", Pattern.CASE_INSENSITIVE),
+            "ClickHouse Connection with Credentials", 10),
+        new DatabasePattern(
+            Pattern.compile("(mssqls?://[^:]+:[^@]+@[^/\"'\\s]+(?:/[^\"'\\s]*)?)", Pattern.CASE_INSENSITIVE),
+            "MSSQL Connection with Credentials", 10),
+        new DatabasePattern(
+            Pattern.compile("(oracle://[^:]+:[^@]+@[^/\"'\\s]+(?:/[^\"'\\s]*)?)", Pattern.CASE_INSENSITIVE),
+            "Oracle Connection with Credentials", 10),
+        new DatabasePattern(
+            Pattern.compile("(cassandra://[^:]+:[^@]+@[^/\"'\\s]+(?:/[^\"'\\s]*)?)", Pattern.CASE_INSENSITIVE),
+            "Cassandra Connection with Credentials", 10),
+        new DatabasePattern(
+            Pattern.compile("(couchbases?://[^:]+:[^@]+@[^/\"'\\s]+(?:/[^\"'\\s]*)?)", Pattern.CASE_INSENSITIVE),
+            "Couchbase Connection with Credentials", 10),
+        new DatabasePattern(
+            Pattern.compile("(influxdb://[^:]+:[^@]+@[^/\"'\\s]+(?:/[^\"'\\s]*)?)", Pattern.CASE_INSENSITIVE),
+            "InfluxDB Connection with Credentials", 10),
+        new DatabasePattern(
+            Pattern.compile("(elasticsearch://[^:]+:[^@]+@[^/\"'\\s]+(?:/[^\"'\\s]*)?)", Pattern.CASE_INSENSITIVE),
+            "Elasticsearch Connection with Credentials", 10),
+        // ADO.NET-style (MSSQL / Oracle)
+        new DatabasePattern(
+            Pattern.compile("Server=[^;\\s]+;\\s*Database=[^;\\s]+;[^\"'<>]*Password=[^;\"'<>]+", Pattern.CASE_INSENSITIVE),
+            "MSSQL ADO.NET Connection String", 10),
+        new DatabasePattern(
+            Pattern.compile("Data Source=[^;\\s]+;\\s*Initial Catalog=[^;\\s]+;[^\"'<>]*Password=[^;\"'<>]+", Pattern.CASE_INSENSITIVE),
+            "Oracle ADO.NET Connection String", 10),
+
+        // ── Priority 9: Passwords in config ───────────────────────────────────
         new DatabasePattern(
             Pattern.compile("(?:password|pwd|passwd)\\s*[:=]\\s*['\"]([^'\"\\s]{4,})['\"]", Pattern.CASE_INSENSITIVE),
             "Database Password", 9),
         new DatabasePattern(
-            Pattern.compile("(?:db_password|database_password|DB_PWD)\\s*[:=]\\s*['\"]([^'\"\\s]+)['\"]", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("(?:db_password|database_password|DB_PWD|DB_PASS)\\s*[:=]\\s*['\"]([^'\"\\s]+)['\"]", Pattern.CASE_INSENSITIVE),
             "Database Password Variable", 9),
-            
-        // Priority 8 - Database usernames  
+
+        // ── Priority 8: Usernames ──────────────────────────────────────────────
         new DatabasePattern(
             Pattern.compile("(?:username|user|uid)\\s*[:=]\\s*['\"]([^'\"\\s]{3,})['\"].*(?:password|pwd)", Pattern.CASE_INSENSITIVE),
             "Database Username with Password Context", 8),
         new DatabasePattern(
-            Pattern.compile("(?:db_user|database_user|DB_USER)\\s*[:=]\\s*['\"]([^'\"\\s]+)['\"]", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("(?:db_user|database_user|DB_USER|DB_USERNAME)\\s*[:=]\\s*['\"]([^'\"\\s]+)['\"]", Pattern.CASE_INSENSITIVE),
             "Database Username Variable", 8),
-            
-        // Priority 7 - Complete database configs
+
+        // ── Priority 7: ORM / driver config calls ─────────────────────────────
         new DatabasePattern(
             Pattern.compile("database\\s*[:=]\\s*\\{[^}]*host\\s*[:=]\\s*['\"]([^'\"]+)['\"][^}]*\\}", Pattern.CASE_INSENSITIVE),
             "Database Configuration Object", 7),
         new DatabasePattern(
             Pattern.compile("sequelize\\s*\\([^)]*['\"]([^'\"]+)['\"][^)]*['\"]([^'\"]+)['\"][^)]*['\"]([^'\"]+)['\"]", Pattern.CASE_INSENSITIVE),
             "Sequelize Configuration", 7),
-            
-        // Priority 6 - Database hosts and ports
         new DatabasePattern(
-            Pattern.compile("(?:host|hostname|server)\\s*[:=]\\s*['\"]([^'\"]+\\.(?:com|net|org|io|local|localhost))['\"]", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("typeorm.*type.*['\"](?:mysql|postgres|mariadb|sqlite|mssql|oracle|mongodb)['\"]", Pattern.CASE_INSENSITIVE),
+            "TypeORM Configuration", 7),
+        new DatabasePattern(
+            Pattern.compile("prisma.*datasource.*url.*=.*env\\(['\"]([^'\"]+)['\"]\\)", Pattern.CASE_INSENSITIVE),
+            "Prisma Datasource URL", 7),
+        new DatabasePattern(
+            Pattern.compile("knex\\s*\\([^)]*client\\s*[:=]\\s*['\"]([^'\"]+)['\"]", Pattern.CASE_INSENSITIVE),
+            "Knex.js Configuration", 7),
+        new DatabasePattern(
+            Pattern.compile("mongoose\\.connect\\s*\\(['\"]([^'\"]+)['\"]", Pattern.CASE_INSENSITIVE),
+            "Mongoose Connect Call", 7),
+        new DatabasePattern(
+            Pattern.compile("createPool\\s*\\([^)]*host\\s*[:=]\\s*['\"]([^'\"]+)['\"]", Pattern.CASE_INSENSITIVE),
+            "MySQL/MariaDB Pool Configuration", 7),
+        new DatabasePattern(
+            Pattern.compile("new Client\\s*\\([^)]*password\\s*[:=]\\s*['\"]([^'\"]+)['\"]", Pattern.CASE_INSENSITIVE),
+            "pg Client Configuration", 7),
+        new DatabasePattern(
+            Pattern.compile("createClient\\s*\\([^)]*url\\s*[:=]\\s*['\"]([^'\"]+)['\"]", Pattern.CASE_INSENSITIVE),
+            "Redis createClient Call", 7),
+        new DatabasePattern(
+            Pattern.compile("new MongoClient\\s*\\(['\"]([^'\"]+)['\"]", Pattern.CASE_INSENSITIVE),
+            "MongoClient Constructor", 7),
+        new DatabasePattern(
+            Pattern.compile("elasticsearch.*node\\s*[:=]\\s*['\"]([^'\"]+)['\"]", Pattern.CASE_INSENSITIVE),
+            "Elasticsearch Node URL", 7),
+        new DatabasePattern(
+            Pattern.compile("firebase.*databaseURL\\s*[:=]\\s*['\"]([^'\"]+)['\"]", Pattern.CASE_INSENSITIVE),
+            "Firebase Database URL", 7),
+        new DatabasePattern(
+            Pattern.compile("supabase.*url\\s*[:=]\\s*['\"]([^'\"]+\\.supabase\\.co)['\"]", Pattern.CASE_INSENSITIVE),
+            "Supabase URL", 7),
+        new DatabasePattern(
+            Pattern.compile("neon.*connectionString\\s*[:=]\\s*['\"]([^'\"]+\\.neon\\.tech[^'\"]*)['\"]", Pattern.CASE_INSENSITIVE),
+            "Neon Serverless Postgres URL", 7),
+        new DatabasePattern(
+            Pattern.compile("jdbc:([a-z:]+)//[^\"'\\s]+", Pattern.CASE_INSENSITIVE),
+            "JDBC Connection String", 7),
+        new DatabasePattern(
+            Pattern.compile("drizzle.*driver.*['\"](?:mysql|pg|sqlite|turso|neon)['\"]", Pattern.CASE_INSENSITIVE),
+            "Drizzle ORM Configuration", 7),
+
+        // ── Priority 6: Hosts and ports ───────────────────────────────────────
+        new DatabasePattern(
+            Pattern.compile("(?:host|hostname|server)\\s*[:=]\\s*['\"]([^'\"]+\\.(?:com|net|org|io|local|internal|cluster\\.local))['\"]", Pattern.CASE_INSENSITIVE),
             "Database Host", 6),
         new DatabasePattern(
-            Pattern.compile("(?:port|db_port)\\s*[:=]\\s*['\"]?(\\d{4,5})['\"]?.*(?:mongo|mysql|postgres|redis)", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("(?:port|db_port)\\s*[:=]\\s*['\"]?(\\d{4,5})['\"]?.*(?:mongo|mysql|postgres|redis|cassandra|elastic|solr|rabbit|couch|neo4j|influx|clickhouse)", Pattern.CASE_INSENSITIVE),
             "Database Port", 6),
-            
-        // Priority 5 - Database names
+
+        // ── Priority 5: Database names ────────────────────────────────────────
         new DatabasePattern(
-            Pattern.compile("(?:database|db_name|schema)\\s*[:=]\\s*['\"]([^'\"\\s]+)['\"]", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("(?:database|db_name|dbname|schema)\\s*[:=]\\s*['\"]([^'\"\\s]+)['\"]", Pattern.CASE_INSENSITIVE),
             "Database Name", 5),
-            
-        // Priority 4 - Connection strings without credentials
+
+        // ── Priority 4: Connection strings WITHOUT credentials ────────────────
         new DatabasePattern(
-            Pattern.compile("(mongodb://[^\"'\\s@/]+(?:/[^\"'\\s]*)?)", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("(mongodb(?:\\+srv)?://[^\"'\\s@/]+(?:/[^\"'\\s]*)?)", Pattern.CASE_INSENSITIVE),
             "MongoDB Connection String", 4),
         new DatabasePattern(
             Pattern.compile("(mysql://[^\"'\\s@/]+(?:/[^\"'\\s]*)?)", Pattern.CASE_INSENSITIVE),
@@ -77,20 +165,41 @@ public class JavaScriptDatabaseAnalyzer {
         new DatabasePattern(
             Pattern.compile("(postgresql://[^\"'\\s@/]+(?:/[^\"'\\s]*)?)", Pattern.CASE_INSENSITIVE),
             "PostgreSQL Connection String", 4),
-            
-        // Priority 3 - Cloud database references  
         new DatabasePattern(
-            Pattern.compile("([a-zA-Z0-9-]+\\.(?:rds\\.amazonaws\\.com|atlas\\.mongodb\\.com|database\\.azure\\.com))", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("(rediss?://[^\"'\\s@/]+)", Pattern.CASE_INSENSITIVE),
+            "Redis Connection String", 4),
+        new DatabasePattern(
+            Pattern.compile("(cassandra://[^\"'\\s@/]+(?:/[^\"'\\s]*)?)", Pattern.CASE_INSENSITIVE),
+            "Cassandra Connection String", 4),
+        new DatabasePattern(
+            Pattern.compile("(neo4j(?:\\+s)?://[^\"'\\s@/]+(?:/[^\"'\\s]*)?)", Pattern.CASE_INSENSITIVE),
+            "Neo4j Connection String", 4),
+        new DatabasePattern(
+            Pattern.compile("(clickhouse://[^\"'\\s@/]+(?:/[^\"'\\s]*)?)", Pattern.CASE_INSENSITIVE),
+            "ClickHouse Connection String", 4),
+        new DatabasePattern(
+            Pattern.compile("(influxdb://[^\"'\\s@/]+(?:/[^\"'\\s]*)?)", Pattern.CASE_INSENSITIVE),
+            "InfluxDB Connection String", 4),
+        new DatabasePattern(
+            Pattern.compile("(elasticsearch://[^\"'\\s@/]+(?:/[^\"'\\s]*)?)", Pattern.CASE_INSENSITIVE),
+            "Elasticsearch Connection String", 4),
+        new DatabasePattern(
+            Pattern.compile("(libsql://[^\"'\\s]+)", Pattern.CASE_INSENSITIVE),
+            "Turso/libSQL Connection String", 4),
+
+        // ── Priority 3: Cloud database URLs ──────────────────────────────────
+        new DatabasePattern(
+            Pattern.compile("([a-zA-Z0-9-]+\\.(?:rds\\.amazonaws\\.com|atlas\\.mongodb\\.com|database\\.azure\\.com|cloud\\.neon\\.tech|supabase\\.co|turso\\.io|cockroachlabs\\.cloud|planetscale\\.com|tidb\\.cloud|aiven\\.io|elephantsql\\.com|redislabs\\.com|upstash\\.io))", Pattern.CASE_INSENSITIVE),
             "Cloud Database URL", 3),
-            
-        // Priority 2 - DB-related environment variables
+
+        // ── Priority 2: Env vars ──────────────────────────────────────────────
         new DatabasePattern(
-            Pattern.compile("process\\.env\\.([A-Z_]*(?:DB|DATABASE|MONGO|MYSQL|POSTGRES)[A-Z_]*)", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("process\\.env\\.([A-Z_]*(?:DB|DATABASE|MONGO|MYSQL|POSTGRES|REDIS|ELASTIC|CASSANDRA|DYNAMO|FIREBASE|SUPABASE|NEON|TURSO|CLICKHOUSE|INFLUX|NEO4J|RABBIT|COUCH)[A-Z_]*)", Pattern.CASE_INSENSITIVE),
             "Database Environment Variable", 2),
-            
-        // Priority 1 - Generic database mentions
+
+        // ── Priority 1: Generic mentions ──────────────────────────────────────
         new DatabasePattern(
-            Pattern.compile("(?:connect|connection).*(?:mongodb|mysql|postgres|redis)", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("(?:connect|connection).*(?:mongodb|mysql|mariadb|postgres|redis|cassandra|neo4j|elasticsearch|dynamodb|firebase|couchdb|couchbase|clickhouse|influxdb|cockroachdb|planetscale|supabase|neon|turso|rabbitmq|solr|scylladb|tidb)", Pattern.CASE_INSENSITIVE),
             "Database Connection Reference", 1)
     };
     

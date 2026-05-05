@@ -172,6 +172,26 @@ src/
 | JavaFX    | 21.0.5   |
 | Maven     | 3.8+     |
 
+> **Nota:** Il JAR pre-compilato include già tutte le librerie native JavaFX per Linux, Windows e macOS — non è necessaria un'installazione separata di JavaFX.
+
+---
+
+## Avvio Rapido (JAR pre-compilato)
+
+Scarica `anibus-1.5.0.jar` dalla pagina [Releases](../../releases) ed esegui:
+
+```bash
+# Linux / macOS
+java -jar anibus-1.5.0.jar
+
+# Windows
+java -jar anibus-1.5.0.jar
+```
+
+Su Windows puoi anche fare **doppio clic** sul file `.jar` se Java 21 è installato e associato ai file `.jar`.
+
+> **Richiede Java 21+.** Scarica da [https://adoptium.net](https://adoptium.net)
+
 ---
 
 ## Compilazione e Avvio

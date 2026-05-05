@@ -194,25 +194,117 @@ public class WebSourceAnalyzer {
     
     private static List<LeakInfo> findDatabaseConnections(String source) {
         List<LeakInfo> leaks = new ArrayList<>();
-        
+
         // MongoDB
-        findMatches(source, 
+        findMatches(source,
             Pattern.compile("mongodb(?:\\+srv)?://[^\\s\"'<>]+"),
-            "MongoDB Connection",
-            leaks);
-        
-        // MySQL/PostgreSQL/Redis
+            "MongoDB Connection", leaks);
+
+        // MySQL / MariaDB
         findMatches(source,
-            Pattern.compile("(?:mysql|postgresql|postgres|redis)://[^\\s\"'<>]+", Pattern.CASE_INSENSITIVE),
-            "Database Connection",
-            leaks);
-        
-        // JDBC
+            Pattern.compile("(?:mysql|mariadb)://[^\\s\"'<>]+", Pattern.CASE_INSENSITIVE),
+            "MySQL/MariaDB Connection", leaks);
+
+        // PostgreSQL / CockroachDB / Neon
         findMatches(source,
-            Pattern.compile("jdbc:[^\\s\"'<>]+", Pattern.CASE_INSENSITIVE),
-            "JDBC Connection",
-            leaks);
-        
+            Pattern.compile("(?:postgresql|postgres|cockroachdb)://[^\\s\"'<>]+", Pattern.CASE_INSENSITIVE),
+            "PostgreSQL Connection", leaks);
+
+        // Redis / Rediss (TLS)
+        findMatches(source,
+            Pattern.compile("rediss?://[^\\s\"'<>]+", Pattern.CASE_INSENSITIVE),
+            "Redis Connection", leaks);
+
+        // Elasticsearch / OpenSearch
+        findMatches(source,
+            Pattern.compile("(?:elasticsearch|opensearch)://[^\\s\"'<>]+", Pattern.CASE_INSENSITIVE),
+            "Elasticsearch/OpenSearch Connection", leaks);
+
+        // Cassandra
+        findMatches(source,
+            Pattern.compile("cassandra://[^\\s\"'<>]+", Pattern.CASE_INSENSITIVE),
+            "Cassandra Connection", leaks);
+
+        // Neo4j
+        findMatches(source,
+            Pattern.compile("neo4j(?:\\+s)?://[^\\s\"'<>]+", Pattern.CASE_INSENSITIVE),
+            "Neo4j Connection", leaks);
+
+        // ClickHouse
+        findMatches(source,
+            Pattern.compile("clickhouse://[^\\s\"'<>]+", Pattern.CASE_INSENSITIVE),
+            "ClickHouse Connection", leaks);
+
+        // InfluxDB
+        findMatches(source,
+            Pattern.compile("influxdb://[^\\s\"'<>]+", Pattern.CASE_INSENSITIVE),
+            "InfluxDB Connection", leaks);
+
+        // CouchDB
+        findMatches(source,
+            Pattern.compile("couchdb://[^\\s\"'<>]+", Pattern.CASE_INSENSITIVE),
+            "CouchDB Connection", leaks);
+
+        // Couchbase
+        findMatches(source,
+            Pattern.compile("couchbase(?:s)?://[^\\s\"'<>]+", Pattern.CASE_INSENSITIVE),
+            "Couchbase Connection", leaks);
+
+        // RabbitMQ / AMQP
+        findMatches(source,
+            Pattern.compile("amqps?://[^\\s\"'<>]+", Pattern.CASE_INSENSITIVE),
+            "RabbitMQ/AMQP Connection", leaks);
+
+        // MSSQL
+        findMatches(source,
+            Pattern.compile("mssqls?://[^\\s\"'<>]+", Pattern.CASE_INSENSITIVE),
+            "MSSQL Connection", leaks);
+
+        // Oracle
+        findMatches(source,
+            Pattern.compile("oracle://[^\\s\"'<>]+", Pattern.CASE_INSENSITIVE),
+            "Oracle Connection", leaks);
+
+        // JDBC (any)
+        findMatches(source,
+            Pattern.compile("jdbc:[a-z]+:(?:thin:)?//[^\\s\"'<>]+", Pattern.CASE_INSENSITIVE),
+            "JDBC Connection", leaks);
+
+        // Firebase Realtime DB
+        findMatches(source,
+            Pattern.compile("https://[a-zA-Z0-9-]+\\.firebaseio\\.com"),
+            "Firebase Realtime Database URL", leaks);
+
+        // Supabase
+        findMatches(source,
+            Pattern.compile("https://[a-zA-Z0-9-]+\\.supabase\\.co"),
+            "Supabase URL", leaks);
+
+        // PlanetScale
+        findMatches(source,
+            Pattern.compile("[a-zA-Z0-9-]+\\.psdb\\.cloud"),
+            "PlanetScale Connection", leaks);
+
+        // Neon serverless Postgres
+        findMatches(source,
+            Pattern.compile("[a-zA-Z0-9-]+\\.neon\\.tech"),
+            "Neon Serverless Postgres URL", leaks);
+
+        // Turso / libSQL
+        findMatches(source,
+            Pattern.compile("libsql://[^\\s\"'<>]+"),
+            "Turso/libSQL Connection", leaks);
+
+        // DynamoDB endpoint hints
+        findMatches(source,
+            Pattern.compile("dynamodb\\.[a-z0-9-]+\\.amazonaws\\.com"),
+            "DynamoDB Endpoint", leaks);
+
+        // ADO.NET MSSQL connection strings
+        findMatches(source,
+            Pattern.compile("Server=[^;\\s]+;\\s*Database=[^;\\s]+;[^\"'<>]*Password=[^;\"'<>]+", Pattern.CASE_INSENSITIVE),
+            "MSSQL ADO.NET Connection String", leaks);
+
         return leaks;
     }
     

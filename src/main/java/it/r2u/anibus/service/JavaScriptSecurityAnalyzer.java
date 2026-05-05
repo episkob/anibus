@@ -803,12 +803,15 @@ public class JavaScriptSecurityAnalyzer {
         
         // Middleware detection
         List<String> middlewares = detectMiddlewares(jsContent);
+
+        // Infrastructure inference
+        ArchitectureInfo.InfrastructureInfo infra = detectInfrastructure(jsContent);
         
         String evidence = buildArchitectureEvidence(framework, stateManagement, pattern);
         double confidence = calculateArchitectureConfidence(framework, stateManagement, pattern);
         
         return new ArchitectureInfo(pattern, stateManagement, framework, cms, services, 
-                                  configurations, middlewares, evidence, confidence);
+                                  configurations, middlewares, evidence, confidence, infra);
     }
     
     // Helper methods implementation continues...
@@ -989,114 +992,302 @@ public class JavaScriptSecurityAnalyzer {
     }
 
     private ArchitectureInfo.Framework detectFramework(String jsContent) {
-        String lowerContent = jsContent.toLowerCase();
-        if (lowerContent.contains("react") || lowerContent.contains("jsx")) return ArchitectureInfo.Framework.REACT;
-        if (lowerContent.contains("vue") || lowerContent.contains("$vue")) return ArchitectureInfo.Framework.VUE;
-        if (lowerContent.contains("angular") || lowerContent.contains("@angular")) return ArchitectureInfo.Framework.ANGULAR;
-        if (lowerContent.contains("svelte")) return ArchitectureInfo.Framework.SVELTE;
+        String lc = jsContent.toLowerCase();
+
+        // ── Meta-frameworks (check before raw frameworks) ────────────────
+        if (lc.contains("__next") || lc.contains("_next/") || lc.contains("next/router") ||
+            lc.contains("nextjs") || lc.contains("next.config"))
+            return ArchitectureInfo.Framework.NEXTJS_FW;
+
+        if (lc.contains("__nuxt") || lc.contains("_nuxt/") || lc.contains("nuxt.config") ||
+            lc.contains("nuxtjs") || lc.contains("usenuxtapp") || lc.contains("$nuxt"))
+            return ArchitectureInfo.Framework.NUXTJS_FW;
+
+        if (lc.contains("sveltekit") || lc.contains("$app/navigation") || lc.contains("@sveltejs/kit"))
+            return ArchitectureInfo.Framework.SVELTEKIT;
+
+        if (lc.contains("remix") && (lc.contains("@remix-run") || lc.contains("remix/react")))
+            return ArchitectureInfo.Framework.REMIX;
+
+        if (lc.contains("astro") && (lc.contains("astro:content") || lc.contains("@astrojs") ||
+            lc.contains("astro.config")))
+            return ArchitectureInfo.Framework.ASTRO;
+
+        if (lc.contains("qwik") && (lc.contains("@builder.io/qwik") || lc.contains("qwik-city")))
+            return ArchitectureInfo.Framework.QWIK;
+
+        // ── Mobile / cross-platform ──────────────────────────────────────
+        if (lc.contains("react-native") || lc.contains("reactnative") ||
+            lc.contains("from 'react-native'") || lc.contains("rn."))
+            return ArchitectureInfo.Framework.REACT_NATIVE;
+
+        if (lc.contains("expo") && (lc.contains("expo-router") || lc.contains("expo-modules")))
+            return ArchitectureInfo.Framework.EXPO;
+
+        if (lc.contains("@ionic") || lc.contains("ion-content") || lc.contains("ionicframework"))
+            return ArchitectureInfo.Framework.IONIC;
+
+        // ── Core JS frameworks ───────────────────────────────────────────
+        if (lc.contains("react") || lc.contains(".jsx") || lc.contains("usestate(") ||
+            lc.contains("useeffect(") || lc.contains("reactdom"))
+            return ArchitectureInfo.Framework.REACT;
+
+        if (lc.contains("@angular/core") || lc.contains("ng-app") || lc.contains("ngmodule") ||
+            lc.contains("@component(") || lc.contains("angular.module"))
+            return ArchitectureInfo.Framework.ANGULAR;
+
+        if (lc.contains("createapp(") || lc.contains("vue.component") || lc.contains("$mount(") ||
+            lc.contains("vue/dist") || lc.contains("$emit(") && lc.contains("$props"))
+            return ArchitectureInfo.Framework.VUE;
+
+        if (lc.contains("solidjs") || lc.contains("@solidjs") || lc.contains("createSignal") ||
+            lc.contains("createeffect") && lc.contains("createstore"))
+            return ArchitectureInfo.Framework.SOLID;
+
+        if (lc.contains("preact") || lc.contains("from 'preact'"))
+            return ArchitectureInfo.Framework.PREACT;
+
+        if (lc.contains("svelte") || lc.contains(".svelte"))
+            return ArchitectureInfo.Framework.SVELTE;
+
+        if (lc.contains("alpinejs") || lc.contains("x-data=") || lc.contains("alpine.js"))
+            return ArchitectureInfo.Framework.ALPINE;
+
+        if (lc.contains("htmx") || lc.contains("hx-get") || lc.contains("hx-post"))
+            return ArchitectureInfo.Framework.HTMX;
+
+        if (lc.contains("ember") || lc.contains("@ember") || lc.contains("ember.js"))
+            return ArchitectureInfo.Framework.EMBER;
+
+        if (lc.contains("backbone") || lc.contains("backbone.js") || lc.contains("backbone.view"))
+            return ArchitectureInfo.Framework.BACKBONE;
+
         return ArchitectureInfo.Framework.VANILLA;
     }
 
     private ArchitectureInfo.CMS detectCms(String jsContent) {
-        String lowerContent = jsContent.toLowerCase();
-        
-        // WordPress detection (most common)
-        if (lowerContent.contains("wp-") || lowerContent.contains("wordpress") || 
-            lowerContent.contains("wp_nonce") || lowerContent.contains("wp-content") ||
-            lowerContent.contains("wp-admin") || lowerContent.contains("wp-includes")) {
-            
-            // Check for WooCommerce
-            if (lowerContent.contains("woocommerce") || lowerContent.contains("wc-") || 
-                lowerContent.contains("cart") && lowerContent.contains("checkout")) {
-                return ArchitectureInfo.CMS.WOOCOMMERCE;
-            }
+        String lc = jsContent.toLowerCase();
+
+        // ── WordPress ecosystem ──────────────────────────────────────────
+        if (lc.contains("woocommerce") || lc.contains("wc_add_to_cart") ||
+            (lc.contains("wc-") && lc.contains("wp-content")))
+            return ArchitectureInfo.CMS.WOOCOMMERCE;
+
+        if (lc.contains("wp-content") || lc.contains("wp-admin") || lc.contains("wp-includes") ||
+            lc.contains("wp_nonce") || lc.contains("wordpress") || lc.contains("wp-json") ||
+            lc.contains("wpajax") || lc.contains("wp_"))
             return ArchitectureInfo.CMS.WORDPRESS;
-        }
-        
-        // Drupal detection
-        if (lowerContent.contains("drupal") || lowerContent.contains("drupal.") || 
-            lowerContent.contains("drupal_") || lowerContent.contains("/sites/default/files")) {
+
+        // ── 1C-Bitrix ────────────────────────────────────────────────────
+        if (lc.contains("bitrix") || lc.contains("bx_") || lc.contains("/bitrix/") ||
+            lc.contains("bitrixajax") || lc.contains("bitrix24"))
+            return ArchitectureInfo.CMS.BITRIX;
+
+        // ── PHP CMS ──────────────────────────────────────────────────────
+        if (lc.contains("drupal") || lc.contains("/sites/default/files") ||
+            lc.contains("drupalSettings") || lc.contains("drupal.behaviors"))
             return ArchitectureInfo.CMS.DRUPAL;
-        }
-        
-        // Joomla detection
-        if (lowerContent.contains("joomla") || lowerContent.contains("jform") || 
-            lowerContent.contains("com_content") || lowerContent.contains("mod_")) {
+
+        if (lc.contains("joomla") || lc.contains("jform") || lc.contains("com_content") ||
+            lc.contains("/components/com_") || lc.contains("joomla!"))
             return ArchitectureInfo.CMS.JOOMLA;
-        }
-        
-        // Shopify detection
-        if (lowerContent.contains("shopify") || lowerContent.contains("cdn.shopify") || 
-            lowerContent.contains("myshopify.com")) {
-            return ArchitectureInfo.CMS.SHOPIFY;
-        }
-        
-        // Magento detection
-        if (lowerContent.contains("magento") || lowerContent.contains("mage/") || 
-            lowerContent.contains("varien/")) {
+
+        if (lc.contains("typo3") || lc.contains("/typo3/") || lc.contains("typo3conf") ||
+            lc.contains("t3lib"))
+            return ArchitectureInfo.CMS.TYPO3;
+
+        if (lc.contains("october") && (lc.contains("october cms") || lc.contains("october/rain") ||
+            lc.contains("octobercms")))
+            return ArchitectureInfo.CMS.OCTOBER_CMS;
+
+        if (lc.contains("modx") || lc.contains("modx.revolution") || lc.contains("modxsite"))
+            return ArchitectureInfo.CMS.MODX;
+
+        if (lc.contains("concrete5") || lc.contains("concrete\\core") || lc.contains("/concrete/"))
+            return ArchitectureInfo.CMS.CONCRETE5;
+
+        if (lc.contains("processwire") || lc.contains("/site/templates/"))
+            return ArchitectureInfo.CMS.PROCESSWIRE;
+
+        // ── PHP e-commerce ───────────────────────────────────────────────
+        // Magento: require strong markers only — avoid false positives from substrings like "damage/"
+        if (lc.contains("magento") || lc.contains("varien/") ||
+            lc.contains("mage.cookies") || lc.contains("/skin/frontend/") ||
+            lc.contains("mage.config") || lc.contains("window.mage") ||
+            lc.contains("requirejs/require") && lc.contains("mage"))
             return ArchitectureInfo.CMS.MAGENTO;
-        }
-        
-        // Next.js detection
-        if (lowerContent.contains("__next") || lowerContent.contains("next/") || 
-            lowerContent.contains("nextjs") || lowerContent.contains("_next/")) {
-            return ArchitectureInfo.CMS.NEXTJS;
-        }
-        
-        // Nuxt.js detection
-        if (lowerContent.contains("__nuxt") || lowerContent.contains("nuxt.") || 
-            lowerContent.contains("nuxtjs")) {
-            return ArchitectureInfo.CMS.NUXTJS;
-        }
-        
-        // Gatsby detection
-        if (lowerContent.contains("gatsby") || lowerContent.contains("___gatsby")) {
-            return ArchitectureInfo.CMS.GATSBY;
-        }
-        
-        // Laravel detection
-        if (lowerContent.contains("laravel") || lowerContent.contains("csrf-token") || 
-            lowerContent.contains("laravel_") || lowerContent.contains("blade")) {
+
+        if (lc.contains("prestashop") || lc.contains("prestashop.") || lc.contains("/modules/") &&
+            lc.contains("/themes/") && lc.contains("addtocart"))
+            return ArchitectureInfo.CMS.PRESTASHOP;
+
+        if (lc.contains("opencart") || lc.contains("catalog/view/javascript") ||
+            lc.contains("catalog/view/theme"))
+            return ArchitectureInfo.CMS.OPENCART;
+
+        if (lc.contains("whmcs") || lc.contains("/whmcs/"))
+            return ArchitectureInfo.CMS.WHMCS;
+
+        // ── SaaS e-commerce ──────────────────────────────────────────────
+        if (lc.contains("shopify") || lc.contains("cdn.shopify") || lc.contains("myshopify.com") ||
+            lc.contains("shopify.theme"))
+            return ArchitectureInfo.CMS.SHOPIFY;
+
+        if (lc.contains("bigcommerce") || lc.contains("cdn11.bigcommerce") ||
+            lc.contains("bigcommercecdn"))
+            return ArchitectureInfo.CMS.BIGCOMMERCE;
+
+        if (lc.contains("squarespace") || lc.contains("static1.squarespace"))
+            return ArchitectureInfo.CMS.SQUARESPACE;
+
+        if (lc.contains("wix.com") || lc.contains("static.wixstatic") ||
+            lc.contains("wixcode") || lc.contains("wixsite.com"))
+            return ArchitectureInfo.CMS.WIX;
+
+        if (lc.contains("webflow") || lc.contains("webflow.com") || lc.contains("webflow-script"))
+            return ArchitectureInfo.CMS.WEBFLOW;
+
+        // ── PHP full-stack frameworks ────────────────────────────────────
+        if (lc.contains("laravel") || lc.contains("laravel_session") || lc.contains("csrf-token") ||
+            lc.contains("blade.") || lc.contains("inertiajs") && lc.contains("ziggy"))
             return ArchitectureInfo.CMS.LARAVEL;
-        }
-        
-        // Django detection
-        if (lowerContent.contains("django") || lowerContent.contains("csrfmiddleware") || 
-            lowerContent.contains("django.") || lowerContent.contains("/static/admin/")) {
+
+        if (lc.contains("symfony") || lc.contains("symfony/") || lc.contains("fosrouting") ||
+            lc.contains("fosjs"))
+            return ArchitectureInfo.CMS.SYMFONY;
+
+        if (lc.contains("codeigniter") || lc.contains("ci_session"))
+            return ArchitectureInfo.CMS.CODEIGNITER;
+
+        if (lc.contains("cakephp") || lc.contains("cake.") || lc.contains("/webroot/"))
+            return ArchitectureInfo.CMS.CAKEPHP;
+
+        if (lc.contains("zend") && (lc.contains("zend framework") || lc.contains("zend/")))
+            return ArchitectureInfo.CMS.ZEND;
+
+        // ── Python ───────────────────────────────────────────────────────
+        if (lc.contains("wagtail") || lc.contains("wagtailcore"))
+            return ArchitectureInfo.CMS.WAGTAIL;
+
+        if (lc.contains("django") || lc.contains("csrfmiddlewaretoken") ||
+            lc.contains("/static/admin/") || lc.contains("django-"))
             return ArchitectureInfo.CMS.DJANGO;
-        }
-        
-        // Rails detection
-        if (lowerContent.contains("rails") || lowerContent.contains("ruby") || 
-            lowerContent.contains("authenticity_token")) {
+
+        if (lc.contains("fastapi") || lc.contains("from fastapi"))
+            return ArchitectureInfo.CMS.FASTAPI;
+
+        if (lc.contains("flask") && (lc.contains("flask.") || lc.contains("from flask")))
+            return ArchitectureInfo.CMS.FLASK;
+
+        // ── Ruby ─────────────────────────────────────────────────────────
+        if (lc.contains("spree") || lc.contains("spree/"))
+            return ArchitectureInfo.CMS.SPREE;
+
+        if (lc.contains("rails") || lc.contains("authenticity_token") ||
+            lc.contains("actioncable") || lc.contains("turbolinks"))
             return ArchitectureInfo.CMS.RAILS;
-        }
-        
-        // Strapi detection
-        if (lowerContent.contains("strapi") || lowerContent.contains("/api/")) {
+
+        // ── Node.js / JS back-end ────────────────────────────────────────
+        if (lc.contains("nestjs") || lc.contains("@nestjs") || lc.contains("nest.js"))
+            return ArchitectureInfo.CMS.NESTJS;
+
+        if (lc.contains("ghost") && (lc.contains("ghost-") || lc.contains("ghost.io") ||
+            lc.contains("ghost/core")))
+            return ArchitectureInfo.CMS.GHOST;
+
+        if (lc.contains("strapi") || lc.contains("/strapi/"))
             return ArchitectureInfo.CMS.STRAPI;
-        }
-        
-        // Contentful detection
-        if (lowerContent.contains("contentful") || lowerContent.contains("cdn.contentful")) {
+
+        if (lc.contains("keystonejs") || lc.contains("@keystone-6") || lc.contains("keystone/"))
+            return ArchitectureInfo.CMS.KEYSTONE;
+
+        if (lc.contains("expressjs") || lc.contains("require('express')") ||
+            lc.contains("require(\"express\")"))
+            return ArchitectureInfo.CMS.EXPRESS;
+
+        // ── Java / JVM ───────────────────────────────────────────────────
+        if (lc.contains("spring") && (lc.contains("spring-mvc") || lc.contains("springboot") ||
+            lc.contains("spring boot") || lc.contains("_csrf") && lc.contains("actuator")))
+            return ArchitectureInfo.CMS.SPRING;
+
+        if (lc.contains("grails") || lc.contains("/grails-app/"))
+            return ArchitectureInfo.CMS.GRAILS;
+
+        // ── .NET ─────────────────────────────────────────────────────────
+        if (lc.contains("umbraco") || lc.contains("/umbraco/"))
+            return ArchitectureInfo.CMS.UMBRACO;
+
+        if (lc.contains("orchardcore") || lc.contains("orchard:"))
+            return ArchitectureInfo.CMS.ORCHARD;
+
+        if (lc.contains("asp.net") || lc.contains("__requestverificationtoken") ||
+            lc.contains("viewstate") || lc.contains("aspnetcore") || lc.contains("/aspnet/"))
+            return ArchitectureInfo.CMS.ASPNET;
+
+        // ── Headless / API-first CMS ─────────────────────────────────────
+        if (lc.contains("contentful") || lc.contains("cdn.contentful") ||
+            lc.contains("contentful.com"))
             return ArchitectureInfo.CMS.CONTENTFUL;
-        }
-        
-        // Custom/API-first indicators
-        if (lowerContent.contains("/api/v") || lowerContent.contains("rest") || 
-            lowerContent.contains("graphql")) {
+
+        if (lc.contains("sanity") && (lc.contains("@sanity") || lc.contains("sanity.io")))
+            return ArchitectureInfo.CMS.SANITY;
+
+        if (lc.contains("prismic") || lc.contains("cdn.prismic.io"))
+            return ArchitectureInfo.CMS.PRISMIC;
+
+        if (lc.contains("storyblok") || lc.contains("a2.storyblok"))
+            return ArchitectureInfo.CMS.STORYBLOK;
+
+        if (lc.contains("directus") || lc.contains("/directus/"))
+            return ArchitectureInfo.CMS.DIRECTUS;
+
+        if (lc.contains("hygraph") || lc.contains("graphcms"))
+            return ArchitectureInfo.CMS.HYGRAPH;
+
+        // ── Static site generators ───────────────────────────────────────
+        if (lc.contains("___gatsby") || lc.contains("gatsby-") || lc.contains("gatsby/"))
+            return ArchitectureInfo.CMS.GATSBY;
+
+        if (lc.contains("hugo") && (lc.contains("hugoversion") || lc.contains("hugo-")))
+            return ArchitectureInfo.CMS.HUGO;
+
+        if (lc.contains("jekyll") || lc.contains("jekyll-"))
+            return ArchitectureInfo.CMS.JEKYLL;
+
+        if (lc.contains("eleventy") || lc.contains("11ty"))
+            return ArchitectureInfo.CMS.ELEVENTY;
+
+        if (lc.contains("hexo") && lc.contains("hexo."))
+            return ArchitectureInfo.CMS.HEXO;
+
+        // ── Generic API-first indicators ─────────────────────────────────
+        if (lc.contains("/api/v") || lc.contains("graphql"))
             return ArchitectureInfo.CMS.CUSTOM;
-        }
-        
+
         return ArchitectureInfo.CMS.UNKNOWN;
     }
 
     private ArchitectureInfo.StateManagement detectStateManagement(String jsContent) {
-        String lowerContent = jsContent.toLowerCase();
-        if (lowerContent.contains("redux") || lowerContent.contains("store.dispatch")) return ArchitectureInfo.StateManagement.REDUX;
-        if (lowerContent.contains("vuex") || lowerContent.contains("$store")) return ArchitectureInfo.StateManagement.VUEX;
-        if (lowerContent.contains("mobx")) return ArchitectureInfo.StateManagement.MOBX;
-        if (lowerContent.contains("usecontext") || lowerContent.contains("context")) return ArchitectureInfo.StateManagement.CONTEXT_API;
+        String lc = jsContent.toLowerCase();
+        if (lc.contains("redux") || lc.contains("store.dispatch") || lc.contains("createslice") ||
+            lc.contains("@reduxjs/toolkit") || lc.contains("redux-toolkit"))
+            return ArchitectureInfo.StateManagement.REDUX;
+        if (lc.contains("pinia") || lc.contains("definestore") && lc.contains("storetoref"))
+            return ArchitectureInfo.StateManagement.PINIA;
+        if (lc.contains("vuex") || lc.contains("$store") || lc.contains("mapstate") && lc.contains("mapactions"))
+            return ArchitectureInfo.StateManagement.VUEX;
+        if (lc.contains("mobx") || lc.contains("makeautoobservable") || lc.contains("@observable"))
+            return ArchitectureInfo.StateManagement.MOBX;
+        if (lc.contains("zustand") || lc.contains("from 'zustand'") || lc.contains("create((set"))
+            return ArchitectureInfo.StateManagement.ZUSTAND;
+        if (lc.contains("recoil") || lc.contains("recoilroot") || lc.contains("userecoilstate"))
+            return ArchitectureInfo.StateManagement.RECOIL;
+        if (lc.contains("jotai") || lc.contains("from 'jotai'") || lc.contains("useatom("))
+            return ArchitectureInfo.StateManagement.JOTAI;
+        if (lc.contains("ngrx") || lc.contains("@ngrx/store") || lc.contains("createaction"))
+            return ArchitectureInfo.StateManagement.NGRX;
+        if (lc.contains("usecontext") || lc.contains("createcontext") || lc.contains("context.provider"))
+            return ArchitectureInfo.StateManagement.CONTEXT_API;
         return ArchitectureInfo.StateManagement.VANILLA;
     }
 
@@ -1117,11 +1308,38 @@ public class JavaScriptSecurityAnalyzer {
 
     private List<String> detectServices(String jsContent) {
         List<String> services = new ArrayList<>();
-        String[] servicePatterns = {"auth", "user", "payment", "notification", "analytics", "logging"};
-        
-        for (String service : servicePatterns) {
-            if (jsContent.toLowerCase().contains(service)) {
-                services.add(service);
+        // Require the service name to appear as part of a URL path, hostname, or explicit
+        // service-name assignment — not just as a plain word anywhere on the page.
+        String[][] servicePatterns = {
+            {"auth-service",    "auth"},
+            {"user-service",    "user"},
+            {"payment-service", "payment"},
+            {"notification-service", "notification"},
+            {"analytics-service",    "analytics"},
+            {"logging-service",      "logging"},
+            {"order-service",        "order"},
+            {"product-service",      "product"},
+            {"cart-service",         "cart"},
+            {"inventory-service",    "inventory"},
+            {"search-service",       "search"},
+            {"media-service",        "media"},
+            {"email-service",        "email"},
+            {"sms-service",          "sms"},
+        };
+        String lc = jsContent.toLowerCase();
+        for (String[] entry : servicePatterns) {
+            String hyphenName = entry[0]; // e.g. "auth-service"
+            String shortName  = entry[1]; // e.g. "auth"
+            // Only count if the service appears as a URL segment, hostname, or explicit variable name
+            boolean isServiceRef =
+                lc.contains(hyphenName) ||                                 // auth-service
+                lc.contains("/" + shortName + "/") ||                     // /auth/
+                lc.contains(shortName + "_service") ||                    // auth_service
+                lc.contains(shortName + "Service") ||                     // authService
+                lc.contains("\"" + shortName + "\"") && lc.contains("microservice") || // "auth" near microservice
+                Pattern.compile("[a-z0-9-]+\\." + shortName + "\\b").matcher(lc).find(); // svc.auth
+            if (isServiceRef) {
+                services.add(shortName);
             }
         }
         return services;
@@ -1152,6 +1370,154 @@ public class JavaScriptSecurityAnalyzer {
         }
         return middlewares;
     }
+
+    /**
+     * Infers containerization, orchestration and proxy/gateway from JS/HTML source.
+     * Looks for Docker file paths, K8s internal hostnames, env-var prefixes,
+     * pod-name patterns, and gateway-specific strings.
+     */
+    private ArchitectureInfo.InfrastructureInfo detectInfrastructure(String jsContent) {
+        List<String> evidence = new ArrayList<>();
+        String lower = jsContent.toLowerCase();
+
+        // ── Containerization ─────────────────────────────────────────────
+        int dockerScore = 0;
+
+        // Dockerfile / docker-compose artefacts embedded in JS config
+        if (lower.contains("dockerfile") || lower.contains("docker-compose")) {
+            dockerScore += 3; evidence.add("Dockerfile/docker-compose reference found");
+        }
+        // Standard container path prefix /app/
+        if (Pattern.compile("/app/[a-zA-Z0-9_./-]{2,}").matcher(jsContent).find()) {
+            dockerScore += 2; evidence.add("Container-style /app/ path prefix found");
+        }
+        // DOCKER_ / COMPOSE_ / CONTAINER_ID env-var prefixes
+        if (Pattern.compile("(?:DOCKER|COMPOSE|CONTAINER_ID|CONTAINER_NAME)_?[A-Z_]*").matcher(jsContent).find()) {
+            dockerScore += 3; evidence.add("Docker/Compose env-var prefix found");
+        }
+        // Internal service hostnames (e.g. backend_api:5000, db_service:3306)
+        if (Pattern.compile("[a-z][a-z0-9_-]{2,}(?:_service|_api|_db|_cache|_broker):[0-9]{2,5}").matcher(lower).find()) {
+            dockerScore += 2; evidence.add("Internal Docker-network service hostname found");
+        }
+        // docker keyword in string literals / comments
+        if (Pattern.compile("\"docker\"|'docker'|//.*docker|/\\*.*docker").matcher(lower).find()) {
+            dockerScore += 1; evidence.add("'docker' keyword in source");
+        }
+        // image_tag or image: hints
+        if (lower.contains("image_tag") || lower.contains("\"image\":")) {
+            dockerScore += 1; evidence.add("image_tag / image field found");
+        }
+
+        ArchitectureInfo.InfrastructureInfo.ContainerRuntime containerRuntime;
+        double containerConfidence;
+        if (dockerScore >= 5) {
+            containerRuntime   = ArchitectureInfo.InfrastructureInfo.ContainerRuntime.DOCKER;
+            containerConfidence = Math.min(0.95, 0.5 + dockerScore * 0.07);
+        } else if (dockerScore >= 2) {
+            containerRuntime   = ArchitectureInfo.InfrastructureInfo.ContainerRuntime.DOCKER;
+            containerConfidence = 0.3 + dockerScore * 0.06;
+        } else if (lower.contains("podman")) {
+            containerRuntime   = ArchitectureInfo.InfrastructureInfo.ContainerRuntime.PODMAN;
+            containerConfidence = 0.6;
+            evidence.add("'podman' keyword found");
+        } else {
+            containerRuntime   = ArchitectureInfo.InfrastructureInfo.ContainerRuntime.NONE;
+            containerConfidence = 0.0;
+        }
+
+        // ── Kubernetes ────────────────────────────────────────────────────
+        int k8sScore = 0;
+
+        // .svc.cluster.local internal DNS
+        if (Pattern.compile("[a-z0-9-]+\\.svc\\.cluster\\.local").matcher(lower).find()) {
+            k8sScore += 4; evidence.add("K8s internal DNS .svc.cluster.local found");
+        }
+        // Pod name pattern: word-word-<hash>-<hash> — require it appears in a JS value context
+        // (string literal or object property) to avoid matching CSS class names / URL slugs
+        if (Pattern.compile("['\"`][a-z][a-z0-9-]+-[a-z0-9]{5,}-[a-z0-9]{5,}\\b['\"`]").matcher(lower).find()) {
+            k8sScore += 2; evidence.add("K8s pod-name pattern detected");
+        }
+        // namespace keyword in configs
+        if (Pattern.compile("\"namespace\"|'namespace'|\\bnamespace\\b\\s*:").matcher(lower).find()) {
+            k8sScore += 1; evidence.add("'namespace' field found (K8s hint)");
+        }
+        // k8s / kubernetes / kubectl keyword
+        if (lower.contains("kubernetes") || lower.contains("kubectl") || lower.contains("\"k8s\"") || lower.contains("'k8s'")) {
+            k8sScore += 3; evidence.add("Kubernetes keyword found");
+        }
+        // Prometheus / Grafana / ELK — indirect K8s indicator
+        if (lower.contains("prometheus") || lower.contains("grafana") || lower.contains("kibana") || lower.contains("elasticsearch")) {
+            k8sScore += 1; evidence.add("Monitoring stack (Prometheus/Grafana/ELK) found");
+        }
+        // Istio / Envoy side-car patterns
+        if (lower.contains("istio") || lower.contains("envoy")) {
+            k8sScore += 2; evidence.add("Istio/Envoy service-mesh reference found");
+        }
+        // Docker Swarm mode
+        if (lower.contains("swarm") && (lower.contains("docker") || lower.contains("stack"))) {
+            k8sScore -= 2; // lower K8s but raise Swarm
+        }
+
+        ArchitectureInfo.InfrastructureInfo.Orchestrator orchestrator;
+        double orchestratorConfidence;
+        if (k8sScore >= 4) {
+            orchestrator           = ArchitectureInfo.InfrastructureInfo.Orchestrator.KUBERNETES;
+            orchestratorConfidence = Math.min(0.95, 0.45 + k8sScore * 0.08);
+        } else if (k8sScore >= 2) {
+            orchestrator           = ArchitectureInfo.InfrastructureInfo.Orchestrator.KUBERNETES;
+            orchestratorConfidence = 0.25 + k8sScore * 0.07;
+        } else if (lower.contains("swarm") && lower.contains("docker")) {
+            orchestrator           = ArchitectureInfo.InfrastructureInfo.Orchestrator.SWARM;
+            orchestratorConfidence = 0.55;
+            evidence.add("Docker Swarm reference found");
+        } else if (lower.contains("nomad")) {
+            orchestrator           = ArchitectureInfo.InfrastructureInfo.Orchestrator.NOMAD;
+            orchestratorConfidence = 0.6;
+            evidence.add("HashiCorp Nomad reference found");
+        } else {
+            orchestrator           = ArchitectureInfo.InfrastructureInfo.Orchestrator.NONE;
+            orchestratorConfidence = 0.0;
+        }
+
+        // ── Proxy / Gateway ───────────────────────────────────────────────
+        ArchitectureInfo.InfrastructureInfo.ProxyGateway proxyGateway =
+                ArchitectureInfo.InfrastructureInfo.ProxyGateway.NONE;
+
+        if (lower.contains("istio") || lower.contains("envoy")) {
+            proxyGateway = ArchitectureInfo.InfrastructureInfo.ProxyGateway.ENVOY;
+        } else if (lower.contains("traefik")) {
+            proxyGateway = ArchitectureInfo.InfrastructureInfo.ProxyGateway.TRAEFIK;
+            evidence.add("Traefik reverse proxy reference found");
+        } else if (lower.contains("haproxy")) {
+            proxyGateway = ArchitectureInfo.InfrastructureInfo.ProxyGateway.HAPROXY;
+            evidence.add("HAProxy reference found");
+        } else if (lower.contains("nginx") || lower.contains("\"x-nginx\"") || lower.contains("'x-nginx'")) {
+            proxyGateway = ArchitectureInfo.InfrastructureInfo.ProxyGateway.NGINX;
+            evidence.add("Nginx reference found");
+        }
+
+        // ── breadcrumb / historyLocations path analysis ───────────────────
+        Pattern breadcrumbPath = Pattern.compile(
+            "(?:breadcrumb|historyLocation|history|route)[^\"'\\n]{0,40}[\"'](/[a-zA-Z0-9_/.-]{4,})[\"']",
+            Pattern.CASE_INSENSITIVE);
+        Matcher bm = breadcrumbPath.matcher(jsContent);
+        int breadcrumbHits = 0;
+        while (bm.find() && breadcrumbHits < 5) {
+            String path = bm.group(1);
+            if (path.startsWith("/app/") || path.contains("/var/") || path.contains("/usr/")) {
+                dockerScore += 1;
+                evidence.add("Container-like path in history/breadcrumb: " + path);
+                breadcrumbHits++;
+            }
+        }
+
+        return new ArchitectureInfo.InfrastructureInfo(
+            containerRuntime, containerConfidence,
+            orchestrator,     orchestratorConfidence,
+            proxyGateway,     evidence
+        );
+    }
+
 
     private String buildArchitectureEvidence(ArchitectureInfo.Framework framework, 
                                            ArchitectureInfo.StateManagement stateManagement, 

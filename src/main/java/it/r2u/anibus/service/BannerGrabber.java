@@ -9,6 +9,9 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
+
 /**
  * Grabs service banners from open ports.
  * Uses an HTTP HEAD probe for web ports; reads the raw greeting otherwise.
@@ -22,10 +25,28 @@ public class BannerGrabber {
     }
 
     public String grab(String host, int port) {
+        if (isTlsPort(port)) {
+            return grabTls(host, port);
+        }
         try (Socket socket = new Socket()) {
             socket.setSoTimeout(timeout);
             socket.connect(new InetSocketAddress(host, port), timeout);
             return isHttpPort(port) ? grabHttpHeaders(socket, host) : grabGreeting(socket);
+        } catch (IOException ignored) {
+            return "";
+        }
+    }
+
+    private String grabTls(String host, int port) {
+        try {
+            SSLSocketFactory factory = (SSLSocketFactory) SSLSocketFactory.getDefault();
+            try (SSLSocket socket = (SSLSocket) factory.createSocket()) {
+                socket.setSoTimeout(timeout * 10); // TLS handshake needs more time
+                socket.connect(new InetSocketAddress(host, port), timeout * 5);
+                socket.setEnabledProtocols(new String[]{"TLSv1.2", "TLSv1.3"});
+                socket.startHandshake();
+                return grabHttpHeaders(socket, host);
+            }
         } catch (IOException ignored) {
             return "";
         }
@@ -54,6 +75,10 @@ public class BannerGrabber {
             lineCount++;
         }
         return sanitize(sb.toString());
+    }
+
+    private boolean isTlsPort(int port) {
+        return port == 443 || port == 8443;
     }
 
     private boolean isHttpPort(int port) {

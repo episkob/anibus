@@ -557,6 +557,41 @@ public class AnibusController {
             detailedResults.append("• Middlewares: ").append(result.getArchitecture().getMiddlewares()).append("\n");
         }
 
+        // Infrastructure inference
+        if (result.getArchitecture() != null && result.getArchitecture().getInfrastructureInfo() != null) {
+            it.r2u.anibus.model.ArchitectureInfo.InfrastructureInfo infra =
+                result.getArchitecture().getInfrastructureInfo();
+            if (infra.hasFindings()) {
+                detailedResults.append("\n=== INFRASTRUCTURE INFERENCE ===\n");
+
+                it.r2u.anibus.model.ArchitectureInfo.InfrastructureInfo.ContainerRuntime cr = infra.getContainerRuntime();
+                if (cr != it.r2u.anibus.model.ArchitectureInfo.InfrastructureInfo.ContainerRuntime.NONE &&
+                    cr != it.r2u.anibus.model.ArchitectureInfo.InfrastructureInfo.ContainerRuntime.UNKNOWN) {
+                    detailedResults.append(String.format("• Containerization : %s (confidence %.0f%%)%n",
+                        cr, infra.getContainerConfidence() * 100));
+                }
+
+                it.r2u.anibus.model.ArchitectureInfo.InfrastructureInfo.Orchestrator orch = infra.getOrchestrator();
+                if (orch != it.r2u.anibus.model.ArchitectureInfo.InfrastructureInfo.Orchestrator.NONE &&
+                    orch != it.r2u.anibus.model.ArchitectureInfo.InfrastructureInfo.Orchestrator.UNKNOWN) {
+                    detailedResults.append(String.format("• Orchestration    : %s (confidence %.0f%%)%n",
+                        orch, infra.getOrchestratorConfidence() * 100));
+                }
+
+                it.r2u.anibus.model.ArchitectureInfo.InfrastructureInfo.ProxyGateway pg = infra.getProxyGateway();
+                if (pg != it.r2u.anibus.model.ArchitectureInfo.InfrastructureInfo.ProxyGateway.NONE &&
+                    pg != it.r2u.anibus.model.ArchitectureInfo.InfrastructureInfo.ProxyGateway.UNKNOWN) {
+                    detailedResults.append(String.format("• Proxy/Gateway    : %s%n", pg));
+                }
+
+                if (infra.getEvidence() != null && !infra.getEvidence().isEmpty()) {
+                    detailedResults.append("• Evidence:\n");
+                    infra.getEvidence().forEach(e -> detailedResults.append("    - ").append(e).append("\n"));
+                }
+            }
+        }
+
+
         detailedResults.append("\n=== ANALYSIS TIMING ===\n");
         appendAnalysisTimingSection(detailedResults, result);
         
