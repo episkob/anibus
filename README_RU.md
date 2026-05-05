@@ -2,15 +2,21 @@
 
 Современное десктопное приложение для сканирования портов с углубленным анализом безопасности, созданное с использованием **Anibus Design System**, **JavaFX 21.0.5** и **Java 21**.
 
-> **Версия:** 1.5.0 · **Автор:** Iaroslav Tsymbaliuk · **Должность:** Intern (2025–2026) @ r2u
+> **Версия:** 1.6.0 · **Автор:** Iaroslav Tsymbaliuk · **Должность:** Intern (2025–2026) @ r2u
 
-## Что нового в 1.5.0
+## Что нового в 1.6.0
 
 - Расширен **анализ поверхности атак**: Auth-эндпоинты, внутренние микросервисы, внешние цели утечки данных
 - Добавлен **Sensitive Deep-Dive**: модуль обнаружения, типизация токенов, извлечение historyLocations
 - Улучшена **глубокая реконструкция схем БД**: расширенные кросс-ссылки и семантическая группировка полей
 - Добавлены **динамические эндпоинты / fuzzing targets** и эвристики скрытых админ-путей
 - Исправлен **экспорт JS-отчётов**: теперь сохраняется полный отрендеренный отчёт без потери секций
+- **Инференс инфраструктуры** из JavaScript — определяет Docker, Kubernetes, AWS/GCP/Azure, Nginx, Traefik, Cloudflare/Fastly с уровнем уверенности и доказательствами
+- **Расширенное определение фреймворков** — добавлены Next.js, Nuxt.js, SvelteKit, Remix, Astro, Qwik, React Native, Expo, Ionic, Solid, Preact и другие мета- и мобильные фреймворки
+- **30+ движков баз данных** в сопоставлении паттернов учётных данных — MariaDB, CockroachDB, Redis TLS, RabbitMQ/AMQP, CouchDB, Neo4j, ClickHouse, MSSQL, Oracle, Cassandra, Couchbase, InfluxDB и др.; паттерны ранжированы по критичности
+- **Расширенное обнаружение утечек строк подключения** в веб-источниках (MySQL/MariaDB, PostgreSQL, Redis, Elasticsearch, Cassandra, Neo4j)
+- **TLS/HTTPS баннер-граббинг** — BannerGrabber теперь подключается через SSLSocket на портах 443 и 8443
+- **Кроссплатформенный fat JAR** (`anibus-1.6.0.jar`) — один самодостаточный файл со встроенными нативными библиотеками JavaFX для Linux, Windows и macOS; запуск: `java -jar anibus-1.6.0.jar`
 
 ---
 
@@ -178,14 +184,14 @@ src/
 
 ## Быстрый старт (готовый JAR)
 
-Скачайте `anibus-1.5.0.jar` со страницы [Releases](../../releases) и запустите:
+Скачайте `anibus-1.6.0.jar` со страницы [Releases](../../releases) и запустите:
 
 ```bash
 # Linux / macOS
-java -jar anibus-1.5.0.jar
+java -jar anibus-1.6.0.jar
 
 # Windows
-java -jar anibus-1.5.0.jar
+java -jar anibus-1.6.0.jar
 ```
 
 На Windows можно также **дважды кликнуть** по `.jar` файлу, если Java 21 установлена и связана с `.jar` файлами.
