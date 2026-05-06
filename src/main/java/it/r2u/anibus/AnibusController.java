@@ -7,13 +7,13 @@ import it.r2u.anibus.model.DatabaseSchemaInfo;
 import it.r2u.anibus.model.EndpointInfo;
 import it.r2u.anibus.model.JavaScriptAnalysisResult;
 import it.r2u.anibus.model.PortScanResult;
+import it.r2u.anibus.model.LeakInfo;
 import it.r2u.anibus.network.HostResolver;
 import it.r2u.anibus.network.NetworkStatusMonitor;
-import it.r2u.anibus.service.EnhancedServiceDetector;
-import it.r2u.anibus.service.JavaScriptSecurityAnalyzer;
-import it.r2u.anibus.service.PortScannerService;
-import it.r2u.anibus.service.SQLInjectionAnalyzer;
-import it.r2u.anibus.service.WebSourceAnalyzer;
+import it.r2u.anibus.service.detection.EnhancedServiceDetector;
+import it.r2u.anibus.service.analysis.JavaScriptSecurityAnalyzer;
+import it.r2u.anibus.service.core.PortScannerService;
+import it.r2u.anibus.service.analysis.SQLInjectionAnalyzer;
 import it.r2u.anibus.ui.AlertHelper;
 import it.r2u.anibus.ui.ConsoleViewManager;
 import it.r2u.anibus.ui.InfoCardManager;
@@ -820,14 +820,14 @@ public class AnibusController {
     }
 
     private void appendSensitiveDeepDiveSection(StringBuilder sb, JavaScriptAnalysisResult result) {
-        List<WebSourceAnalyzer.LeakInfo> leaks = result.getSensitiveInfo() != null ? result.getSensitiveInfo() : java.util.Collections.emptyList();
+        List<LeakInfo> leaks = result.getSensitiveInfo() != null ? result.getSensitiveInfo() : java.util.Collections.emptyList();
         if (leaks.isEmpty()) {
             sb.append("  No sensitive findings for deep-dive.\n");
             return;
         }
 
         int shown = 0;
-        for (WebSourceAnalyzer.LeakInfo leak : leaks) {
+        for (LeakInfo leak : leaks) {
             if (shown >= 25) break;
             String module = leak.getService() != null ? leak.getService() : inferModuleFromLeak(leak);
             sb.append("  • [").append(module).append("] ")
@@ -846,7 +846,7 @@ public class AnibusController {
 
         List<String> historyRoutes = leaks.stream()
             .filter(l -> l.getType() != null && l.getType().toLowerCase(Locale.ROOT).contains("history locations"))
-            .map(WebSourceAnalyzer.LeakInfo::getValue)
+            .map(LeakInfo::getValue)
             .filter(v -> v != null && !v.isBlank())
             .toList();
         if (!historyRoutes.isEmpty()) {
@@ -868,7 +868,7 @@ public class AnibusController {
         return hits;
     }
 
-    private String inferModuleFromLeak(WebSourceAnalyzer.LeakInfo leak) {
+    private String inferModuleFromLeak(LeakInfo leak) {
         String combined = (leak.getType() + " " + leak.getValue() + " " + leak.getContext()).toLowerCase(Locale.ROOT);
         if (combined.contains("auth") || combined.contains("login") || combined.contains("token")) return "auth";
         if (combined.contains("payment") || combined.contains("billing") || combined.contains("checkout")) return "payment";
@@ -878,7 +878,7 @@ public class AnibusController {
         return "general";
     }
 
-    private String inferTokenType(WebSourceAnalyzer.LeakInfo leak) {
+    private String inferTokenType(LeakInfo leak) {
         String combined = (leak.getValue() + " " + leak.getContext());
         String[] markers = {
             "VKSDKGeneralSuperAppToken", "VKSDKRequestSuperAppToken", "SuperAppToken", "Bearer", "JWT", "OAuth"
@@ -890,11 +890,11 @@ public class AnibusController {
     }
 
     private void appendDependencyTreeSection(StringBuilder sb, JavaScriptAnalysisResult result) {
-        List<WebSourceAnalyzer.LeakInfo> leaks = result.getSensitiveInfo() != null ? result.getSensitiveInfo() : java.util.Collections.emptyList();
+        List<LeakInfo> leaks = result.getSensitiveInfo() != null ? result.getSensitiveInfo() : java.util.Collections.emptyList();
         List<DataStructureInfo> structures = result.getDataStructures() != null ? result.getDataStructures() : java.util.Collections.emptyList();
         List<EndpointInfo> endpoints = result.getEndpoints() != null ? result.getEndpoints() : java.util.Collections.emptyList();
 
-        List<WebSourceAnalyzer.LeakInfo> tokenLeaks = leaks.stream()
+        List<LeakInfo> tokenLeaks = leaks.stream()
             .filter(l -> {
                 String t = l.getType() != null ? l.getType().toLowerCase(Locale.ROOT) : "";
                 String v = l.getValue() != null ? l.getValue().toLowerCase(Locale.ROOT) : "";
@@ -908,7 +908,7 @@ public class AnibusController {
             return;
         }
 
-        for (WebSourceAnalyzer.LeakInfo tokenLeak : tokenLeaks) {
+        for (LeakInfo tokenLeak : tokenLeaks) {
             String tokenType = inferTokenType(tokenLeak);
             sb.append("  • Token: ").append(tokenType != null ? tokenType : "generic").append("\n");
             sb.append("    ├─ Leak: ").append(truncate(tokenLeak.getValue(), 110)).append("\n");
@@ -998,7 +998,7 @@ public class AnibusController {
      */
     private void appendSensitiveInfoSection(
             StringBuilder sb,
-            List<WebSourceAnalyzer.LeakInfo> leaks,
+            List<LeakInfo> leaks,
             it.r2u.anibus.model.ArchitectureInfo arch) {
 
         if (leaks == null || leaks.isEmpty()) {
@@ -1010,33 +1010,33 @@ public class AnibusController {
             && arch.getPattern() == it.r2u.anibus.model.ArchitectureInfo.ArchitecturePattern.MICROSERVICES;
 
         // Group by tier
-        List<WebSourceAnalyzer.LeakInfo> critical  = new java.util.ArrayList<>();
-        List<WebSourceAnalyzer.LeakInfo> important = new java.util.ArrayList<>();
-        List<WebSourceAnalyzer.LeakInfo> lowRisk   = new java.util.ArrayList<>();
+        List<LeakInfo> critical  = new java.util.ArrayList<>();
+        List<LeakInfo> important = new java.util.ArrayList<>();
+        List<LeakInfo> lowRisk   = new java.util.ArrayList<>();
 
-        for (WebSourceAnalyzer.LeakInfo l : leaks) {
+        for (LeakInfo l : leaks) {
             if (l.getPriority() >= 8)      critical.add(l);
             else if (l.getPriority() >= 5) important.add(l);
             else                           lowRisk.add(l);
         }
 
-        java.util.function.BiConsumer<String, List<WebSourceAnalyzer.LeakInfo>> renderTier =
+        java.util.function.BiConsumer<String, List<LeakInfo>> renderTier =
             (header, items) -> {
                 if (items.isEmpty()) return;
                 sb.append("\n  ── ").append(header).append(" ").append("─".repeat(Math.max(0, 46 - header.length()))).append("\n");
                 // Optionally group by service inside tier
                 if (isMicroservices) {
-                    Map<String, List<WebSourceAnalyzer.LeakInfo>> byService = new java.util.LinkedHashMap<>();
-                    for (WebSourceAnalyzer.LeakInfo l : items) {
+                    Map<String, List<LeakInfo>> byService = new java.util.LinkedHashMap<>();
+                    for (LeakInfo l : items) {
                         String svc = l.getService() != null ? l.getService() : "general";
                         byService.computeIfAbsent(svc, k -> new java.util.ArrayList<>()).add(l);
                     }
                     byService.forEach((svc, svcLeaks) -> {
                         sb.append("    [").append(svc.toUpperCase()).append("]\n");
-                        for (WebSourceAnalyzer.LeakInfo l : svcLeaks) renderLeakLine(sb, l);
+                        for (LeakInfo l : svcLeaks) renderLeakLine(sb, l);
                     });
                 } else {
-                    for (WebSourceAnalyzer.LeakInfo l : items) renderLeakLine(sb, l);
+                    for (LeakInfo l : items) renderLeakLine(sb, l);
                 }
             };
 
@@ -1047,7 +1047,7 @@ public class AnibusController {
 
     /** Formats a single LeakInfo line. Long values are shown in full on the next line. */
     private void renderLeakLine(StringBuilder sb,
-                                WebSourceAnalyzer.LeakInfo leak) {
+                                LeakInfo leak) {
         String rawValue = leak.getValue() != null ? leak.getValue() : "";
 
         sb.append("  [P").append(String.format("%2d", leak.getPriority())).append("] ")

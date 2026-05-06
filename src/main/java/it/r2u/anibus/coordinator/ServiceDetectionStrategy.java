@@ -3,10 +3,10 @@ package it.r2u.anibus.coordinator;
 import java.util.List;
 
 import it.r2u.anibus.model.PortScanResult;
-import it.r2u.anibus.service.CloudMetadataProbe;
-import it.r2u.anibus.service.EnhancedServiceDetector;
-import it.r2u.anibus.service.ReverseDnsExpander;
-import it.r2u.anibus.service.ServiceDetectionTask;
+import it.r2u.anibus.service.network.CloudMetadataProbe;
+import it.r2u.anibus.service.detection.EnhancedServiceDetector;
+import it.r2u.anibus.service.network.ReverseDnsExpander;
+import it.r2u.anibus.service.core.ServiceDetectionTask;
 import javafx.application.Platform;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;

@@ -1,8 +1,8 @@
 package it.r2u.anibus.coordinator;
 
 import it.r2u.anibus.model.PortScanResult;
-import it.r2u.anibus.service.PortScannerService;
-import it.r2u.anibus.service.ScanTask;
+import it.r2u.anibus.service.core.PortScannerService;
+import it.r2u.anibus.service.core.ScanTask;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 

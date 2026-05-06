@@ -3,8 +3,8 @@ package it.r2u.anibus.coordinator;
 import java.util.List;
 
 import it.r2u.anibus.model.PortScanResult;
-import it.r2u.anibus.service.CloudMetadataProbe;
-import it.r2u.anibus.service.ReverseDnsExpander;
+import it.r2u.anibus.service.network.CloudMetadataProbe;
+import it.r2u.anibus.service.network.ReverseDnsExpander;
 
 /**
  * Context object encapsulating all scan parameters and callbacks.

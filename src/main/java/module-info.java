@@ -11,17 +11,14 @@ module it.r2u.anibus {
     // model: PropertyValueFactory uses reflection on PortScanResult
     opens it.r2u.anibus.model to javafx.base, javafx.controls;
 
-    // service & ui: opened for potential future FXML use
-    opens it.r2u.anibus.service to javafx.fxml;
-    opens it.r2u.anibus.ui to javafx.fxml;
-    
-    // coordinator & handlers: new refactored packages
-    opens it.r2u.anibus.coordinator to javafx.fxml;
-    opens it.r2u.anibus.handlers to javafx.fxml;
-
     exports it.r2u.anibus;
     exports it.r2u.anibus.model;
-    exports it.r2u.anibus.service;
+    exports it.r2u.anibus.service.analysis;
+    exports it.r2u.anibus.service.core;
+    exports it.r2u.anibus.service.detection;
+    exports it.r2u.anibus.service.network;
+    exports it.r2u.anibus.service.geo;
+    exports it.r2u.anibus.service.export;
     exports it.r2u.anibus.ui;
     exports it.r2u.anibus.coordinator;
     exports it.r2u.anibus.handlers;

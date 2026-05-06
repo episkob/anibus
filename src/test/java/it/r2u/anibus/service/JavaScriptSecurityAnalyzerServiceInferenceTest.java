@@ -9,12 +9,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 
+import it.r2u.anibus.model.LeakInfo;
+import it.r2u.anibus.service.analysis.JavaScriptSecurityAnalyzer;
+
 class JavaScriptSecurityAnalyzerServiceInferenceTest {
 
     @Test
     void infersAuthFromApiPath() throws Exception {
         JavaScriptSecurityAnalyzer analyzer = new JavaScriptSecurityAnalyzer();
-        WebSourceAnalyzer.LeakInfo leak = new WebSourceAnalyzer.LeakInfo(
+        LeakInfo leak = new LeakInfo(
             "KV Pair: Username + Password",
             "Username: admin | Password: realSecret123",
             "POST /api/auth/login",
@@ -30,7 +33,7 @@ class JavaScriptSecurityAnalyzerServiceInferenceTest {
     @Test
     void normalizesBillingAliasToPayment() throws Exception {
         JavaScriptSecurityAnalyzer analyzer = new JavaScriptSecurityAnalyzer();
-        WebSourceAnalyzer.LeakInfo leak = new WebSourceAnalyzer.LeakInfo(
+        LeakInfo leak = new LeakInfo(
             "Token→Endpoint",
             "tokenVar → /api/billing/invoice",
             "axios.post('/api/billing/invoice')",
@@ -44,9 +47,9 @@ class JavaScriptSecurityAnalyzerServiceInferenceTest {
     }
 
     private static String invokeInferService(JavaScriptSecurityAnalyzer analyzer,
-                                             WebSourceAnalyzer.LeakInfo leak) throws Exception {
+                                             LeakInfo leak) throws Exception {
         Method inferService = JavaScriptSecurityAnalyzer.class
-            .getDeclaredMethod("inferService", WebSourceAnalyzer.LeakInfo.class);
+            .getDeclaredMethod("inferService", LeakInfo.class);
         inferService.setAccessible(true);
         return (String) inferService.invoke(analyzer, leak);
     }
@@ -63,7 +66,7 @@ class JavaScriptSecurityAnalyzerServiceInferenceTest {
         findSensitive.setAccessible(true);
 
         String js = "const state = { historyLocations: ['/feed','/auth/login','/payment/checkout'] };";
-        List<WebSourceAnalyzer.LeakInfo> leaks = (List<WebSourceAnalyzer.LeakInfo>) findSensitive.invoke(
+        List<LeakInfo> leaks = (List<LeakInfo>) findSensitive.invoke(
             analyzer, js, JavaScriptSecurityAnalyzer.AnalysisDepth.COMPREHENSIVE);
 
         assertTrue(leaks.stream().anyMatch(l -> "History Locations".equals(l.getType())));
@@ -99,7 +102,7 @@ class JavaScriptSecurityAnalyzerServiceInferenceTest {
         findSensitive.setAccessible(true);
 
         String js = "const tokenType = 'VKSDKGeneralSuperAppToken';";
-        List<WebSourceAnalyzer.LeakInfo> leaks = (List<WebSourceAnalyzer.LeakInfo>) findSensitive.invoke(
+        List<LeakInfo> leaks = (List<LeakInfo>) findSensitive.invoke(
             analyzer, js, JavaScriptSecurityAnalyzer.AnalysisDepth.COMPREHENSIVE);
 
         assertTrue(leaks.stream().anyMatch(l -> "Typed Token".equals(l.getType())));
@@ -118,7 +121,7 @@ class JavaScriptSecurityAnalyzerServiceInferenceTest {
         findSensitive.setAccessible(true);
 
         String js = "const OLD_PASSWORD='old123'; const status='incorrect_password';";
-        List<WebSourceAnalyzer.LeakInfo> leaks = (List<WebSourceAnalyzer.LeakInfo>) findSensitive.invoke(
+        List<LeakInfo> leaks = (List<LeakInfo>) findSensitive.invoke(
             analyzer, js, JavaScriptSecurityAnalyzer.AnalysisDepth.COMPREHENSIVE);
 
         assertTrue(leaks.stream().anyMatch(l -> "Password Hierarchy".equals(l.getType())));
@@ -137,7 +140,7 @@ class JavaScriptSecurityAnalyzerServiceInferenceTest {
         findSensitive.setAccessible(true);
 
         String js = "const p={uuid:'123e4567-e89b-12d3-a456-426614174000',user_id:'42',email:'u@x.com'};";
-        List<WebSourceAnalyzer.LeakInfo> leaks = (List<WebSourceAnalyzer.LeakInfo>) findSensitive.invoke(
+        List<LeakInfo> leaks = (List<LeakInfo>) findSensitive.invoke(
             analyzer, js, JavaScriptSecurityAnalyzer.AnalysisDepth.COMPREHENSIVE);
 
         assertTrue(leaks.stream().anyMatch(l -> "Session Identifier Bundle".equals(l.getType())));

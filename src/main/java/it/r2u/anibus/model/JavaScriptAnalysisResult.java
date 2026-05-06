@@ -1,6 +1,5 @@
 package it.r2u.anibus.model;
 
-import it.r2u.anibus.service.WebSourceAnalyzer;
 import java.util.List;
 
 /**
@@ -13,7 +12,7 @@ public class JavaScriptAnalysisResult {
     private final List<EndpointInfo> endpoints;
     private final List<DataStructureInfo> dataStructures;
     private final List<DatabaseSchemaInfo> databaseSchemas;
-    private final List<WebSourceAnalyzer.LeakInfo> sensitiveInfo;
+    private final List<LeakInfo> sensitiveInfo;
     private final ArchitectureInfo architecture;
     private final List<String> jsFiles;
     private final List<String> errors;
@@ -22,7 +21,7 @@ public class JavaScriptAnalysisResult {
                                   List<EndpointInfo> endpoints,
                                   List<DataStructureInfo> dataStructures,
                                   List<DatabaseSchemaInfo> databaseSchemas,
-                                  List<WebSourceAnalyzer.LeakInfo> sensitiveInfo,
+                                  List<LeakInfo> sensitiveInfo,
                                   ArchitectureInfo architecture,
                                   List<String> jsFiles,
                                   List<String> errors) {
@@ -42,7 +41,7 @@ public class JavaScriptAnalysisResult {
     public List<EndpointInfo> getEndpoints() { return endpoints; }
     public List<DataStructureInfo> getDataStructures() { return dataStructures; }
     public List<DatabaseSchemaInfo> getDatabaseSchemas() { return databaseSchemas; }
-    public List<WebSourceAnalyzer.LeakInfo> getSensitiveInfo() { return sensitiveInfo; }
+    public List<LeakInfo> getSensitiveInfo() { return sensitiveInfo; }
     public ArchitectureInfo getArchitecture() { return architecture; }
     public List<String> getJsFiles() { return jsFiles; }
     public List<String> getErrors() { return errors; }

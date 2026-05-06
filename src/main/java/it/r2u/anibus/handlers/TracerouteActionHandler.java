@@ -1,6 +1,6 @@
 package it.r2u.anibus.handlers;
 
-import it.r2u.anibus.service.TracerouteService;
+import it.r2u.anibus.service.network.TracerouteService;
 import javafx.application.Platform;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextInputDialog;

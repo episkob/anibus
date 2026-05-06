@@ -10,8 +10,8 @@ import it.r2u.anibus.coordinator.ScanContext;
 import it.r2u.anibus.coordinator.ScanCoordinator;
 import it.r2u.anibus.model.PortScanResult;
 import it.r2u.anibus.network.HostResolver;
-import it.r2u.anibus.service.PortScannerService;
-import it.r2u.anibus.service.SoftwareStackDetector;
+import it.r2u.anibus.service.core.PortScannerService;
+import it.r2u.anibus.service.detection.SoftwareStackDetector;
 import it.r2u.anibus.ui.AlertHelper;
 import it.r2u.anibus.ui.ConsoleViewManager;
 import it.r2u.anibus.ui.InfoCardManager;
@@ -174,14 +174,14 @@ public class ScanActionHandler {
                 }
 
                 @Override
-                public void onCloudMetadata(java.util.List<it.r2u.anibus.service.CloudMetadataProbe.MetadataResult> cloudResults) {
+                public void onCloudMetadata(java.util.List<it.r2u.anibus.service.network.CloudMetadataProbe.MetadataResult> cloudResults) {
                     StringBuilder sb = new StringBuilder();
                     cloudResults.forEach(r -> sb.append(r.toString()).append("\n"));
                     Platform.runLater(() -> consoleViewManager.appendRawText("\n" + sb.toString().trim() + "\n"));
                 }
 
                 @Override
-                public void onNeighborDiscovered(it.r2u.anibus.service.ReverseDnsExpander.NeighborInfo neighbor) {
+                public void onNeighborDiscovered(it.r2u.anibus.service.network.ReverseDnsExpander.NeighborInfo neighbor) {
                     String tag = neighbor.isTarget() ? " [TARGET]" : "";
                     String line = "[NEIGHBOR] " + neighbor + tag;
                     Platform.runLater(() -> consoleViewManager.appendRawText(line + "\n"));

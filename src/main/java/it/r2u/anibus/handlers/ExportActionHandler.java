@@ -2,15 +2,21 @@ package it.r2u.anibus.handlers;
 
 import java.io.File;
 import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.URL;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.function.Consumer;
 
 import it.r2u.anibus.model.JavaScriptAnalysisResult;
 import it.r2u.anibus.model.PortScanResult;
-import it.r2u.anibus.service.ExportService;
+import it.r2u.anibus.service.export.ExportService;
 import javafx.collections.ObservableList;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.DialogPane;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
 
@@ -37,192 +43,166 @@ public class ExportActionHandler {
     }
     
     /**
-     * Export JavaScript analysis results to file.
-     */
-    public void exportJavaScriptAnalysis(JavaScriptAnalysisResult result) {
-        exportJavaScriptAnalysis(result, null);
-    }
-
-    /**
-     * Export JavaScript analysis results to file.
-     *
-     * @param result analysis model data
-     * @param renderedReport full pre-rendered report text from UI console (optional)
+     * Export JavaScript analysis results — CSV or XML, same flow as port scan export.
      */
     public void exportJavaScriptAnalysis(JavaScriptAnalysisResult result, String renderedReport) {
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Export JavaScript Analysis Results");
-        fileChooser.setInitialFileName("js-analysis-" + 
-            new SimpleDateFormat("yyyy-MM-dd-HHmmss").format(new Date()) + ".txt");
-        
-        FileChooser.ExtensionFilter textFilter = new FileChooser.ExtensionFilter("Text Files", "*.txt");
-        FileChooser.ExtensionFilter jsonFilter = new FileChooser.ExtensionFilter("JSON Files", "*.json");
-        fileChooser.getExtensionFilters().addAll(textFilter, jsonFilter);
-        fileChooser.setSelectedExtensionFilter(textFilter);
-        
-        File file = fileChooser.showSaveDialog(null);
-        if (file != null) {
-            try (FileWriter writer = new FileWriter(file)) {
-                if (file.getName().toLowerCase().endsWith(".json")) {
-                    writer.write(generateJsonExport(result, renderedReport));
-                } else {
-                    writer.write(generateTextExport(result, renderedReport));
-                }
-                statusSetter.accept("JavaScript analysis exported to " + file.getName());
-            } catch (Exception e) {
+        exportJavaScriptAnalysis(result, renderedReport, null);
+    }
+
+    public void exportJavaScriptAnalysis(JavaScriptAnalysisResult result, String renderedReport, Window owner) {
+        ButtonType csvBtn = new ButtonType("CSV");
+        ButtonType xmlBtn = new ButtonType("XML");
+        ButtonType cancel = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+        Alert fmt = new Alert(Alert.AlertType.NONE, "Choose export format:", csvBtn, xmlBtn, cancel);
+        fmt.setTitle("Export JS Analysis");
+        fmt.setHeaderText(null);
+        styleDialog(fmt.getDialogPane());
+
+        fmt.showAndWait().ifPresent(choice -> {
+            if (choice == cancel) return;
+            boolean isCsv = (choice == csvBtn);
+            File file = pickJsFile(isCsv, owner);
+            if (file == null) return;
+            try (PrintWriter pw = new PrintWriter(new FileWriter(file))) {
+                if (isCsv) writeJsCsv(pw, result);
+                else        writeJsXml(pw, result);
+                statusSetter.accept("JS analysis exported to " + file.getName());
+            } catch (IOException e) {
                 statusSetter.accept("Export failed: " + e.getMessage());
             }
-        }
+        });
     }
-    
-    private String generateTextExport(JavaScriptAnalysisResult result, String renderedReport) {
-        if (renderedReport != null && !renderedReport.isBlank()) {
-            StringBuilder export = new StringBuilder();
-            export.append("JavaScript Security Analysis Report\n");
-            export.append("=====================================\n\n");
-            export.append("Target: ").append(result.getTargetUrl()).append("\n");
-            export.append("Analysis Date: ").append(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date())).append("\n");
-            export.append("Analysis Time: ").append(result.getAnalysisTime()).append(" ms\n\n");
-            export.append(renderedReport);
-            if (!renderedReport.endsWith("\n")) export.append("\n");
-            return export.toString();
-        }
 
-        StringBuilder export = new StringBuilder();
-        export.append("JavaScript Security Analysis Report\n");
-        export.append("=====================================\n\n");
-        export.append("Target: ").append(result.getTargetUrl()).append("\n");
-        export.append("Analysis Date: ").append(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date())).append("\n");
-        export.append("Analysis Time: ").append(result.getAnalysisTime()).append(" ms\n\n");
-        
-        export.append(result.getSummary()).append("\n\n");
-        
-        // Detailed sections
-        export.append("DISCOVERED ENDPOINTS\n");
-        export.append("===================\n");
-        result.getEndpoints().forEach(endpoint -> {
-            export.append("• ").append(endpoint.getHttpMethod()).append(" ").append(endpoint.getUrl());
-            if (endpoint.isDynamic()) export.append(" (dynamic)");
-            export.append("\n");
-        });
-        
-        export.append("\nDATA STRUCTURES\n");
-        export.append("===============\n");
-        result.getDataStructures().forEach(structure -> {
-            export.append("• ").append(structure.getName()).append(" (").append(structure.getType()).append(")\n");
-            structure.getProperties().forEach((key, value) -> 
-                export.append("  - ").append(key).append(": ").append(value).append("\n"));
-        });
-        
-        export.append("\nDATABASE SCHEMAS\n");
-        export.append("================\n");
-        result.getDatabaseSchemas().forEach(schema -> {
-            export.append("• ").append(schema.getTableName()).append(" (").append(schema.getDatabaseType())
-                  .append(", ").append(String.format("%.0f", schema.getConfidence() * 100)).append("% confidence)\n");
-            schema.getColumns().forEach((col, type) -> 
-                export.append("  - ").append(col).append(": ").append(type).append("\n"));
-        });
-        
-        export.append("\nSENSITIVE INFORMATION\n");
-        export.append("====================\n");
-        result.getSensitiveInfo().forEach(leak -> 
-            export.append("• ").append(leak.getType()).append(": ").append(leak.getValue()).append("\n"));
-        
-        if (result.getArchitecture() != null) {
-            export.append("\nARCHITECTURE ANALYSIS\n");
-            export.append("====================\n");
-            export.append("Framework: ").append(result.getArchitecture().getFramework()).append("\n");
-            export.append("State Management: ").append(result.getArchitecture().getStateManagement()).append("\n");
-            export.append("Pattern: ").append(result.getArchitecture().getPattern()).append("\n");
-            export.append("Services: ").append(result.getArchitecture().getServices()).append("\n");
-            export.append("Middlewares: ").append(result.getArchitecture().getMiddlewares()).append("\n");
-        }
-        
-        if (!result.getErrors().isEmpty()) {
-            export.append("\nERRORS\n");
-            export.append("======\n");
-            result.getErrors().forEach(error -> export.append("• ").append(error).append("\n"));
-        }
-        
-        return export.toString();
-    }
-    
-    private String generateJsonExport(JavaScriptAnalysisResult result, String renderedReport) {
-        // Simple JSON generation - in a real application, you'd use a proper JSON library
-        StringBuilder json = new StringBuilder();
-        json.append("{\n");
-        json.append("  \"targetUrl\": \"").append(jsonEscape(result.getTargetUrl())).append("\",\n");
-        json.append("  \"analysisTime\": ").append(result.getAnalysisTime()).append(",\n");
-        json.append("  \"timestamp\": \"").append(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'").format(new Date())).append("\",\n");
-        json.append("  \"summary\": {\n");
-        json.append("    \"endpointsCount\": ").append(result.getEndpoints().size()).append(",\n");
-        json.append("    \"dataStructuresCount\": ").append(result.getDataStructures().size()).append(",\n");
-        json.append("    \"databaseSchemasCount\": ").append(result.getDatabaseSchemas().size()).append(",\n");
-        json.append("    \"sensitiveInfoCount\": ").append(result.getSensitiveInfo().size()).append("\n");
-        json.append("  },\n");
-        json.append("  \"architecture\": ");
-        if (result.getArchitecture() != null) {
-            json.append("{\n");
-            json.append("    \"framework\": \"").append(result.getArchitecture().getFramework()).append("\",\n");
-            json.append("    \"stateManagement\": \"").append(result.getArchitecture().getStateManagement()).append("\",\n");
-            json.append("    \"pattern\": \"").append(result.getArchitecture().getPattern()).append("\",\n");
-            json.append("    \"confidence\": ").append(result.getArchitecture().getPatternConfidence()).append(",\n");
-            json.append("    \"services\": [");
-            for (int i = 0; i < result.getArchitecture().getServices().size(); i++) {
-                if (i > 0) json.append(", ");
-                json.append("\"").append(jsonEscape(result.getArchitecture().getServices().get(i))).append("\"");
-            }
-            json.append("],\n");
-            json.append("    \"middlewares\": [");
-            for (int i = 0; i < result.getArchitecture().getMiddlewares().size(); i++) {
-                if (i > 0) json.append(", ");
-                json.append("\"").append(jsonEscape(result.getArchitecture().getMiddlewares().get(i))).append("\"");
-            }
-            json.append("]\n");
-            json.append("  }\n");
+    private File pickJsFile(boolean isCsv, Window owner) {
+        String stamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"));
+        FileChooser fc = new FileChooser();
+        fc.setTitle("Export JS Analysis");
+        if (isCsv) {
+            fc.setInitialFileName("js-analysis-" + stamp + ".csv");
+            fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("CSV Files", "*.csv"));
         } else {
-            json.append("null\n");
+            fc.setInitialFileName("js-analysis-" + stamp + ".xml");
+            fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("XML Files", "*.xml"));
         }
-        json.append(",\n");
-
-        json.append("  \"endpoints\": [\n");
-        for (int i = 0; i < result.getEndpoints().size(); i++) {
-            var ep = result.getEndpoints().get(i);
-            json.append("    {\"method\":\"").append(jsonEscape(ep.getHttpMethod()))
-                .append("\",\"url\":\"").append(jsonEscape(ep.getUrl()))
-                .append("\",\"dynamic\":").append(ep.isDynamic()).append("}");
-            if (i < result.getEndpoints().size() - 1) json.append(",");
-            json.append("\n");
-        }
-        json.append("  ],\n");
-
-        json.append("  \"sensitiveInfo\": [\n");
-        for (int i = 0; i < result.getSensitiveInfo().size(); i++) {
-            var leak = result.getSensitiveInfo().get(i);
-            json.append("    {\"type\":\"").append(jsonEscape(leak.getType()))
-                .append("\",\"value\":\"").append(jsonEscape(leak.getValue()))
-                .append("\",\"priority\":").append(leak.getPriority())
-                .append(",\"placeholder\":").append(leak.isPlaceholder()).append("}");
-            if (i < result.getSensitiveInfo().size() - 1) json.append(",");
-            json.append("\n");
-        }
-        json.append("  ]");
-
-        if (renderedReport != null && !renderedReport.isBlank()) {
-            json.append(",\n  \"renderedReport\": \"").append(jsonEscape(renderedReport)).append("\"");
-        }
-        json.append("}\n");
-        
-        return json.toString();
+        return fc.showSaveDialog(owner);
     }
 
-    private String jsonEscape(String value) {
-        if (value == null) return "";
-        return value
-            .replace("\\", "\\\\")
-            .replace("\"", "\\\"")
-            .replace("\n", "\\n")
-            .replace("\r", "\\r")
-            .replace("\t", "\\t");
+    private void writeJsCsv(PrintWriter pw, JavaScriptAnalysisResult r) {
+        String ts = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        pw.println("# JavaScript Security Analysis");
+        pw.println("# Target: " + r.getTargetUrl());
+        pw.println("# Date: " + ts);
+        pw.println("# Analysis Time: " + r.getAnalysisTime() + " ms");
+        pw.println();
+
+        pw.println("## ENDPOINTS");
+        pw.println("Method,URL,Dynamic");
+        r.getEndpoints().forEach(ep ->
+            pw.printf("%s,\"%s\",%s%n", esc(ep.getHttpMethod()), esc(ep.getUrl()), ep.isDynamic()));
+
+        pw.println();
+        pw.println("## SENSITIVE INFORMATION");
+        pw.println("Type,Value,Priority,Placeholder");
+        r.getSensitiveInfo().forEach(leak ->
+            pw.printf("\"%s\",\"%s\",%d,%s%n",
+                esc(leak.getType()), esc(leak.getValue()), leak.getPriority(), leak.isPlaceholder()));
+
+        pw.println();
+        pw.println("## DATABASE SCHEMAS");
+        pw.println("Table,DatabaseType,Confidence,Columns");
+        r.getDatabaseSchemas().forEach(schema -> {
+            String cols = String.join("|", schema.getColumns().keySet());
+            pw.printf("\"%s\",\"%s\",%.0f%%,\"%s\"%n",
+                esc(schema.getTableName()), esc(schema.getDatabaseType().toString()),
+                schema.getConfidence() * 100, esc(cols));
+        });
+
+        pw.println();
+        pw.println("## DATA STRUCTURES");
+        pw.println("Name,Type,Properties");
+        r.getDataStructures().forEach(ds -> {
+            String props = ds.getProperties().entrySet().stream()
+                .map(e -> e.getKey() + "=" + e.getValue())
+                .reduce("", (a, b) -> a.isEmpty() ? b : a + "|" + b);
+            pw.printf("\"%s\",\"%s\",\"%s\"%n", esc(ds.getName()), esc(ds.getType().toString()), esc(props));
+        });
+
+        if (r.getArchitecture() != null) {
+            pw.println();
+            pw.println("## ARCHITECTURE");
+            pw.println("Framework,Pattern,StateManagement,Services,Middlewares");
+            var a = r.getArchitecture();
+            pw.printf("\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"%n",
+                esc(a.getFramework().toString()), esc(a.getPattern().toString()), esc(a.getStateManagement().toString()),
+                esc(String.join("|", a.getServices())), esc(String.join("|", a.getMiddlewares())));
+        }
+    }
+
+    private void writeJsXml(PrintWriter pw, JavaScriptAnalysisResult r) {
+        String ts = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"));
+        pw.println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+        pw.println("<jsAnalysis>");
+        pw.printf("  <meta target=\"%s\" timestamp=\"%s\" analysisTimeMs=\"%d\"/>%n",
+            x(r.getTargetUrl()), ts, r.getAnalysisTime());
+
+        pw.println("  <endpoints>");
+        r.getEndpoints().forEach(ep ->
+            pw.printf("    <endpoint method=\"%s\" dynamic=\"%s\"><url>%s</url></endpoint>%n",
+                x(ep.getHttpMethod()), ep.isDynamic(), x(ep.getUrl())));
+        pw.println("  </endpoints>");
+
+        pw.println("  <sensitiveInfo>");
+        r.getSensitiveInfo().forEach(leak ->
+            pw.printf("    <leak type=\"%s\" priority=\"%d\" placeholder=\"%s\"><value>%s</value></leak>%n",
+                x(leak.getType()), leak.getPriority(), leak.isPlaceholder(), x(leak.getValue())));
+        pw.println("  </sensitiveInfo>");
+
+        pw.println("  <databaseSchemas>");
+        r.getDatabaseSchemas().forEach(schema -> {
+            pw.printf("    <schema table=\"%s\" dbType=\"%s\" confidence=\"%.2f\">%n",
+                x(schema.getTableName()), x(schema.getDatabaseType().toString()), schema.getConfidence());
+            schema.getColumns().forEach((col, type) ->
+                pw.printf("      <column name=\"%s\" type=\"%s\"/>%n", x(col), x(type)));
+            pw.println("    </schema>");
+        });
+        pw.println("  </databaseSchemas>");
+
+        pw.println("  <dataStructures>");
+        r.getDataStructures().forEach(ds -> {
+            pw.printf("    <structure name=\"%s\" type=\"%s\">%n", x(ds.getName()), x(ds.getType().toString()));
+            ds.getProperties().forEach((k, v) ->
+                pw.printf("      <property key=\"%s\">%s</property>%n", x(k), x(v)));
+            pw.println("    </structure>");
+        });
+        pw.println("  </dataStructures>");
+
+        if (r.getArchitecture() != null) {
+            var a = r.getArchitecture();
+            pw.printf("  <architecture framework=\"%s\" pattern=\"%s\" stateManagement=\"%s\" confidence=\"%.2f\">%n",
+                x(a.getFramework().toString()), x(a.getPattern().toString()), x(a.getStateManagement().toString()), a.getPatternConfidence());
+            a.getServices().forEach(s -> pw.printf("    <service>%s</service>%n", x(s)));
+            a.getMiddlewares().forEach(m -> pw.printf("    <middleware>%s</middleware>%n", x(m)));
+            pw.println("  </architecture>");
+        }
+
+        if (!r.getErrors().isEmpty()) {
+            pw.println("  <errors>");
+            r.getErrors().forEach(e -> pw.printf("    <error>%s</error>%n", x(e)));
+            pw.println("  </errors>");
+        }
+
+        pw.println("</jsAnalysis>");
+    }
+
+    private void styleDialog(DialogPane dp) {
+        if (cssUrl != null) dp.getStylesheets().add(cssUrl.toExternalForm());
+        dp.getStyleClass().add("anibus-dialog");
+    }
+
+    private String esc(String s) { return s == null ? "" : s.replace("\"", "\"\""); }
+    private String x(String s) {
+        if (s == null) return "";
+        return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+                .replace("\"", "&quot;").replace("'", "&apos;");
     }
 }

@@ -1,271 +1,487 @@
-# Anibus — Scanner di Porte Avanzato
+# Anibus — Scanner di Sicurezza di Rete Avanzato
 
-Un'applicazione desktop moderna per la scansione delle porte con analisi di sicurezza approfondita, realizzata con **Anibus Design System**, **JavaFX 21.0.5** e **Java 21**.
+> **Versione:** 1.7.0 · **Autore:** Iaroslav Tsymbaliuk · **Ruolo:** Intern (2025–2026) @ r2u
 
-> **Versione:** 1.6.0 · **Autore:** Iaroslav Tsymbaliuk · **Ruolo:** Intern (2025–2026) @ r2u
-
-## Novità in 1.6.0
-
-- Analisi **attack surface** estesa: endpoint Auth, host microservizi interni, target di leakage verso terze parti
-- Nuova sezione **Sensitive Deep-Dive** con contesto modulo, tipizzazione token e historyLocations
-- **Deep Schema Inference** migliorata con cross-link più ricchi e raggruppamento semantico dei campi
-- Aggiunti **endpoint dinamici / fuzzing targets** e euristiche per pannelli amministrativi nascosti
-- Corretto l'**export dei report JavaScript**: ora i file salvano il report completo renderizzato
-- **Infrastructure Inference** da JavaScript — rileva Docker, Kubernetes, AWS/GCP/Azure, Nginx, Traefik, Cloudflare/Fastly con punteggio di confidenza ed evidenze
-- **Rilevamento framework esteso** — aggiunti Next.js, Nuxt.js, SvelteKit, Remix, Astro, Qwik, React Native, Expo, Ionic, Solid, Preact e altri framework meta/mobile
-- **30+ motori database** nel pattern matching delle credenziali — MariaDB, CockroachDB, Redis TLS, RabbitMQ/AMQP, CouchDB, Neo4j, ClickHouse, MSSQL, Oracle, Cassandra, Couchbase, InfluxDB e altri; pattern classificati per criticità
-- **Rilevamento esteso di connection string** nel sorgente web (MySQL/MariaDB, PostgreSQL, Redis, Elasticsearch, Cassandra, Neo4j)
-- **Banner grabbing TLS/HTTPS** — BannerGrabber si connette ora via SSLSocket sulle porte 443 e 8443
-- **Fat JAR multipiattaforma** (`anibus-1.6.0.jar`) — file unico con librerie native JavaFX per Linux, Windows e macOS; avvio: `java -jar anibus-1.6.0.jar`
+Uno scanner di sicurezza di rete desktop completo, realizzato con **Java 21 (JPMS)**, **JavaFX 21.0.5** e un tema **Bootstrap 5 Dark** personalizzato.
+Anibus va ben oltre un semplice port scanner: combina fingerprinting dei servizi, corrispondenza CVE, analisi dei sorgenti JavaScript, test di SQL injection, geolocalizzazione, ispezione SSL/TLS e rilevamento dell'infrastruttura in un'unica applicazione autonoma.
 
 ---
 
-## Funzionalità
+## Indice
 
-### Scansione Base
-- Scansione di qualsiasi hostname o indirizzo IP alla ricerca di porte aperte
-- Intervallo di porte configurabile (es. `1-65535`)
-- Numero di thread regolabile (10–500, predefinito 10)
-- Misurazione della **latenza** per ogni porta (ms)
-- Interruzione della scansione sicura con architettura SOLID
+- [Novità in 1.7.0](#novità-in-170)
+- [Panoramica Funzionalità](#panoramica-funzionalità)
+- [Architettura](#architettura)
+- [Struttura del Progetto](#struttura-del-progetto)
+- [Design Pattern](#design-pattern)
+- [Interfaccia Utente](#interfaccia-utente)
+- [Stack Tecnologico](#stack-tecnologico)
+- [Requisiti](#requisiti)
+- [Build & Run](#build--run)
+- [Guida all'Utilizzo](#guida-allutilizzo)
+- [Testing](#testing)
+- [Formati di Export](#formati-di-export)
+- [Licenza](#licenza)
+
+---
+
+## Novità in 1.7.0
+
+| Area | Modifica |
+|------|---------|
+| Architettura | Layer dei servizi riorganizzato in 6 sottopacchetti specializzati |
+| Modello | `LeakInfo` spostato in `model/` come classe immutabile |
+| DI | Iniezione via costruttore ovunque — nessun framework DI |
+| UI | Redesign completo: sidebar + TabPane |
+| Tema | Riscrittura completa del CSS in Bootstrap 5 Dark |
+| Rilevamento leak | Dati sensibili esclusivamente nella scheda JS Analysis |
+| Test | 49 unit test JUnit 5 |
+| Lingua | Interfaccia solo in inglese |
+| Export | JS Analysis ora esporta in CSV o XML (stesso flusso del port scan) |
+
+---
+
+## Panoramica Funzionalità
+
+### Scansione Porte
+- Scansione di qualsiasi hostname, IP o URL
+- Range di porte configurabile (`1-65535`) e numero di thread (default: 10 thread virtuali)
+- Misurazione latenza per porta (ms)
+- Barra di avanzamento in tempo reale e statistiche live
+- Interruzione sicura in qualsiasi momento
 
 ### Rilevamento Servizi Avanzato
-- **Modalità di scansione unificata** — tutte le scansioni utilizzano il rilevamento servizi completo con fingerprinting avanzato
-- **Fingerprinting avanzato dei servizi** per oltre 100 servizi (HTTP, SSH, FTP, MySQL, PostgreSQL, Redis, MongoDB, Elasticsearch, Kubernetes API, Jenkins, ecc.)
-- **Acquisizione banner** con sonde specifiche del protocollo (HTTP HEAD, saluto SSH, SMTP, FTP, handshake MySQL)
-- **Estrazione versione software** dai banner (OpenSSH, Apache, nginx, ProFTPD, Postfix, ecc.)
-- **Rilevamento sistema operativo** tramite impronte TCP e analisi banner
-- **Scansione vulnerabilità** con corrispondenza database CVE (livelli di severità ALTO/MEDIO/CRITICO)
-- **Servizi di geolocalizzazione** — posizione IP, ISP, ASN, rilevamento provider cloud
-- **Analisi certificati SSL/TLS** — date di scadenza, rilevamento autofirmati, dettagli certificato
 
-### Analisi Sicurezza
-- **Rilevamento Keycloak IAM** — rileva automaticamente server Keycloak su `/auth/`, `/keycloak/`, percorsi personalizzati
-- **Estrazione chiavi crittografiche** — trova chiavi pubbliche/private esposte e segreti client
-- **Supporto multi-realm** — rileva realm `master` e personalizzati
-- **Analisi header di sicurezza** — Content Security Policy, HSTS, X-Frame-Options, ecc.
-- **Rilevamento tecnologie HTTP** — identificazione CMS (WordPress, Drupal, Magento), server web, framework
-- **Rilevamento dispositivi IoT** — telecamere IP, DVR, router con avvisi credenziali predefinite
+Analisi banner multi-livello e sonde specifiche del protocollo:
 
-### Estrazione Informazioni
-- **Analisi codice sorgente web** — rileva credenziali trapelate, chiavi API, file di configurazione
-- **Analisi approfondita JavaScript** — scansione avanzata del codice sorgente JS con pieno supporto HTTPS, estrazione automatica degli script inline `<script>`, rilevamento file con hash (bundle Webpack, Vite, Rollup), rilevamento `<link rel="modulepreload">` e analisi del contenuto della pagina HTML (meta tag, JSON-LD, configurazioni integrate). Tre modalità: **Basic** (controllo rapido endpoint + sicurezza), **Deep** (rilevamento pattern completo, estrazione credenziali DB) e **Comprehensive** (analisi architetturale + valutazione minacce classificate)
-- **Mappatura endpoint** — estrae automaticamente endpoint REST/GraphQL, metodi HTTP, URL e parametri da bundle JavaScript, script inline e sorgente pagina HTML
-- **Inferenza schema database** — rileva nomi di tabelle, colonne e relazioni dai pattern di query nel codice JS
-- **Estrazione credenziali database** — trova stringhe di connessione per MongoDB, MySQL, PostgreSQL, Redis e altri DB nei file JS (classificate per criticità)
-- **Rilevamento pattern architetturali** — identifica pattern MVC, SPA, micro-servizi e serverless dalla struttura JS
-- **Rilevamento servizi cloud** — Cloudflare, AWS, Azure, Akamai, identificazione WAF/CDN
-- **Rilevamento piattaforme container** — Docker, Kubernetes, Podman e rilevamento orchestrazione tramite fingerprinting passivo header HTTP (Envoy/Istio, Kong, Traefik) e probing attivo API (Docker API, K8s API, Kubelet, cAdvisor, Portainer, OCI Registry)
-- **Analisi stack software** — Kubernetes, Docker, Jenkins CI/CD, strumenti HashiCorp
+| Livello | Cosa fa |
+|---------|--------|
+| Acquisizione banner | HTTP HEAD, greeting SSH, SMTP EHLO, FTP, handshake MySQL |
+| Estrazione versione | Parsing intestazioni `Server:`, banner SSH, Redis `INFO`, greeting FTP |
+| Rilevamento OS | TCP fingerprinting + analisi banner |
+| Corrispondenza CVE | Confronta versioni con database vulnerabilità incorporato |
+| Geolocalizzazione | IP → posizione, ISP, ASN, cloud provider |
+| SSL/TLS | Data scadenza, emittente, rilevamento certificati autofirmati |
 
-### Analisi SQL Injection
-- **Test automatizzato di SQL injection** — test endpoint CMS-aware con oltre 110 payload in 12 categorie (error-based, UNION, time-based, boolean-based, auth-bypass, stacked queries, encoding evasion, integer injection, NoSQL, XPath, LDAP)
-- **Profili di injection specifici per CMS** — endpoint vulnerabili preconfigurati per WordPress, Joomla, Drupal, Magento, 1C-Bitrix, OpenCart, PrestaShop, ModX, Shopify, più target generici
-- **Rilevamento CMS automatico** — identifica automaticamente il CMS target dalle risposte HTTP e seleziona il profilo di injection corrispondente
-- **Scoperta automatica form HTML** — analizza `<form>`, `<a href>`, `<input>`, `<select>` e `<textarea>` per scoprire endpoint iniettabili
-- **Sistema payload modulare** — file per categoria e per CMS con discovery tramite `index.txt` per facile manutenzione ed estensibilità
-- **Analisi delle risposte** — rileva errori SQL da 7 motori database (MySQL, PostgreSQL, Oracle, MSSQL, SQLite, MongoDB, MariaDB), pattern di leak dati e ritardi temporali
+Servizi supportati: HTTP/HTTPS, SSH, FTP, SMTP, DNS, MySQL, PostgreSQL, Redis, MongoDB, Elasticsearch, Kibana, Kubernetes API, Jenkins, Grafana, Prometheus, RabbitMQ, Kafka, ZooKeeper, LDAP, Memcached, Cassandra, CouchDB, Neo4j, InfluxDB, Splunk, Vault, Consul, Etcd e molti altri.
 
-### Interfaccia e Flusso di Lavoro
-- **Tema scuro** — design completo in modalità dark con contrasto e leggibilità ottimizzati
-- **Vista console** — alternanza tra visualizzazione tabella e output console in stile terminale con risultati formattati
-- **Rilevamento SSL/TLS** — controllo automatico del supporto HTTPS durante la risoluzione degli host (indicatore spunta/X)
-- **Gestione intelligente degli URL** — rimozione automatica dei prefissi http:// e https://, estrazione dell'hostname dagli URL completi
-- **Indicatore stato rete** — stato connessione in tempo reale nella barra di stato ([ONLINE], [LOCALE], [OFFLINE]), aggiornato ogni 5 secondi
-- **Pannello informazioni host** — IP, hostname, tempo di scansione, porte analizzate, porte aperte, latenza media (aggiornamento in tempo reale)
-- **Esportazione in CSV o XML** con tutte le colonne e dati del rilevamento servizi avanzato
-- **Cancellazione** dei risultati con un clic
-- **Copia riga** o **copia tutti** tramite menu contestuale
-- **Copia indirizzo IP** dall'etichetta dell'host risolto tramite clic destro
-- Risoluzione DNS automatica alla perdita del focus
-- **Anibus Design System**: barra di navigazione effetto vetro, pulsanti con gradiente, barre di scorrimento sottili, schede arrotondate, colonna stato colorata
-- **Output testuale** — formattazione ASCII pulita per compatibilità universale con console
+### Analisi di Sicurezza
+
+| Funzionalità | Descrizione |
+|-------------|------------|
+| **Keycloak IAM** | Rileva server Keycloak, estrae chiavi crittografiche esposte e segreti client |
+| **Header di sicurezza** | Verifica CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Permissions-Policy |
+| **Rilevamento CMS** | WordPress, Drupal, Magento, Joomla, 1C-Bitrix — fingerprinting versioni |
+| **Dispositivi IoT** | Telecamere IP, DVR/NVR, router — avvisi credenziali predefinite |
+| **Rilevamento container** | Docker API, Kubernetes API, Rancher, Portainer |
+| **Metadati cloud** | Sonda endpoint AWS/GCP/Azure IMDS |
+
+### Analisi JavaScript (scheda JS Analysis)
+
+Recupera e analizza i file JavaScript del target, inclusi bundle Webpack/Vite/Rollup con nomi hashati scoperti tramite HTML:
+
+| Analisi | Dettagli |
+|---------|---------|
+| **Mapping endpoint API** | Endpoint REST/GraphQL, metodi HTTP, template URL da bundle JS |
+| **Estrazione credenziali DB** | Connection string per 30+ engine: MongoDB, MySQL, PostgreSQL, Redis, Elasticsearch, Cassandra, Neo4j, InfluxDB, RabbitMQ, DynamoDB, Supabase, PlanetScale e altri |
+| **Inferenza schema DB** | Tabelle, colonne, relazioni da pattern ORM/query in JS |
+| **Rilevamento infrastruttura** | Docker, Kubernetes, AWS/GCP/Azure, Nginx, Traefik, Cloudflare, Fastly con punteggio di confidenza |
+| **Rilevamento framework** | React, Vue, Angular, Next.js, Nuxt.js, SvelteKit, Remix, Astro, Gatsby, Alpine.js, Solid.js, Qwik e 20+ altri |
+| **Informazioni sensibili** | API key, token segreti, chiavi private, JWT secret, credenziali OAuth |
+
+I risultati sono mostrati in un **TreeView** espandibile categorizzato per tipo di rilevamento.
+
+### SQL Injection Testing
+
+- **110+ payload** in 12 categorie:
+  - Error-based, UNION-based, time-based (sleep/benchmark), boolean-based
+  - Auth-bypass, stacked query, NoSQL, XPath, LDAP injection
+  - Evasione encoding (URL, hex, double-URL, Unicode, mixed-case)
+- **Profili CMS**: WordPress (`wp-login.php`, `xmlrpc.php`), Joomla, Drupal, Magento, 1C-Bitrix, OpenCart, PrestaShop, ModX, Shopify
+- **Scoperta automatica form**: parsing di `<form>`, `<input>`, `<select>`, `<textarea>`
+- **Analisi risposta**: rileva errori SQL da MySQL, PostgreSQL, MSSQL, SQLite, Oracle, MongoDB e ritardi time-based
+
+---
+
+## Architettura
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    AnibusController                      │
+│       (Controller FXML JavaFX, solo thread UI)           │
+└───────┬─────────────────────────────────┬───────────────┘
+        │                                 │
+        ▼                                 ▼
+┌───────────────┐                ┌────────────────────┐
+│ ScanCoordinator│               │  Action Handler    │
+│ Strategy+Facade│               │ ScanActionHandler  │
+│               │                │ ExportActionHandler│
+│  ScanContext  │                │ ClipboardHandler   │
+│  ScanStrategy │                └────────────────────┘
+└───────┬───────┘
+        │
+        ▼
+┌─────────────────────────────────────────────┐
+│               Layer dei Servizi              │
+│                                             │
+│  service/core/        service/detection/    │
+│  PortScannerService   EnhancedServiceDet.   │
+│  BannerGrabber        OSDetector            │
+│  HTTPAnalyzer         IoTDetector           │
+│  VulnScanner          KeycloakDetector      │
+│                       SoftwareStackDet.     │
+│                       ContainerDetector     │
+│                                             │
+│  service/analysis/    service/network/      │
+│  JSSecurityAnalyzer   SubnetScanner         │
+│  JSDatabaseAnalyzer   TracerouteService     │
+│  WebSourceAnalyzer    ReverseDnsExpander    │
+│  SQLInjectionAnalyzer CloudMetadataProbe    │
+│                                             │
+│  service/export/      service/geo/          │
+│  ExportService        GeolocationService    │
+└─────────────────────────────────────────────┘
+        │
+        ▼
+┌─────────────────────────────────────────────┐
+│               Layer dei Modelli              │
+│  LeakInfo · PortScanResult · PortRegistry   │
+│  JavaScriptAnalysisResult · EndpointInfo    │
+│  DatabaseSchemaInfo · DataStructureInfo     │
+│  ArchitectureInfo                           │
+└─────────────────────────────────────────────┘
+```
+
+### Flusso dei Dati
+
+1. L'utente inserisce target + opzioni → **ScanCoordinator** crea un `ScanContext`
+2. **PortScannerService** avvia task su thread virtuali, uno per porta
+3. Ogni porta aperta → **EnhancedServiceDetector** → banner → versione → CVE
+4. **GeolocationService** risolve metadati IP in parallelo
+5. JS Analysis abilitata → **JavaScriptSecurityAnalyzer** recupera e analizza bundle
+6. SQL Injection abilitata → **SQLInjectionAnalyzer** scopre form e li testa
+7. Risultati restituiti tramite `Platform.runLater()` — UI sempre sul thread JavaFX
+8. **ExportService** / **ExportActionHandler** scrivono CSV o XML su richiesta
 
 ---
 
 ## Struttura del Progetto
 
 ```
-src/
-└── main/
-    ├── java/
-    │   ├── module-info.java
-    │   └── it/r2u/anibus/
-    │       ├── AnibusApplication.java          # Punto di ingresso JavaFX
-    │       ├── AnibusController.java           # Controller UI (refactoring SOLID, snello e focalizzato)
-    │       │
-    │       ├── coordinator/                     # Orchestrazione scan (pattern Strategy & Facade)
-    │       │   ├── ScanStrategy.java            # Interfaccia strategia per tipi di scansione
-    │       │   ├── ScanContext.java             # Pattern Builder per parametri scansione
-    │       │   ├── ScanCoordinator.java         # Facade per gestione strategie
-    │       │   ├── StandardScanStrategy.java    # Strategia scansione TCP veloce
-    │       │   └── ServiceDetectionStrategy.java # Strategia rilevamento servizi avanzato
-    │       │
-    │       ├── handlers/                        # Handler azioni (pattern Command)
-    │       │   ├── ScanActionHandler.java       # Ciclo vita scansione e aggiornamenti UI
-    │       │   ├── ClipboardActionHandler.java  # Operazioni appunti
-    │       │   ├── ExportActionHandler.java     # Funzionalità esportazione
-    │       │   └── TracerouteActionHandler.java # Tracciamento percorso rete
-    │       │
-    │       ├── model/
-    │       │   ├── PortScanResult.java          # Modello dati (7 campi)
-    │       │   ├── PortRegistry.java            # Tabelle di servizi e protocolli/cifratura
-    │       │   ├── ArchitectureInfo.java        # Risultato analisi pattern architetturali JS
-    │       │   ├── DataStructureInfo.java       # Strutture dati rilevate dal codice JS
-    │       │   ├── DatabaseSchemaInfo.java      # Schema DB inferito dalle query JS
-    │       │   ├── EndpointInfo.java            # Dettagli degli endpoint API estratti
-    │       │   └── JavaScriptAnalysisResult.java # Risultato aggregato dell'analisi sicurezza JS
-    │       │
-    │       ├── network/
-    │       │   ├── HostResolver.java            # Risoluzione DNS e rilevamento SSL
-    │       │   └── NetworkStatusMonitor.java    # Monitoraggio connettività rete
-    │       │
-    │       ├── service/
-    │       │   ├── PortScannerService.java      # Logica scansione principale
-    │       │   ├── ScanTask.java                # Task<Void> in background con callbacks
-    │       │   ├── ServiceDetectionTask.java    # Task rilevamento avanzato
-    │       │   ├── EnhancedServiceDetector.java # Fingerprinting servizi approfondito
-    │       │   ├── BannerGrabber.java           # Acquisizione banner (HTTP HEAD / greeting raw)
-    │       │   ├── VersionExtractor.java        # Estrazione versione (regex)
-    │       │   ├── ExportService.java           # Esportazione CSV e XML
-    │       │   ├── OSDetector.java              # Rilevamento sistema operativo
-    │       │   ├── VulnerabilityScanner.java    # Corrispondenza database CVE
-    │       │   ├── GeolocationService.java      # Geolocalizzazione IP via ip-api.com
-    │       │   ├── HTTPAnalyzer.java            # Certificati SSL, header sicurezza, rilevamento CMS
-    │       │   ├── TracerouteService.java       # Tracciamento percorso rete
-    │       │   ├── IoTDetector.java             # Rilevamento telecamere IP e dispositivi IoT
-    │       │   ├── KeycloakDetector.java        # Rilevamento Keycloak IAM ed estrazione chiavi
-    │       │   ├── SoftwareStackDetector.java   # Analisi stack tecnologico
-    │       │   ├── ContainerDetector.java        # Rilevamento piattaforme container Docker/K8s/Podman
-    │       │   ├── SubnetScanner.java            # Scansione intervallo subnet
-    │       │   ├── WebSourceAnalyzer.java        # Analisi perdite nel codice sorgente web
-    │       │   ├── JavaScriptSecurityAnalyzer.java # Analisi sicurezza JS avanzata (HTTPS, script inline, file hash, architettura)
-    │       │   ├── JavaScriptDatabaseAnalyzer.java # Estrazione credenziali DB e stringhe di connessione da JS
-    │       │   └── SQLInjectionAnalyzer.java     # Test SQL injection con profili CMS e scoperta form HTML
-    │       │
-    │       └── ui/
-    │           ├── AlertHelper.java             # Dialoghi di avviso Anibus Design System
-    │           ├── ClipboardService.java        # Utilità copia negli appunti
-    │           ├── ConsoleViewManager.java      # Gestione output console
-    │           ├── InfoCardManager.java         # Gestione pannello info host
-    │           └── TableConfigurator.java       # Configurazione colonne tabella
-    │
-    └── resources/
-        └── it/r2u/anibus/
-            ├── hello-view.fxml                  # Layout dell'interfaccia
-            ├── anibus-style.css                 # Foglio di stile Anibus Design System
-            ├── app.properties                   # Versione runtime filtrata da Maven
-            └── injections/                      # Payload SQL injection e profili CMS
-                ├── payloads/                    # 12 file per categoria (error-based, UNION, time-based, ecc.)
-                │   ├── index.txt
-                │   ├── error-based.txt
-                │   ├── union-based.txt
-                │   └── ...                      # boolean-based, auth-bypass, nosql, xpath, ldap, ecc.
-                └── cms/                         # 10 profili endpoint specifici per CMS
-                    ├── index.txt
-                    ├── wordpress.txt
-                    ├── joomla.txt
-                    └── ...                      # drupal, magento, bitrix, opencart, ecc.
+src/main/java/it/r2u/anibus/
+├── AnibusApplication.java               # Entry point JavaFX Application
+├── AnibusController.java                # Controller FXML principale
+│
+├── coordinator/
+│   ├── ScanCoordinator.java             # Orchestrazione pipeline scansione completa
+│   ├── ScanContext.java                 # Container stato scansione mutabile
+│   ├── ScanStrategy.java               # Interfaccia Strategy
+│   ├── StandardScanStrategy.java       # Flusso scansione predefinito
+│   └── ServiceDetectionStrategy.java   # Flusso orientato al rilevamento
+│
+├── handlers/                            # Command pattern — una classe per azione UI
+│   ├── ScanActionHandler.java
+│   ├── ExportActionHandler.java         # Export CSV/XML per port scan + JS analysis
+│   ├── ClipboardActionHandler.java
+│   └── TracerouteActionHandler.java
+│
+├── model/                               # Classi dati immutabili
+│   ├── LeakInfo.java                   # Record leak + inferenza priorità
+│   ├── PortScanResult.java
+│   ├── PortRegistry.java               # Mappa porta/nome servizio (1000+ voci)
+│   ├── JavaScriptAnalysisResult.java
+│   ├── EndpointInfo.java
+│   ├── DatabaseSchemaInfo.java
+│   ├── DataStructureInfo.java
+│   └── ArchitectureInfo.java
+│
+├── network/
+│   ├── HostResolver.java               # Risoluzione DNS + normalizzazione URL
+│   └── NetworkStatusMonitor.java       # Verifica connettività periodica
+│
+├── service/
+│   ├── analysis/
+│   │   ├── JavaScriptSecurityAnalyzer.java    # Fetcher bundle + orchestratore analisi
+│   │   ├── JavaScriptDatabaseAnalyzer.java    # Rilevamento credenziali DB + schemi
+│   │   ├── WebSourceAnalyzer.java             # Parser HTML/JS (script inline, link)
+│   │   └── SQLInjectionAnalyzer.java          # Scoperta form + iniezione payload
+│   │
+│   ├── core/
+│   │   ├── PortScannerService.java            # Scanner porte su thread virtuali
+│   │   ├── ScanTask.java                      # Callable per singola porta
+│   │   ├── ServiceDetectionTask.java          # Rilevamento approfondito post-scan
+│   │   ├── BannerGrabber.java                 # Acquisizione banner grezzo
+│   │   ├── HTTPAnalyzer.java                  # Analisi livello HTTP
+│   │   └── VulnerabilityScanner.java          # Engine corrispondenza CVE
+│   │
+│   ├── detection/
+│   │   ├── EnhancedServiceDetector.java       # Dispatcher principale rilevamento
+│   │   ├── OSDetector.java                    # Fingerprinting OS
+│   │   ├── PassiveFingerprinter.java          # Analisi traffico passiva
+│   │   ├── IoTDetector.java                   # Rilevamento telecamere/DVR/router
+│   │   ├── KeycloakDetector.java              # Scraper realm Keycloak
+│   │   ├── SoftwareStackDetector.java         # Identificazione CMS/framework
+│   │   └── ContainerDetector.java             # Rilevamento Docker/Kubernetes
+│   │
+│   ├── export/
+│   │   └── ExportService.java                 # Writer CSV/XML per port scan
+│   │
+│   ├── geo/
+│   │   └── GeolocationService.java            # Integrazione ip-api.com
+│   │
+│   └── network/
+│       ├── SubnetScanner.java                 # Espansione range CIDR
+│       ├── TracerouteService.java             # Traceroute ICMP/TCP
+│       ├── ReverseDnsExpander.java            # Lookup record PTR
+│       ├── CloudMetadataProbe.java            # Sonda AWS/GCP/Azure IMDS
+│       └── VersionExtractor.java             # Estrazione versione via regex
+│
+└── ui/
+    ├── AlertHelper.java                       # Dialog stilizzati
+    ├── ClipboardService.java                  # Integrazione clipboard di sistema
+    ├── ConsoleViewManager.java                # Rendering scheda console
+    ├── InfoCardManager.java                   # Aggiornamento card Host Info
+    └── TableConfigurator.java                 # Configurazione colonne tabella
+
+src/main/resources/it/r2u/anibus/
+├── hello-view.fxml                            # Layout UI completo (sidebar + TabPane)
+├── anibus-style.css                           # Tema personalizzato Bootstrap 5 Dark
+└── logging.properties
+
+src/test/java/it/r2u/anibus/
+├── service/core/PortScannerServiceTest.java         # 9 test
+├── model/LeakInfoTest.java                          # 22 test
+├── service/analysis/WebSourceAnalyzerTest.java      # 8 test
+├── service/WebSourceAnalyzerLeakInfoTest.java       # 3 test
+└── service/JavaScriptSecurityAnalyzerServiceInferenceTest.java  # 7 test
 ```
 
 ---
 
-## Requisiti
+## Design Pattern
 
-| Strumento | Versione |
-|-----------|----------|
-| Java      | 21+      |
-| JavaFX    | 21.0.5   |
-| Maven     | 3.8+     |
+| Pattern | Dove usato | Perché |
+|---------|-----------|--------|
+| **Strategy** | `ScanStrategy` / `ScanCoordinator` | Sostituire l'algoritmo di scansione senza modificare il controller |
+| **Command** | Classi `*ActionHandler` | Disaccoppiare azioni UI dalla logica; una classe = una responsabilità |
+| **Facade** | `ScanCoordinator` | Unico punto d'ingresso per pipeline multi-servizio complessa |
+| **Builder** | `JavaScriptAnalysisResult` | Raccolta incrementale di risultati asincroni |
+| **Constructor Injection** | Tutti i servizi | Dipendenze esplicite, testabilità, compatibilità JPMS, zero overhead |
+| **Observer** | `Platform.runLater()`, `Task<>` | Aggiornamenti UI thread-safe da thread di scansione in background |
 
-> **Nota:** Il JAR pre-compilato include già tutte le librerie native JavaFX per Linux, Windows e macOS — non è necessaria un'installazione separata di JavaFX.
+### Perché nessun framework DI?
 
----
+Java 21 JPMS è incompatibile con la maggior parte dei framework DI (Spring, Guice) perché si basano sulla reflection attraverso i confini dei moduli. L'iniezione via costruttore fornisce lo stesso disaccoppiamento senza overhead e con piena compatibilità JPMS.
 
-## Avvio Rapido (JAR pre-compilato)
+### Perché i thread virtuali?
 
-Scarica `anibus-1.6.0.jar` dalla pagina [Releases](../../releases) ed esegui:
-
-```bash
-# Linux / macOS
-java -jar anibus-1.6.0.jar
-
-# Windows
-java -jar anibus-1.6.0.jar
-```
-
-Su Windows puoi anche fare **doppio clic** sul file `.jar` se Java 21 è installato e associato ai file `.jar`.
-
-> **Richiede Java 21+.** Scarica da [https://adoptium.net](https://adoptium.net)
+La scansione delle porte è puramente I/O-bound. I thread virtuali di Java 21 (`Executors.newVirtualThreadPerTaskExecutor()`) permettono centinaia di connessioni socket concorrenti con overhead di memoria trascurabile — senza la complessità della programmazione reattiva.
 
 ---
 
-## Compilazione e Avvio
+## Interfaccia Utente
 
-```bash
-# Clonare il repository
-git clone https://github.com/episkob/anibus.git
-cd anibus
-
-# Avvio con Maven
-./mvnw javafx:run
+```
+┌──────────────────────────────── Anibus 1.7.0 ─────────────────────────────────┐
+│ [●] Anibus  ░░░░░░░░░░░░░░░░░░░░░░░░  ● Connesso  192.168.1.1                │  ← Nav bar
+│───────────────────────────────────────────────────────────────────────────────│
+│ ┌── Scan Target ───────────────┐  ┌── [Scan Results] [JS Analysis] ──────────┐│
+│ │ Host: [example.com_______]   │  │  Scan Results               [Export][Clear]││
+│ │ Ports:[1-1024] Threads:[10]  │  │ ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄  ││
+│ │ ☑ JavaScript Analysis        │  │  ╔══ PORTA 22 — SSH ══════════════════╗  ││
+│ │ ☑ SQL Injection Testing      │  │  ║ OpenSSH 8.9p1 Ubuntu              ║  ││
+│ │ [▶ Start Scan       ] [Stop] │  │  ║ CVE-2023-38408  HIGH              ║  ││
+│ │ ████████████░░░░░  67%       │  │  ╚═══════════════════════════════════╝  ││
+│ └──────────────────────────────┘  │  ╔══ PORTA 80 — HTTP ═════════════════╗  ││
+│ ┌── Host Info ─────────────────┐  │  ║ nginx/1.24.0  WordPress 6.4.2    ║  ││
+│ │ IP                           │  │  ╚═══════════════════════════════════╝  ││
+│ │ 93.184.216.34                │  └────────────────────────────────────────┘│
+│ │ Hostname                     │                                             │
+│ │ example.com                  │                                             │
+│ │ Scan Time    │ Ports Scanned │                                             │
+│ │ 4.2s         │ 1024          │                                             │
+│ │ Open Ports   │ Avg Latency   │                                             │
+│ │ 3            │ 12ms          │                                             │
+│ └──────────────────────────────┘                                             │
+│───────────────────────────────────────────────────────────────────────────────│
+│ ● Scansione completata — trovate 3 porte aperte                               │  ← Status bar
+└───────────────────────────────────────────────────────────────────────────────┘
 ```
 
-Su Windows:
+**Pannello sinistro (300 px):**
+- **Card Scan Target** — campo host con risoluzione DNS live, range porte, spinner thread, due checkbox, pulsanti Start/Stop, barra avanzamento
+- **Card Host Info** — appare dopo la scansione; IP e hostname (con a capo automatico), griglia 2 colonne: Scan Time / Ports Scanned / Open Ports / Avg Latency
 
-```cmd
-mvnw.cmd javafx:run
-```
-
-Su Linux (Wayland + XWayland):
-
-JavaFX utilizza il backend GTK/X11 e richiede la variabile `DISPLAY`. Sui desktop Wayland (GNOME, KDE) XWayland è solitamente in esecuzione su `:0`.
-
-```bash
-# 1. Consentire ai processi locali l'accesso al display X (una volta per sessione)
-xhost +local:
-
-# 2. Avvio con la variabile DISPLAY
-DISPLAY=:0 ./mvnw javafx:run
-```
-
-Se usi VS Code (o un altro IDE) tramite **Flatpak**, la sandbox non eredita `DISPLAY`. Usa `flatpak-spawn` per chiamare `xhost` sull'host:
-
-```bash
-flatpak-spawn --host xhost +local:
-DISPLAY=:0 ./mvnw javafx:run
-```
-
-> **Nota:** gli avvisi GTK come `Failed to load module "canberra-gtk-module"` sono cosmetici e non influenzano il funzionamento.
-
----
-
-## Utilizzo
-
-1. Inserire l'**host di destinazione** (hostname o indirizzo IP)
-2. Inserire l'**intervallo di porte** nel formato `inizio-fine` (es. `1-65535` o `80,443`)
-3. Facoltativamente, regolare il **numero di thread** (più alto = più veloce, ma più aggressivo)
-4. Facoltativamente, abilitare le caselle **JavaScript Analysis** e/o **SQL Injection Testing**
-5. Cliccare su **Start Scan**
-6. Appare il **pannello informazioni host** con statistiche di scansione in tempo reale
-7. I risultati popolano la tabella con dati completi: OS, vulnerabilità, geolocalizzazione, analisi Keycloak
-8. Al termine della scansione, il **rilevamento stack software** identifica automaticamente le tecnologie (Docker, K8s, Redis, PostgreSQL, ecc.)
-9. Cliccare su **Stop** per interrompere la scansione in qualsiasi momento
-10. Usare **Export** per salvare i risultati come **CSV o XML**, o **Clear** per resettare
-11. Cliccare con il tasto destro su qualsiasi riga per copiare risultati o indirizzi IP
+**Pannello destro (flessibile):**
+- **Scheda Scan Results** — console monospace scura con banner ASCII formattati per servizio
+- **Scheda JS Analysis** — barra statistiche + TreeView espandibile + pulsante Export
 
 ---
 
 ## Stack Tecnologico
 
-- **Java 21** — linguaggio di programmazione
-- **JavaFX 21.0.5** — framework UI
-- **Maven** — strumento di build
-- **FXML** — layout dichiarativo dell'interfaccia
-- **CSS** — tema Anibus Design System
+| Tecnologia | Versione | Ruolo |
+|-----------|---------|-------|
+| Java | 21 (LTS) | Linguaggio, sistema moduli JPMS, thread virtuali |
+| JavaFX | 21.0.5 | Framework UI (FXML + CSS) |
+| Bootstrap 5 Dark (CSS) | Port personalizzato | Sistema di design |
+| Maven Shade Plugin | 3.5.0 | Fat JAR con librerie native JavaFX integrate |
+| JUnit 5 | 5.10.2 | Unit testing |
+| junit-jupiter-params | 5.10.2 | Test parametrizzati |
+
+---
+
+## Requisiti
+
+| Strumento | Versione | Note |
+|-----------|---------|------|
+| Java | **21+** | LTS raccomandato |
+| Maven | 3.8+ | O il wrapper incluso `./mvnw` |
+| JavaFX | — | Integrato nel fat JAR — nessuna installazione separata |
+| OS | Linux / Windows / macOS | Tutte le piattaforme |
+
+---
+
+## Build & Run
+
+**Clone e avvio diretto:**
+
+```bash
+git clone https://github.com/episkob/anibus.git
+cd anibus
+./mvnw javafx:run
+```
+
+**Costruire il fat JAR:**
+
+```bash
+./mvnw clean package -DskipTests
+java -jar target/anibus-1.7.0.jar
+```
+
+**Windows:**
+
+```cmd
+mvnw.cmd clean package -DskipTests
+java -jar target\anibus-1.7.0.jar
+```
+
+**Linux — Wayland / XWayland:**
+
+```bash
+xhost +local:
+DISPLAY=:0 java -jar target/anibus-1.7.0.jar
+```
+
+**Da terminale Flatpak VS Code:**
+
+```bash
+flatpak-spawn --host xhost +local:
+DISPLAY=:0 java -jar target/anibus-1.7.0.jar
+```
+
+---
+
+## Guida all'Utilizzo
+
+### 1 — Inserire il target
+
+Digita un hostname, indirizzo IP o URL completo. Il DNS si risolve automaticamente alla perdita del focus. Un indicatore SSL appare se la porta 443 risponde.
+
+### 2 — Configurare le opzioni
+
+| Impostazione | Descrizione |
+|-------------|------------|
+| **Ports** | Range come `1-1024` o lista separata da virgole `22,80,443,8080` |
+| **Threads** | Connessioni parallele (1–200, default 10) |
+| **JavaScript Analysis** | Recupera e analizza bundle JS per segreti ed endpoint |
+| **SQL Injection Testing** | Scoperta automatica form e test con 110+ payload |
+
+### 3 — Avviare la scansione
+
+Clicca **▶ Start Scan**. La barra di avanzamento e la status bar si aggiornano in tempo reale.
+
+### 4 — Leggere i risultati
+
+La scheda **Scan Results** mostra banner formattati: versione, OS, avvisi CVE, geolocalizzazione, dati SSL.
+
+### 5 — Scheda JS Analysis
+
+Passa a **JS Analysis** per vedere: endpoint API, credenziali sensibili, schemi DB, strutture dati, infrastruttura e framework rilevati.
+
+### 6 — Export
+
+Entrambe le schede hanno un pulsante **Export** indipendente che apre un dialogo di scelta formato:
+- **CSV** — formato leggibile, compatibile con fogli di calcolo
+- **XML** — formato strutturato, analizzabile da macchina
+
+---
+
+## Testing
+
+```bash
+./mvnw test
+```
+
+| Classe di test | Test | Copre |
+|--------------|------|-------|
+| `PortScannerServiceTest` | 9 | Parsing range porte, thread safety, input null |
+| `LeakInfoTest` | 22 | Inferenza priorità, rilevamento placeholder, builder |
+| `WebSourceAnalyzerTest` | 8 | Parsing sorgenti JS, estrazione endpoint |
+| `WebSourceAnalyzerLeakInfoTest` | 3 | Integrazione LeakInfo |
+| `JavaScriptSecurityAnalyzerServiceInferenceTest` | 7 | Rilevamento engine DB e framework |
+| **Totale** | **49** | |
+
+---
+
+## Formati di Export
+
+### Port Scan — CSV
+```
+Port,Protocol,Service,State,Banner,Version,Latency(ms),CVE,Severity
+22,TCP,SSH,OPEN,OpenSSH 8.9p1,8.9p1,8,CVE-2023-38408,HIGH
+80,TCP,HTTP,OPEN,nginx/1.24.0,,12,,
+```
+
+### JS Analysis — CSV
+```
+## ENDPOINTS
+Method,URL,Dynamic
+GET,"/api/v1/users",false
+POST,"/api/v1/auth/login",true
+
+## SENSITIVE INFORMATION
+Type,Value,Priority,Placeholder
+API_KEY,"sk-prod-abc123...",1,false
+
+## DATABASE SCHEMAS
+Table,DatabaseType,Confidence,Columns
+users,POSTGRESQL,95%,"id|email|password_hash"
+```
+
+### JS Analysis — XML
+```xml
+<jsAnalysis>
+  <meta target="example.com" timestamp="2026-05-06T10:30:00" analysisTimeMs="3200"/>
+  <endpoints>
+    <endpoint method="GET" dynamic="false"><url>/api/v1/users</url></endpoint>
+  </endpoints>
+  <sensitiveInfo>
+    <leak type="API_KEY" priority="1" placeholder="false">
+      <value>sk-prod-abc123...</value>
+    </leak>
+  </sensitiveInfo>
+  <databaseSchemas>
+    <schema table="users" dbType="POSTGRESQL" confidence="0.95">
+      <column name="id" type="INTEGER"/>
+      <column name="email" type="VARCHAR"/>
+    </schema>
+  </databaseSchemas>
+</jsAnalysis>
+```
 
 ---
 
 ## Licenza
 
-Licenza MIT. Vedere il file `LICENSE` per i dettagli.
+MIT License. Vedi `LICENSE` per i dettagli.

@@ -1,22 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import java.lang.String?>
-<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.CheckBox?>
-<?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ProgressBar?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.Spinner?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
-<?import javafx.scene.control.TreeItem?>
 <?import javafx.scene.control.TreeView?>
 <?import javafx.scene.layout.HBox?>
-<?import javafx.scene.layout.Priority?>
 <?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.shape.Circle?>
 
@@ -24,7 +22,7 @@
       fx:controller="it.r2u.anibus.AnibusController">
     <children>
 
-        <!-- Navigation Bar -->
+        <!-- ── Navigation Bar ──────────────────────────────────────── -->
         <HBox alignment="CENTER" styleClass="nav-bar">
             <children>
                 <Label text="Anibus" styleClass="nav-title" />
@@ -33,204 +31,324 @@
             </children>
         </HBox>
 
-        <!-- Status Bar -->
-        <HBox alignment="CENTER_LEFT" styleClass="status-bar" spacing="8">
+        <!-- ── Status Bar ───────────────────────────────────────────── -->
+        <HBox alignment="CENTER_RIGHT" styleClass="status-bar" spacing="8">
             <children>
-                <Region HBox.hgrow="ALWAYS" />
-                <Circle fx:id="networkDot" radius="5" fill="#8E8E93" styleClass="network-dot" />
+                <Circle fx:id="networkDot" radius="5" fill="#8E8E93" />
                 <Label fx:id="statusLabel" text="Ready" styleClass="status-label" />
             </children>
         </HBox>
 
-        <!-- Scrollable Content -->
-        <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS">
-            <content>
-                <VBox spacing="10" styleClass="content-area">
-                    <children>
+        <!-- ── Main Split: Sidebar + Results ────────────────────────── -->
+        <HBox VBox.vgrow="ALWAYS" spacing="0">
+            <children>
 
-                        <!-- Input Card -->
-                        <VBox spacing="10" styleClass="card">
+                <!-- ══ LEFT SIDEBAR ══ -->
+                <ScrollPane fitToWidth="true" styleClass="left-panel"
+                            prefWidth="300" minWidth="260" maxWidth="340"
+                            hbarPolicy="NEVER" vbarPolicy="AS_NEEDED">
+                    <content>
+                        <VBox spacing="12" styleClass="sidebar-content">
                             <children>
-                                <Label text="Anibus Scanner" styleClass="title-label" />
 
-                                <!-- Host & Port Range & Threads in one row -->
-                                <HBox spacing="12" alignment="BOTTOM_LEFT">
+                                <!-- Scan Target Card -->
+                                <VBox spacing="10" styleClass="card">
                                     <children>
-                                        <VBox spacing="3" HBox.hgrow="ALWAYS">
+                                        <Label text="Scan Target" styleClass="section-title" />
+
+                                        <VBox spacing="3">
                                             <children>
                                                 <Label text="TARGET" styleClass="subtitle-label" />
                                                 <TextField fx:id="hostTextField"
-                                                           promptText="hostname, IP address or URL" />
+                                                           promptText="hostname, IP or URL" />
+                                                <Label fx:id="resolvedHostLabel" text=""
+                                                       styleClass="host-resolved-label" />
                                             </children>
                                         </VBox>
-                                        <VBox spacing="3" prefWidth="150">
+
+                                        <HBox spacing="10">
                                             <children>
-                                                <Label text="PORT RANGE" styleClass="subtitle-label" />
-                                                <TextField fx:id="portsTextField"
-                                                           promptText="e.g. 1-65535" />
+                                                <VBox spacing="3" HBox.hgrow="ALWAYS">
+                                                    <children>
+                                                        <Label text="PORT RANGE" styleClass="subtitle-label" />
+                                                        <TextField fx:id="portsTextField"
+                                                                   promptText="e.g. 1-1024" />
+                                                    </children>
+                                                </VBox>
+                                                <VBox spacing="3" prefWidth="90">
+                                                    <children>
+                                                        <Label text="THREADS" styleClass="subtitle-label" />
+                                                        <Spinner fx:id="threadSpinner" editable="true" />
+                                                    </children>
+                                                </VBox>
                                             </children>
-                                        </VBox>
-                                        <VBox spacing="3" prefWidth="80">
+                                        </HBox>
+
+                                        <Separator />
+
+                                        <!-- Options with descriptions -->
+                                        <Label text="OPTIONS" styleClass="subtitle-label" />
+
+                                        <VBox spacing="10">
                                             <children>
-                                                <Label text="THREADS" styleClass="subtitle-label" />
-                                                <Spinner fx:id="threadSpinner" editable="true" />
+                                                <HBox spacing="10" alignment="TOP_LEFT">
+                                                    <children>
+                                                        <CheckBox fx:id="jsAnalysisCheckBox" />
+                                                        <VBox spacing="2">
+                                                            <children>
+                                                                <Label text="JavaScript Analysis"
+                                                                       styleClass="option-title" />
+                                                                <Label text="Finds API keys, DB strings and endpoints in JS"
+                                                                       styleClass="option-desc" wrapText="true" />
+                                                            </children>
+                                                        </VBox>
+                                                    </children>
+                                                </HBox>
+                                                <HBox spacing="10" alignment="TOP_LEFT">
+                                                    <children>
+                                                        <CheckBox fx:id="jsInjectionCheckBox" />
+                                                        <VBox spacing="2">
+                                                            <children>
+                                                                <Label text="SQL Injection Testing"
+                                                                       styleClass="option-title" />
+                                                                <Label text="Tests forms and endpoints for SQL injection"
+                                                                       styleClass="option-desc" wrapText="true" />
+                                                            </children>
+                                                        </VBox>
+                                                    </children>
+                                                </HBox>
                                             </children>
                                         </VBox>
-                                    </children>
-                                </HBox>
-                                
-                                <Label fx:id="resolvedHostLabel" text="" styleClass="host-resolved-label" />
 
-                                <!-- Options Row -->
-                                <HBox spacing="16" alignment="CENTER_LEFT">
-                                    <children>
-                                        <CheckBox fx:id="jsAnalysisCheckBox" text="JavaScript Analysis" />
-                                        <CheckBox fx:id="jsInjectionCheckBox" text="SQL Injection Testing" />
-                                    </children>
-                                </HBox>
+                                        <Separator />
 
-                                <!-- Actions -->
-                                <HBox spacing="10" alignment="CENTER_LEFT">
-                                    <children>
-                                        <Button fx:id="scanButton" onAction="#onScanButtonClick"
-                                                text="Start Scan" styleClass="scan-button" />
-                                        <Button fx:id="stopButton" onAction="#onStopButtonClick"
-                                                text="Stop" disable="true" styleClass="stop-button" />
-                                        <Region HBox.hgrow="ALWAYS" />
-                                        <ProgressBar fx:id="progressBar" visible="false"
-                                                     prefWidth="140" prefHeight="6" />
+                                        <!-- Actions -->
+                                        <HBox spacing="8">
+                                            <children>
+                                                <Button fx:id="scanButton"
+                                                        onAction="#onScanButtonClick"
+                                                        text="▶  Start Scan"
+                                                        styleClass="scan-button"
+                                                        maxWidth="Infinity"
+                                                        HBox.hgrow="ALWAYS" />
+                                                <Button fx:id="stopButton"
+                                                        onAction="#onStopButtonClick"
+                                                        text="Stop"
+                                                        disable="true"
+                                                        prefWidth="72"
+                                                        styleClass="stop-button" />
+                                            </children>
+                                        </HBox>
+                                        <ProgressBar fx:id="progressBar"
+                                                     visible="false"
+                                                     maxWidth="Infinity"
+                                                     prefHeight="4" />
                                     </children>
-                                </HBox>
-                            </children>
-                        </VBox>
+                                </VBox>
 
-                        <!-- Host Info Card -->
-                        <VBox fx:id="infoCard" spacing="12" styleClass="card" visible="false">
-                            <children>
-                                <Label text="Host Information" styleClass="section-title" />
-                                <HBox spacing="24">
+                                <!-- Host Info Card (shown after scan) -->
+                                <VBox fx:id="infoCard" spacing="8" styleClass="card"
+                                      visible="false">
                                     <children>
-                                        <VBox spacing="4" styleClass="info-item">
+                                        <Label text="Host Info" styleClass="section-title" />
+                                        <!-- IP -->
+                                        <VBox spacing="2">
                                             <children>
                                                 <Label text="IP ADDRESS" styleClass="info-key" />
-                                                <Label fx:id="infoIpLabel" text="-" styleClass="info-value" />
+                                                <Label fx:id="infoIpLabel" text="-"
+                                                       styleClass="info-value" wrapText="true" maxWidth="Infinity" />
                                             </children>
                                         </VBox>
-                                        <VBox spacing="4" styleClass="info-item">
+                                        <!-- Hostname -->
+                                        <VBox spacing="2">
                                             <children>
                                                 <Label text="HOSTNAME" styleClass="info-key" />
-                                                <Label fx:id="infoHostnameLabel" text="-" styleClass="info-value" />
+                                                <Label fx:id="infoHostnameLabel" text="-"
+                                                       styleClass="info-value" wrapText="true" maxWidth="Infinity" />
                                             </children>
                                         </VBox>
-                                        <VBox spacing="4" styleClass="info-item">
+                                        <!-- 2-col row: Scan Time + Ports Scanned -->
+                                        <HBox spacing="8">
                                             <children>
-                                                <Label text="SCAN TIME" styleClass="info-key" />
-                                                <Label fx:id="infoScanTimeLabel" text="-" styleClass="info-value" />
+                                                <VBox spacing="2" HBox.hgrow="ALWAYS" maxWidth="Infinity">
+                                                    <children>
+                                                        <Label text="SCAN TIME" styleClass="info-key" />
+                                                        <Label fx:id="infoScanTimeLabel" text="-" styleClass="info-value" />
+                                                    </children>
+                                                </VBox>
+                                                <VBox spacing="2" HBox.hgrow="ALWAYS" maxWidth="Infinity">
+                                                    <children>
+                                                        <Label text="PORTS SCANNED" styleClass="info-key" />
+                                                        <Label fx:id="infoPortsScannedLabel" text="-" styleClass="info-value" />
+                                                    </children>
+                                                </VBox>
                                             </children>
-                                        </VBox>
-                                        <VBox spacing="4" styleClass="info-item">
+                                        </HBox>
+                                        <!-- 2-col row: Open Ports + Avg Latency -->
+                                        <HBox spacing="8">
                                             <children>
-                                                <Label text="PORTS SCANNED" styleClass="info-key" />
-                                                <Label fx:id="infoPortsScannedLabel" text="-" styleClass="info-value" />
+                                                <VBox spacing="2" HBox.hgrow="ALWAYS" maxWidth="Infinity">
+                                                    <children>
+                                                        <Label text="OPEN PORTS" styleClass="info-key" />
+                                                        <Label fx:id="infoOpenPortsLabel" text="-" styleClass="info-value" />
+                                                    </children>
+                                                </VBox>
+                                                <VBox spacing="2" HBox.hgrow="ALWAYS" maxWidth="Infinity">
+                                                    <children>
+                                                        <Label text="AVG LATENCY" styleClass="info-key" />
+                                                        <Label fx:id="infoAvgLatencyLabel" text="-" styleClass="info-value" />
+                                                    </children>
+                                                </VBox>
                                             </children>
-                                        </VBox>
-                                        <VBox spacing="4" styleClass="info-item">
-                                            <children>
-                                                <Label text="OPEN PORTS" styleClass="info-key" />
-                                                <Label fx:id="infoOpenPortsLabel" text="-" styleClass="info-value" />
-                                            </children>
-                                        </VBox>
-                                        <VBox spacing="4" styleClass="info-item">
-                                            <children>
-                                                <Label text="AVG LATENCY" styleClass="info-key" />
-                                                <Label fx:id="infoAvgLatencyLabel" text="-" styleClass="info-value" />
-                                            </children>
-                                        </VBox>
+                                        </HBox>
                                     </children>
-                                </HBox>
+                                </VBox>
+
                             </children>
                         </VBox>
+                    </content>
+                </ScrollPane>
 
-                        <!-- JavaScript Analysis Results Card -->
-                        <VBox fx:id="jsResultsCard" spacing="10" styleClass="card" visible="false">
-                            <children>
-                                <Label text="Analysis Results" styleClass="section-title" />
-                                <HBox spacing="24">
-                                    <children>
-                                        <VBox spacing="4" styleClass="info-item">
+                <!-- ══ RIGHT RESULTS PANEL ══ -->
+                <VBox HBox.hgrow="ALWAYS" styleClass="results-panel">
+                    <children>
+                        <TabPane VBox.vgrow="ALWAYS"
+                                 styleClass="results-tabs"
+                                 tabClosingPolicy="UNAVAILABLE">
+                            <tabs>
+
+                                <!-- ── Tab: Scan Results ── -->
+                                <Tab text="Scan Results">
+                                    <content>
+                                        <VBox spacing="12" styleClass="tab-content">
                                             <children>
-                                                <Label text="ENDPOINTS" styleClass="info-key" />
-                                                <Label fx:id="jsEndpointsLabel" text="0" styleClass="info-value" />
+                                                <HBox spacing="10" alignment="CENTER_LEFT">
+                                                    <children>
+                                                        <Label fx:id="consoleHeaderLabel"
+                                                               text="Console Output"
+                                                               styleClass="section-title" />
+                                                        <Label fx:id="resultCountLabel"
+                                                               text="No results"
+                                                               styleClass="counter-label" />
+                                                        <Region HBox.hgrow="ALWAYS" />
+                                                        <Button fx:id="exportButton"
+                                                                text="Export"
+                                                                onAction="#onExportClick"
+                                                                styleClass="secondary-button"
+                                                                disable="true" />
+                                                        <Button fx:id="clearButton"
+                                                                text="Clear"
+                                                                onAction="#onClearClick"
+                                                                styleClass="secondary-button"
+                                                                disable="true" />
+                                                    </children>
+                                                </HBox>
+                                                <TextArea fx:id="consoleTextArea"
+                                                          editable="false"
+                                                          wrapText="true"
+                                                          styleClass="console-view"
+                                                          VBox.vgrow="ALWAYS" />
                                             </children>
                                         </VBox>
-                                        <VBox spacing="4" styleClass="info-item">
-                                            <children>
-                                                <Label text="DATA STRUCTURES" styleClass="info-key" />
-                                                <Label fx:id="jsDataStructuresLabel" text="0" styleClass="info-value" />
-                                            </children>
-                                        </VBox>
-                                        <VBox spacing="4" styleClass="info-item">
-                                            <children>
-                                                <Label text="DB SCHEMAS" styleClass="info-key" />
-                                                <Label fx:id="jsDbSchemasLabel" text="0" styleClass="info-value" />
-                                            </children>
-                                        </VBox>
-                                        <VBox spacing="4" styleClass="info-item">
-                                            <children>
-                                                <Label text="SENSITIVE INFO" styleClass="info-key" />
-                                                <Label fx:id="jsSensitiveInfoLabel" text="0" styleClass="info-value" />
-                                            </children>
-                                        </VBox>
-                                        <VBox spacing="4" styleClass="info-item">
-                                            <children>
-                                                <Label text="ARCHITECTURE" styleClass="info-key" />
-                                                <Label fx:id="jsArchitectureLabel" text="-" styleClass="info-value" />
-                                            </children>
-                                        </VBox>
-                                    </children>
-                                </HBox>
+                                    </content>
+                                </Tab>
 
-                                <!-- Collapsible tree view of discovered data structures -->
-                                <Label text="DATA STRUCTURES" styleClass="info-key" />
-                                <TreeView fx:id="jsStructureTree"
-                                          prefHeight="220"
-                                          showRoot="false"
-                                          styleClass="structure-tree" />
-                            </children>
-                        </VBox>
+                                <!-- ── Tab: JS Analysis ── -->
+                                <Tab text="JS Analysis">
+                                    <content>
+                                        <StackPane styleClass="tab-content">
+                                            <!-- Placeholder when no analysis done -->
+                                            <VBox alignment="CENTER" spacing="10"
+                                                  styleClass="placeholder-pane">
+                                                <children>
+                                                    <Label text="No analysis data"
+                                                           styleClass="placeholder-title" />
+                                                    <Label text="Enable JavaScript Analysis and run a scan"
+                                                           styleClass="placeholder-desc"
+                                                           wrapText="true" />
+                                                </children>
+                                            </VBox>
+                                            <!-- Results (covers placeholder when visible) -->
+                                            <VBox fx:id="jsResultsCard" spacing="12"
+                                                  visible="false"
+                                                  styleClass="js-results-pane">
+                                                <children>
+                                                    <!-- Stats strip -->
+                                                    <HBox spacing="24" styleClass="js-stats-bar">
+                                                        <children>
+                                                            <VBox spacing="3">
+                                                                <children>
+                                                                    <Label text="ENDPOINTS"
+                                                                           styleClass="info-key" />
+                                                                    <Label fx:id="jsEndpointsLabel"
+                                                                           text="0"
+                                                                           styleClass="info-value" />
+                                                                </children>
+                                                            </VBox>
+                                                            <VBox spacing="3">
+                                                                <children>
+                                                                    <Label text="DATA STRUCTURES"
+                                                                           styleClass="info-key" />
+                                                                    <Label fx:id="jsDataStructuresLabel"
+                                                                           text="0"
+                                                                           styleClass="info-value" />
+                                                                </children>
+                                                            </VBox>
+                                                            <VBox spacing="3">
+                                                                <children>
+                                                                    <Label text="DB SCHEMAS"
+                                                                           styleClass="info-key" />
+                                                                    <Label fx:id="jsDbSchemasLabel"
+                                                                           text="0"
+                                                                           styleClass="info-value" />
+                                                                </children>
+                                                            </VBox>
+                                                            <VBox spacing="3">
+                                                                <children>
+                                                                    <Label text="SENSITIVE INFO"
+                                                                           styleClass="info-key" />
+                                                                    <Label fx:id="jsSensitiveInfoLabel"
+                                                                           text="0"
+                                                                           styleClass="info-value" />
+                                                                </children>
+                                                            </VBox>
+                                                            <VBox spacing="3">
+                                                                <children>
+                                                                    <Label text="ARCHITECTURE"
+                                                                           styleClass="info-key" />
+                                                                    <Label fx:id="jsArchitectureLabel"
+                                                                           text="-"
+                                                                           styleClass="info-value" />
+                                                                </children>
+                                                            </VBox>
+                                                            <Region HBox.hgrow="ALWAYS" />
+                                                            <Button fx:id="jsExportButton"
+                                                                    text="Export Analysis"
+                                                                    onAction="#onJsExportClick"
+                                                                    styleClass="secondary-button"
+                                                                    disable="true"
+                                                                    visible="false" />
+                                                        </children>
+                                                    </HBox>
+                                                    <Label text="DATA STRUCTURES"
+                                                           styleClass="subtitle-label" />
+                                                    <TreeView fx:id="jsStructureTree"
+                                                              VBox.vgrow="ALWAYS"
+                                                              showRoot="false"
+                                                              styleClass="structure-tree" />
+                                                </children>
+                                            </VBox>
+                                        </StackPane>
+                                    </content>
+                                </Tab>
 
-                        <!-- Unified Results Console -->
-                        <VBox spacing="14" styleClass="card">
-                            <children>
-                                <HBox alignment="CENTER_LEFT" spacing="10">
-                                    <children>
-                                        <Label fx:id="consoleHeaderLabel" text="Console Output" styleClass="section-title" />
-                                        <Label fx:id="resultCountLabel" text="No results"
-                                               styleClass="counter-label" />
-                                        <Region HBox.hgrow="ALWAYS" />
-                                        <Button fx:id="exportButton" text="Export"
-                                                onAction="#onExportClick"
-                                                styleClass="secondary-button" disable="true" />
-                                        <Button fx:id="jsExportButton" text="Export Analysis"
-                                                onAction="#onJsExportClick"
-                                                styleClass="secondary-button" disable="true" visible="false" />
-                                        <Button fx:id="clearButton" text="Clear"
-                                                onAction="#onClearClick"
-                                                styleClass="secondary-button" disable="true" />
-                                    </children>
-                                </HBox>
-
-                                <TextArea fx:id="consoleTextArea" 
-                                    editable="false" wrapText="true"
-                                    styleClass="console-view"
-                                    prefRowCount="2" />
-                            </children>
-                        </VBox>
-
+                            </tabs>
+                        </TabPane>
                     </children>
                 </VBox>
-            </content>
-        </ScrollPane>
+
+            </children>
+        </HBox>
 
     </children>
 </VBox>
