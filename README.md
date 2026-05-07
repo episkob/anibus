@@ -1,6 +1,6 @@
 # Anibus — Advanced Network Security Scanner
 
-> **Version:** 1.7.0 · **Author:** Iaroslav Tsymbaliuk · **Position:** Intern (2025–2026) @ r2u
+> **Version:** 1.7.1 · **Author:** Iaroslav Tsymbaliuk · **Position:** Intern (2025–2026) @ r2u
 
 A full-featured desktop network security scanner built with **Java 21 (JPMS)**, **JavaFX 21.0.5**, and a custom **Bootstrap 5 Dark** CSS theme.
 Anibus goes far beyond a simple port scanner — it combines service fingerprinting, CVE matching, JavaScript source analysis, SQL injection testing, geolocation, SSL/TLS inspection and infrastructure detection into a single self-contained desktop application.
@@ -9,7 +9,7 @@ Anibus goes far beyond a simple port scanner — it combines service fingerprint
 
 ## Table of Contents
 
-- [What's New in 1.7.0](#whats-new-in-170)
+- [What's New in 1.7.1](#whats-new-in-170)
 - [Feature Overview](#feature-overview)
 - [Architecture](#architecture)
 - [Project Structure](#project-structure)
@@ -25,7 +25,7 @@ Anibus goes far beyond a simple port scanner — it combines service fingerprint
 
 ---
 
-## What's New in 1.7.0
+## What's New in 1.7.1
 
 | Area | Change |
 |------|--------|
@@ -282,7 +282,7 @@ Port scanning is purely I/O-bound. Java 21 virtual threads (`Executors.newVirtua
 ## UI Layout
 
 ```
-┌──────────────────────────────── Anibus 1.7.0 ─────────────────────────────────┐
+┌──────────────────────────────── Anibus 1.7.1 ─────────────────────────────────┐
 │ [●] Anibus  ░░░░░░░░░░░░░░░░░░░░░░░░░░  ● Connected  192.168.1.1              │  ← Nav bar
 │───────────────────────────────────────────────────────────────────────────────│
 │ ┌── Scan Target ───────────────┐  ┌── [Scan Results] [JS Analysis] ──────────┐│
@@ -356,28 +356,28 @@ cd anibus
 
 ```bash
 ./mvnw clean package -DskipTests
-java -jar target/anibus-1.7.0.jar
+java -jar target/anibus-1.7.1.jar
 ```
 
 **Windows:**
 
 ```cmd
 mvnw.cmd clean package -DskipTests
-java -jar target\anibus-1.7.0.jar
+java -jar target\anibus-1.7.1.jar
 ```
 
 **Linux — Wayland / XWayland:**
 
 ```bash
 xhost +local:
-DISPLAY=:0 java -jar target/anibus-1.7.0.jar
+DISPLAY=:0 java -jar target/anibus-1.7.1.jar
 ```
 
 **From a Flatpak VS Code terminal:**
 
 ```bash
 flatpak-spawn --host xhost +local:
-DISPLAY=:0 java -jar target/anibus-1.7.0.jar
+DISPLAY=:0 java -jar target/anibus-1.7.1.jar
 ```
 
 ---

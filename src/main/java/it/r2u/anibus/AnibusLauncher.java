@@ -1,5 +1,6 @@
 package it.r2u.anibus;
 
+import java.io.IOException;
 import java.util.logging.LogManager;
 
 /**
@@ -12,7 +13,7 @@ public class AnibusLauncher {
         try {
             LogManager.getLogManager().readConfiguration(
                 AnibusLauncher.class.getResourceAsStream("/logging.properties"));
-        } catch (Exception ignored) {}
+        } catch (IOException | SecurityException ignored) {}
         AnibusApplication.main(args);
     }
 }
