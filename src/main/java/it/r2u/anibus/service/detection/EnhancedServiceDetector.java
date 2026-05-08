@@ -128,6 +128,11 @@ public class EnhancedServiceDetector {
                     } else {
                         enhancedBanner.append("\n[INSECURE] Security Headers: None");
                     }
+                    // Proxy headers detected in response (Via, X-Forwarded-For, etc.)
+                    if (!httpInfo.getProxyHeaders().isEmpty()) {
+                        httpInfo.getProxyHeaders().forEach((k, v) ->
+                                enhancedBanner.append("\n[PROXY] ").append(k).append(": ").append(v));
+                    }
                 }
             }
             

@@ -1,6 +1,6 @@
 # Anibus — Advanced Network Security Scanner
 
-> **Version:** 1.7.1 · **Author:** Iaroslav Tsymbaliuk · **Position:** Intern (2025–2026) @ r2u
+> **Version:** 2.0.0 · **Author:** Iaroslav Tsymbaliuk · **Position:** Intern (2025–2026) @ r2u
 
 A full-featured desktop network security scanner built with **Java 21 (JPMS)**, **JavaFX 21.0.5**, and a custom **Bootstrap 5 Dark** CSS theme.
 Anibus goes far beyond a simple port scanner — it combines service fingerprinting, CVE matching, JavaScript source analysis, SQL injection testing, geolocation, SSL/TLS inspection and infrastructure detection into a single self-contained desktop application.
@@ -9,7 +9,7 @@ Anibus goes far beyond a simple port scanner — it combines service fingerprint
 
 ## Table of Contents
 
-- [What's New in 1.7.1](#whats-new-in-170)
+- [What's New in 2.0.0](#whats-new-in-200)
 - [Feature Overview](#feature-overview)
 - [Architecture](#architecture)
 - [Project Structure](#project-structure)
@@ -25,7 +25,24 @@ Anibus goes far beyond a simple port scanner — it combines service fingerprint
 
 ---
 
-## What's New in 1.7.1
+## What's New in 2.0.0
+
+| Area | Change |
+|------|--------|
+| **Proxy Module** | Full proxy harvesting pipeline: harvest → validate → geo-resolve → pool |
+| **Proxy Persistence** | Validated pool saved to `~/.anibus/proxy-pool.json`; reloaded on next start |
+| **Geo-Routing** | Auto-selects best proxy by target country on every scan; switches on host change |
+| **Manual Rotation** | ↻ button next to active proxy for one-click manual proxy switch |
+| **Proxy Headers** | Detects and logs `Via`, `X-Forwarded-For`, `X-Real-IP` and other proxy headers in scan output |
+| **Scan Header** | Console shows TARGET and ROUTING (proxy or DIRECT) before scan results |
+| **Stop Harvesting** | Clear button becomes ■ Stop during harvest; cancellation at each phase boundary |
+| **Progress Feedback** | Phase 2 emits "Checked N / M" every 500 proxies; progress bar live |
+| **Network Throttle** | Semaphore limits concurrent validation sockets to 200 (was unbounded) |
+| **Deprecated API** | `new Locale("ru")` → `Locale.of("ru")` |
+
+---
+
+## What's New in 1.8.0
 
 | Area | Change |
 |------|--------|
@@ -236,6 +253,16 @@ src/main/java/it/r2u/anibus/
 │       ├── CloudMetadataProbe.java            # AWS/GCP/Azure IMDS probe
 │       └── VersionExtractor.java             # Regex-based version parsing
 │
+└── service/network/proxy/
+    ├── ProxyNode.java                     # Immutable proxy record (host/port/type/country/latency)
+    ├── ProxyType.java                     # HTTP / SOCKS4 / SOCKS5 enum
+    ├── ProxyPool.java                     # Thread-safe geo-indexed pool
+    ├── ProxyHarvester.java                # Phase 1: fetch candidates from public sources
+    ├── ReactiveValidator.java             # Phase 2: triple-handshake validation (virtual threads, semaphore)
+    ├── ProxyStore.java                    # Save/load pool to ~/.anibus/proxy-pool.json
+    ├── GeoRoutingStrategy.java            # Select best proxy by target country
+    └── ProxyRoutingService.java           # Public facade: harvest → validate → route → persist
+│
 └── ui/
     ├── AlertHelper.java
     ├── ClipboardService.java
@@ -282,7 +309,7 @@ Port scanning is purely I/O-bound. Java 21 virtual threads (`Executors.newVirtua
 ## UI Layout
 
 ```
-┌──────────────────────────────── Anibus 1.7.1 ─────────────────────────────────┐
+┌──────────────────────────────── Anibus 1.8.0 ─────────────────────────────────┐
 │ [●] Anibus  ░░░░░░░░░░░░░░░░░░░░░░░░░░  ● Connected  192.168.1.1              │  ← Nav bar
 │───────────────────────────────────────────────────────────────────────────────│
 │ ┌── Scan Target ───────────────┐  ┌── [Scan Results] [JS Analysis] ──────────┐│
@@ -356,28 +383,28 @@ cd anibus
 
 ```bash
 ./mvnw clean package -DskipTests
-java -jar target/anibus-1.7.1.jar
+java -jar target/anibus-2.0.0.jar
 ```
 
 **Windows:**
 
 ```cmd
 mvnw.cmd clean package -DskipTests
-java -jar target\anibus-1.7.1.jar
+java -jar target\anibus-2.0.0.jar
 ```
 
 **Linux — Wayland / XWayland:**
 
 ```bash
 xhost +local:
-DISPLAY=:0 java -jar target/anibus-1.7.1.jar
+DISPLAY=:0 java -jar target/anibus-1.8.0.jar
 ```
 
 **From a Flatpak VS Code terminal:**
 
 ```bash
 flatpak-spawn --host xhost +local:
-DISPLAY=:0 java -jar target/anibus-1.7.1.jar
+DISPLAY=:0 java -jar target/anibus-2.0.0.jar
 ```
 
 ---
@@ -479,6 +506,37 @@ users,POSTGRESQL,95%,"id|email|password_hash"
   </databaseSchemas>
 </jsAnalysis>
 ```
+
+---
+
+## Roadmap
+
+### v2.0.0 — Proxy Module
+
+- ✅ Proxy harvesting (Phase 1) from public sources
+- ✅ Triple-handshake validation with virtual threads (Phase 2)
+- ✅ Geo-resolution with ip-api.com (Phase 3)
+- ✅ `GeoRoutingStrategy` — same-country → neighbour → global fallback
+- ✅ `ProxyStore` — persist pool to `~/.anibus/proxy-pool.json`
+- ✅ "Load from file" button — restore pool without re-harvesting
+- ✅ Auto proxy rotation on host change
+- ✅ Manual ↻ rotate button
+- ✅ Network throttle (semaphore, 200 concurrent sockets)
+- ✅ Proxy headers detection in scan output
+
+### Planned
+
+**Network Layer**
+- 🟡 **UDP Scanning** — probes DNS (53), SNMP (161/162), NTP (123), mDNS (5353), SSDP (1900), NetBIOS (137), TFTP (69), Syslog (514) with protocol-specific payloads and banner parsing
+- 🟡 **Subdomain Enumeration** — passive discovery via [crt.sh](https://crt.sh) Certificate Transparency logs + active DNS brute-force wordlist (70+ common prefixes), DNS-verified results
+
+**Analysis Layer**
+- 🟡 **Source Map Analysis** — detects and fetches `.js.map` files, reconstructs original source paths and embedded source content, runs full leak analysis over de-minified code
+- 🟡 **Param Miner** — discovers hidden GET/POST parameters via canary injection; flags reflected params (XSS/SSRF risk), status changes and body length deltas
+
+**Export & Reporting**
+- 🟡 **Diff Mode** — compare two XML scan exports side by side; highlights new open ports, closed ports and changed service/version info
+- 🟡 **Scan Scheduler** — repeat scans at a configurable interval (e.g. every 2 h) with callback on result change
 
 ---
 

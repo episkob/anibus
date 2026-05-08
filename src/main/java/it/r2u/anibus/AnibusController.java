@@ -8,6 +8,8 @@ import it.r2u.anibus.model.EndpointInfo;
 import it.r2u.anibus.model.JavaScriptAnalysisResult;
 import it.r2u.anibus.model.PortScanResult;
 import it.r2u.anibus.model.LeakInfo;
+import it.r2u.anibus.service.network.proxy.ProxyNode;
+import it.r2u.anibus.service.network.proxy.ProxyRoutingService;
 import it.r2u.anibus.network.HostResolver;
 import it.r2u.anibus.network.NetworkStatusMonitor;
 import it.r2u.anibus.service.detection.EnhancedServiceDetector;
@@ -17,6 +19,7 @@ import it.r2u.anibus.service.analysis.SQLInjectionAnalyzer;
 import it.r2u.anibus.ui.AlertHelper;
 import it.r2u.anibus.ui.ConsoleViewManager;
 import it.r2u.anibus.ui.InfoCardManager;
+import it.r2u.anibus.ui.LanguageManager;
 
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -24,6 +27,8 @@ import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+import javafx.scene.control.RadioMenuItem;
+import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.Circle;
 
@@ -88,6 +93,49 @@ public class AnibusController {
     /* -- Unified Console FXML fields ------------------------- */
     @FXML private Label             consoleHeaderLabel;
 
+    /* -- i18n: configuration menu + translatable labels ------ */
+    @FXML private MenuButton configMenuButton;
+    @FXML private Button aboutButton;
+    @FXML private Label  sectionScanTargetLabel;
+    @FXML private Label  labelTargetKey;
+    @FXML private Label  labelPortRangeKey;
+    @FXML private Label  labelThreadsKey;
+    @FXML private Label  labelOptionsKey;
+    @FXML private Label  optionJsTitle;
+    @FXML private Label  optionJsDesc;
+    @FXML private Label  optionSqlTitle;
+    @FXML private Label  optionSqlDesc;
+    @FXML private Label  sectionHostInfoLabel;
+    @FXML private Label  keyIpAddressLabel;
+    @FXML private Label  keyHostnameLabel;
+    @FXML private Label  keyScanTimeLabel;
+    @FXML private Label  keyPortsScannedLabel;
+    @FXML private Label  keyOpenPortsLabel;
+    @FXML private Label  keyAvgLatencyLabel;
+    @FXML private Tab    tabScanResults;
+    @FXML private Tab    tabJsAnalysis;
+    @FXML private Tab    tabProxy;
+    @FXML private TextArea proxyLogArea;
+    @FXML private Label    activeProxyLabel;
+    @FXML private Circle   proxyStatusDot;
+    @FXML private Button   startProxyButton;
+    @FXML private Button   clearProxyButton;
+    @FXML private Button   loadProxyButton;
+    @FXML private Button   rotateProxyButton;
+    @FXML private Label    proxyStatCandidates;
+    @FXML private Label    proxyStatLive;
+    @FXML private Label    proxyStatCountries;
+    @FXML private Label    proxyPhaseLabel;
+    @FXML private ProgressBar proxyProgressBar;
+    @FXML private Label  placeholderTitleLabel;
+    @FXML private Label  placeholderDescLabel;
+    @FXML private Label  keyEndpointsLabel;
+    @FXML private Label  keyDataStructuresLabel;
+    @FXML private Label  keyDbSchemasLabel;
+    @FXML private Label  keySensitiveInfoLabel;
+    @FXML private Label  keyArchitectureLabel;
+    @FXML private Label  subtitleDataStructuresLabel;
+
     /* -- State ------------------------------------------------ */
     private final ObservableList<PortScanResult> results = FXCollections.observableArrayList();
     private Task<Void> jsAnalysisTask;
@@ -95,6 +143,9 @@ public class AnibusController {
     private boolean scanningInProgress = false;
     private boolean jsAnalysisInProgress = false;
     private boolean isJsAnalysisMode = false; // Track current console mode
+    private ProxyRoutingService proxyRoutingService;
+    private ProxyNode currentActiveProxy = null;
+    private boolean proxyHarvesting = false;
     
     /* -- Core services (Dependency Injection candidates) ------ */
     private PortScannerService     scanner;
@@ -121,6 +172,7 @@ public class AnibusController {
         setupUI();
         setupEventHandlers();
         startBackgroundServices();
+        applyLanguage();
     }
     
     /**
@@ -202,6 +254,31 @@ public class AnibusController {
         // Setup context menus
         setupConsoleContextMenu();
         setupResolvedHostContextMenu();
+
+        // Configuration MenuButton — Language sub-menu
+        RadioMenuItem langEn = new RadioMenuItem("English");
+        RadioMenuItem langIt = new RadioMenuItem("Italiano");
+        RadioMenuItem langRu = new RadioMenuItem("Русский");
+        ToggleGroup langGroup = new ToggleGroup();
+        langEn.setToggleGroup(langGroup);
+        langIt.setToggleGroup(langGroup);
+        langRu.setToggleGroup(langGroup);
+        langEn.setSelected(true);
+        langEn.setOnAction(e -> { LanguageManager.getInstance().setLanguage(LanguageManager.Language.EN); applyLanguage(); });
+        langIt.setOnAction(e -> { LanguageManager.getInstance().setLanguage(LanguageManager.Language.IT); applyLanguage(); });
+        langRu.setOnAction(e -> { LanguageManager.getInstance().setLanguage(LanguageManager.Language.RU); applyLanguage(); });
+        Menu langMenu = new Menu("Выбор языка");
+        langMenu.getItems().addAll(langEn, langIt, langRu);
+        configMenuButton.getItems().add(langMenu);
+
+        // Show saved-pool hint on startup
+        it.r2u.anibus.service.network.proxy.ProxyStore ps =
+                new it.r2u.anibus.service.network.proxy.ProxyStore();
+        if (ps.exists()) {
+            loadProxyButton.setText("⬆  Load from file ✓");
+            loadProxyButton.setTooltip(new Tooltip(
+                    "Cached pool found: " + ps.getStorePath()));
+        }
     }
     
     /**
@@ -285,7 +362,8 @@ public class AnibusController {
             if (!sanitizedHost.equals(originalHost)) {
                 hostTextField.setText(sanitizedHost);
             }
-            hostResolver.resolveHostAsync(sanitizedHost, resolvedHostLabel, null);
+            hostResolver.resolveHostAsync(sanitizedHost, resolvedHostLabel,
+                    this::autoSelectProxyForCurrentTarget);
         } else {
             resolvedHostLabel.setText("");
         }
@@ -304,7 +382,19 @@ public class AnibusController {
             // Run port scan
             scanningInProgress = true;
             switchToPortScannerMode();
-            
+
+            // Auto-select proxy by target country if pool is ready
+            if (proxyRoutingService != null && proxyRoutingService.isReady()) {
+                String resolvedIp = hostResolver.extractIPFromResolvedText(
+                        resolvedHostLabel.getText());
+                String geoTarget = resolvedIp.isBlank()
+                        ? hostTextField.getText().trim() : resolvedIp;
+                proxyRoutingService.selectProxy(geoTarget).ifPresent(this::updateActiveProxy);
+            }
+
+            consoleViewManager.printScanHeader(
+                    hostTextField.getText(), currentActiveProxy);
+
             scanActionHandler.startScan(
                 hostTextField.getText(),
                 portsTextField.getText(),
@@ -362,6 +452,282 @@ public class AnibusController {
             "Anibus Design System  ›  Version: " + version + 
             "\n\nAuthor: Iaroslav Tsymbaliuk\n\nPosition: Intern (2025–2026) @ r2u",
             Alert.AlertType.INFORMATION, cssUrl());
+    }
+
+    /* -- Proxy tab -------------------------------------------- */
+
+    @FXML
+    protected void onStartProxyClick() {
+        startProxyButton.setDisable(true);
+        clearProxyButton.setText("■  Stop");
+        proxyHarvesting = true;
+        proxyLogArea.clear();
+        appendProxyLog("═══════════════════════════════════════\n");
+        appendProxyLog("  ANIBUS PROXY HARVESTER\n");
+        appendProxyLog("═══════════════════════════════════════\n");
+
+        proxyRoutingService = new ProxyRoutingService();
+        proxyRoutingService.setLogCallback(
+                msg -> Platform.runLater(() -> appendProxyLog(msg)));
+        proxyRoutingService.setStatsCallback(stats -> Platform.runLater(() -> {
+            if (stats[0] > 0) proxyStatCandidates.setText(String.valueOf(stats[0]));
+            proxyStatLive.setText(String.valueOf(stats[1]));
+            proxyStatCountries.setText(String.valueOf(stats[2]));
+        }));
+        proxyRoutingService.setProgressCallback(
+                val -> Platform.runLater(() -> {
+                    proxyProgressBar.setVisible(true);
+                    proxyProgressBar.setProgress(val);
+                }));
+
+        proxyRoutingService.initializeAsync().thenRun(() -> Platform.runLater(() -> {
+            proxyHarvesting = false;
+            startProxyButton.setDisable(false);
+            clearProxyButton.setText("Clear");
+            proxyProgressBar.setVisible(false);
+            if (proxyRoutingService.isReady()) {
+                appendProxyLog("\n✓ Pool ready — " + proxyRoutingService.poolSize() + " live proxies\n");
+                if (proxyRoutingService.hasSavedPool()) {
+                    loadProxyButton.setText("⬆  Load from file ✓");
+                    loadProxyButton.setTooltip(new Tooltip(
+                            "Cached pool: " + proxyRoutingService.savedPoolPath()));
+                }
+                String target = hostTextField.getText().trim();
+                if (!target.isBlank()) {
+                    proxyRoutingService.selectProxy(target).ifPresentOrElse(
+                        p -> {
+                            updateActiveProxy(p);
+                            appendProxyLog("\n● Active proxy: "
+                                    + p.host() + ":" + p.port()
+                                    + "  [" + p.type() + "]  "
+                                    + p.countryCode() + "  ~  " + p.latencyMs() + " ms\n");
+                        },
+                        () -> appendProxyLog("\n✗ No suitable proxy for target\n")
+                    );
+                }
+            } else {
+                appendProxyLog("\n✗ No live proxies found\n");
+                proxyStatusDot.setFill(javafx.scene.paint.Color.web("#ff453a"));
+                activeProxyLabel.setText("No live proxies found");
+                activeProxyLabel.setStyle("-fx-text-fill: #ff453a;");
+            }
+        }));
+    }
+
+    @FXML
+    protected void onLoadProxyClick() {
+        proxyRoutingService = new ProxyRoutingService();
+        proxyRoutingService.setLogCallback(
+                msg -> Platform.runLater(() -> appendProxyLog(msg)));
+        proxyRoutingService.setStatsCallback(stats -> Platform.runLater(() -> {
+            if (stats[0] > 0) proxyStatCandidates.setText(String.valueOf(stats[0]));
+            proxyStatLive.setText(String.valueOf(stats[1]));
+            proxyStatCountries.setText(String.valueOf(stats[2]));
+        }));
+
+        proxyLogArea.clear();
+        appendProxyLog("═══════════════════════════════════════\n");
+        appendProxyLog("  LOADING PROXY POOL FROM FILE\n");
+        appendProxyLog("═══════════════════════════════════════\n");
+
+        if (!proxyRoutingService.hasSavedPool()) {
+            appendProxyLog("✗ No saved proxy file found.\n");
+            appendProxyLog("  Run harvesting first to create one.\n");
+            return;
+        }
+
+        int count = proxyRoutingService.loadFromFile();
+        if (count == 0) {
+            appendProxyLog("✗ File is empty or unreadable.\n");
+            return;
+        }
+
+        appendProxyLog("✓ Loaded " + count + " proxies\n");
+        appendProxyLog("  File: " + proxyRoutingService.savedPoolPath() + "\n");
+        loadProxyButton.setDisable(true);
+
+        String target = hostTextField.getText().trim();
+        if (!target.isBlank()) {
+            String resolvedIp = hostResolver.extractIPFromResolvedText(
+                    resolvedHostLabel.getText());
+            String geoTarget = resolvedIp.isBlank() ? target : resolvedIp;
+            proxyRoutingService.selectProxy(geoTarget).ifPresentOrElse(
+                p -> {
+                    updateActiveProxy(p);
+                    appendProxyLog("\n● Active proxy: "
+                            + p.host() + ":" + p.port()
+                            + "  [" + p.type() + "]  "
+                            + p.countryCode() + "  ~  " + p.latencyMs() + " ms\n");
+                },
+                () -> appendProxyLog("\n✗ No suitable proxy for target\n")
+            );
+        }
+    }
+
+    @FXML
+    protected void onClearProxyLogClick() {
+        if (proxyHarvesting && proxyRoutingService != null) {
+            // Stop the running harvester
+            proxyRoutingService.cancel();
+            proxyHarvesting = false;
+            startProxyButton.setDisable(false);
+            clearProxyButton.setText("Clear");
+            appendProxyLog("\n■ Harvesting stopped by user.\n");
+            return;
+        }
+        proxyLogArea.clear();
+        proxyStatCandidates.setText("—");
+        proxyStatLive.setText("—");
+        proxyStatCountries.setText("—");
+        proxyPhaseLabel.setText("IDLE");
+        proxyProgressBar.setVisible(false);
+        proxyStatusDot.setFill(javafx.scene.paint.Color.web("#8E8E93"));
+        activeProxyLabel.setText("No active proxy");
+        activeProxyLabel.setStyle("");
+        currentActiveProxy = null;
+        loadProxyButton.setDisable(false);
+    }
+
+    private void updateActiveProxy(ProxyNode p) {
+        currentActiveProxy = p;
+        proxyStatusDot.setFill(javafx.scene.paint.Color.web("#30d158"));
+        activeProxyLabel.setText(
+                p.host() + ":" + p.port()
+                + "  [" + p.type() + "]  "
+                + p.countryCode() + "  ~  " + p.latencyMs() + " ms");
+        activeProxyLabel.setStyle("-fx-text-fill: #30d158; -fx-font-weight: 600;");
+        rotateProxyButton.setVisible(true);
+        rotateProxyButton.setManaged(true);
+    }
+
+    @FXML
+    protected void onRotateProxyClick() {
+        if (proxyRoutingService == null || !proxyRoutingService.isReady()) return;
+        String resolvedIp = hostResolver.extractIPFromResolvedText(resolvedHostLabel.getText());
+        String geoTarget = resolvedIp.isBlank() ? hostTextField.getText().trim() : resolvedIp;
+        // Exclude current proxy from selection by temporarily marking it dead, then restoring
+        ProxyNode prev = currentActiveProxy;
+        if (prev != null) proxyRoutingService.failover(prev, geoTarget).ifPresentOrElse(
+            p -> {
+                updateActiveProxy(p);
+                appendProxyLog("\n↻ Rotated to: " + p.host() + ":" + p.port()
+                        + "  [" + p.type() + "]  " + p.countryCode()
+                        + "  ~  " + p.latencyMs() + " ms\n");
+            },
+            () -> {
+                // failover removed prev, try selecting again freshly
+                proxyRoutingService.selectProxy(geoTarget).ifPresent(p -> {
+                    updateActiveProxy(p);
+                    appendProxyLog("\n↻ Rotated to: " + p.host() + ":" + p.port()
+                            + "  [" + p.type() + "]  " + p.countryCode()
+                            + "  ~  " + p.latencyMs() + " ms\n");
+                });
+            });
+        else
+            proxyRoutingService.selectProxy(geoTarget).ifPresent(this::updateActiveProxy);
+    }
+
+    /**
+     * Called after host resolve completes — re-selects geo-optimal proxy for new target.
+     * Runs on JavaFX thread (called from resolveHostAsync onUpdate callback).
+     */
+    private void autoSelectProxyForCurrentTarget() {
+        if (proxyRoutingService == null || !proxyRoutingService.isReady()) return;
+        String resolvedIp = hostResolver.extractIPFromResolvedText(resolvedHostLabel.getText());
+        if (resolvedIp.isBlank()) return;
+        proxyRoutingService.selectProxy(resolvedIp).ifPresent(p -> {
+            if (currentActiveProxy == null
+                    || !p.countryCode().equals(currentActiveProxy.countryCode())) {
+                updateActiveProxy(p);
+            }
+        });
+    }
+
+    private void appendProxyLog(String text) {
+        proxyLogArea.appendText(text);
+        proxyLogArea.setScrollTop(Double.MAX_VALUE);
+    }
+
+    /* -- Language switching ----------------------------------- */
+
+    /**
+     * Apply current language bundle to all static UI elements.
+     * Call after language change or on first initialize.
+     */
+    private void applyLanguage() {
+        LanguageManager lm = LanguageManager.getInstance();
+
+        // Nav bar
+        aboutButton.setText(lm.get("nav.about"));
+
+        // Sidebar — Scan Target card
+        sectionScanTargetLabel.setText(lm.get("section.scanTarget"));
+        labelTargetKey.setText(lm.get("label.target"));
+        hostTextField.setPromptText(lm.get("prompt.host"));
+        labelPortRangeKey.setText(lm.get("label.portRange"));
+        portsTextField.setPromptText(lm.get("prompt.ports"));
+        labelThreadsKey.setText(lm.get("label.threads"));
+        labelOptionsKey.setText(lm.get("label.options"));
+
+        // Options
+        optionJsTitle.setText(lm.get("option.jsAnalysis"));
+        optionJsDesc.setText(lm.get("option.jsAnalysis.desc"));
+        optionSqlTitle.setText(lm.get("option.sqlInjection"));
+        optionSqlDesc.setText(lm.get("option.sqlInjection.desc"));
+
+        // Buttons
+        scanButton.setText(lm.get("btn.startScan"));
+        stopButton.setText(lm.get("btn.stop"));
+        exportButton.setText(lm.get("btn.export"));
+        clearButton.setText(lm.get("btn.clear"));
+        jsExportButton.setText(lm.get("btn.exportAnalysis"));
+
+        // Host Info card
+        sectionHostInfoLabel.setText(lm.get("section.hostInfo"));
+        keyIpAddressLabel.setText(lm.get("key.ipAddress"));
+        keyHostnameLabel.setText(lm.get("key.hostname"));
+        keyScanTimeLabel.setText(lm.get("key.scanTime"));
+        keyPortsScannedLabel.setText(lm.get("key.portsScanned"));
+        keyOpenPortsLabel.setText(lm.get("key.openPorts"));
+        keyAvgLatencyLabel.setText(lm.get("key.avgLatency"));
+
+        // Console / results header
+        consoleHeaderLabel.setText(
+            isJsAnalysisMode ? lm.get("console.headerJs") : lm.get("console.header"));
+
+        // Tabs
+        tabScanResults.setText(lm.get("tab.scanResults"));
+        tabJsAnalysis.setText(lm.get("tab.jsAnalysis"));
+        tabProxy.setText(lm.get("tab.proxy"));
+        startProxyButton.setText(lm.get("btn.startHarvesting"));
+
+        // JS Analysis pane
+        placeholderTitleLabel.setText(lm.get("placeholder.noData"));
+        placeholderDescLabel.setText(lm.get("placeholder.noData.desc"));
+        keyEndpointsLabel.setText(lm.get("key.endpoints"));
+        keyDataStructuresLabel.setText(lm.get("key.dataStructures"));
+        keyDbSchemasLabel.setText(lm.get("key.dbSchemas"));
+        keySensitiveInfoLabel.setText(lm.get("key.sensitiveInfo"));
+        keyArchitectureLabel.setText(lm.get("key.architecture"));
+        subtitleDataStructuresLabel.setText(lm.get("subtitle.dataStructures"));
+
+        // Refresh result count label with translated strings
+        refreshResultCountLabel();
+
+        // Sync language radio selection in config menu
+        configMenuButton.setText(lm.get("menu.configuration"));
+        Menu langMenu = (Menu) configMenuButton.getItems().get(0);
+        langMenu.setText(lm.get("menu.language"));
+        LanguageManager.Language curLang = LanguageManager.getInstance().getLanguage();
+        for (var item : langMenu.getItems()) {
+            if (item instanceof RadioMenuItem ri) {
+                ri.setSelected(
+                    (curLang == LanguageManager.Language.EN && "English".equals(ri.getText())) ||
+                    (curLang == LanguageManager.Language.IT && "Italiano".equals(ri.getText())) ||
+                    (curLang == LanguageManager.Language.RU && "Русский".equals(ri.getText()))
+                );
+            }
+        }
     }
 
     /* -- UI helpers ------------------------------------------- */
@@ -1159,33 +1525,31 @@ public class AnibusController {
      */
     private void switchToJsAnalysisMode() {
         Platform.runLater(() -> {
+            LanguageManager lm = LanguageManager.getInstance();
             isJsAnalysisMode = true;
-            consoleHeaderLabel.setText("JavaScript Analysis Results");
-            resultCountLabel.setText("Analysis completed");
-            
-            // Show JS export button, hide port scanner export
+            consoleHeaderLabel.setText(lm.get("console.headerJs"));
+            resultCountLabel.setText(lm.get("result.analysisCompleted"));
+
             exportButton.setVisible(false);
             jsExportButton.setVisible(true);
             jsExportButton.setDisable(false);
-            
             clearButton.setDisable(false);
         });
     }
-    
+
     /**
      * Switch console to port scanner mode.
      */
     private void switchToPortScannerMode() {
         Platform.runLater(() -> {
+            LanguageManager lm = LanguageManager.getInstance();
             isJsAnalysisMode = false;
-            consoleHeaderLabel.setText("Console Output");
+            consoleHeaderLabel.setText(lm.get("console.header"));
             refreshResultCountLabel();
-            
-            // Show port scanner export button, hide JS export
+
             exportButton.setVisible(true);
             jsExportButton.setVisible(false);
-            
-            // Update clear button state based on results
+
             boolean hasResults = !results.isEmpty();
             clearButton.setDisable(!hasResults);
             exportButton.setDisable(!hasResults);
@@ -1196,14 +1560,15 @@ public class AnibusController {
      * Updates result count label based on current mode.
      */
     private void refreshResultCountLabel() {
+        LanguageManager lm = LanguageManager.getInstance();
         if (isJsAnalysisMode) {
-            resultCountLabel.setText("Analysis completed");
+            resultCountLabel.setText(lm.get("result.analysisCompleted"));
         } else {
             int n = results.size();
             resultCountLabel.setText(
-                n == 0 ? "No open ports" : 
-                n == 1 ? "1 open port" : 
-                n + " open ports"
+                n == 0 ? lm.get("result.noResults") :
+                n == 1 ? lm.get("result.onePort") :
+                String.format(lm.get("result.manyPorts"), n)
             );
         }
     }

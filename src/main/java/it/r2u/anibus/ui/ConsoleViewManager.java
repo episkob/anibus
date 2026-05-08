@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import it.r2u.anibus.model.PortScanResult;
+import it.r2u.anibus.service.network.proxy.ProxyNode;
 import javafx.application.Platform;
 import javafx.scene.control.TextArea;
 
@@ -99,6 +100,9 @@ public class ConsoleViewManager {
             } else if (line.startsWith("[SECURE]") || line.startsWith("[INSECURE]")) {
                 currentSection = "SECURITY HEADERS";
                 line = line.replaceFirst("^\\[(IN)?SECURE\\]\\s*", "");
+            } else if (line.startsWith("[PROXY]")) {
+                currentSection = "PROXY HEADERS";
+                line = line.substring(7).trim();
             } else if (line.startsWith("[IOT]")) {
                 currentSection = "IOT DEVICE";
                 line = line.substring(5).trim();
@@ -161,6 +165,7 @@ public class ConsoleViewManager {
                 case "HTTP" -> renderSimpleSection(sb, "HTTP Analysis", lines);
                 case "SSL" -> renderSimpleSection(sb, "SSL/TLS", lines);
                 case "SECURITY HEADERS" -> renderSimpleSection(sb, "Security Headers", lines);
+                case "PROXY HEADERS"    -> renderProxyHeadersSection(sb, lines);
                 case "IOT DEVICE" -> renderSimpleSection(sb, "IoT Device", lines);
                 case "KEYCLOAK IAM" -> renderSimpleSection(sb, "Keycloak IAM", lines);
                 case "CONTAINER" -> renderSimpleSection(sb, "Container / Orchestration", lines);
@@ -210,6 +215,18 @@ public class ConsoleViewManager {
         }
     }
 
+    /** Proxy headers section — highlighted with ⚠ prefix and distinct label. */
+    private static void renderProxyHeadersSection(StringBuilder sb, List<String> lines) {
+        sb.append("│\n│  ── Proxy Headers Detected ──────────────────────────────────────\n");
+        for (String line : lines) {
+            // strip leading ⚠️ prefix from HTTPInfo.formatProxyHeaders() if already there
+            String clean = line.replaceFirst("^⚠\\uFE0F\\s*", "").trim();
+            if (!clean.isEmpty()) {
+                sb.append(wrapLine("│  ⚠  ", clean));
+            }
+        }
+    }
+
     // =====================================================================
     //  Helpers
     // =====================================================================
@@ -245,14 +262,25 @@ public class ConsoleViewManager {
     /**
      * Updates console with all results (used when switching from table view).
      */
-    public void updateConsoleWithAllResults(List<PortScanResult> results) {
+    public void updateConsoleWithAllResults(List<PortScanResult> results, String target, ProxyNode proxy) {
         if (consoleTextArea == null) return;
-        
+
+        String proxyLine = (proxy != null)
+                ? String.format("  ROUTING  ▶  %s:%d  [%s]  %s  ~  %d ms\n",
+                        proxy.host(), proxy.port(), proxy.type(), proxy.countryCode(), proxy.latencyMs())
+                : "  ROUTING  ▶  DIRECT (no proxy)\n";
+
         StringBuilder sb = new StringBuilder();
         sb.append("═══════════════════════════════════════════════════════════════════════\n");
         sb.append("                        ANIBUS SCAN RESULTS                            \n");
-        sb.append("═══════════════════════════════════════════════════════════════════════\n\n");
-        
+        sb.append("═══════════════════════════════════════════════════════════════════════\n");
+        if (target != null && !target.isEmpty()) {
+            sb.append("  TARGET   ▶  ").append(target).append("\n");
+            sb.append(proxyLine);
+            sb.append("═══════════════════════════════════════════════════════════════════════\n");
+        }
+        sb.append("\n");
+
         if (results.isEmpty()) {
             sb.append("No results to display\n");
         } else {
@@ -260,34 +288,50 @@ public class ConsoleViewManager {
                 sb.append(formatConsoleResult(result));
             }
         }
-        
+
         sb.append("═══════════════════════════════════════════════════════════════════════\n");
         sb.append(String.format("Total: %d open port%s\n", results.size(), results.size() == 1 ? "" : "s"));
         sb.append("═══════════════════════════════════════════════════════════════════════\n");
-        
+
         consoleTextArea.setText(sb.toString());
     }
     
+    /**
+     * Prints the scan session header — shows target and proxy (or DIRECT) routing.
+     * Called once before the first result arrives.
+     */
+    public void printScanHeader(String target, ProxyNode proxy) {
+        if (consoleTextArea == null) return;
+        String proxyLine;
+        if (proxy != null) {
+            proxyLine = String.format(
+                "  ROUTING  ▶  %s:%d  [%s]  %s  ~  %d ms\n",
+                proxy.host(), proxy.port(), proxy.type(), proxy.countryCode(), proxy.latencyMs());
+        } else {
+            proxyLine = "  ROUTING  ▶  DIRECT (no proxy)\n";
+        }
+        String header = """
+                        \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+                                                ANIBUS SCAN RESULTS
+                        \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+                          TARGET   \u25b6  """ + target + "\n" +
+                proxyLine +
+                "═══════════════════════════════════════════════════════════════════════\n\n";
+        Platform.runLater(() -> {
+            consoleTextArea.clear();
+            consoleTextArea.setText(header);
+            consoleTextArea.setScrollTop(0);
+        });
+    }
+
     /**
      * Appends a single result to console (for live updates during scanning).
      */
     public void appendToConsole(PortScanResult result) {
         if (consoleTextArea == null || !isConsoleView) return;
-        
-        Platform.runLater(() -> {
-            String current = consoleTextArea.getText();
-            if (current.isEmpty()) {
-                // First result - add header
-                consoleTextArea.setText("""
-                    ═══════════════════════════════════════════════════════════════════════
-                                            ANIBUS SCAN RESULTS                            
-                    ═══════════════════════════════════════════════════════════════════════
 
-                    """ + formatConsoleResult(result));
-            } else {
-                consoleTextArea.appendText(formatConsoleResult(result));
-            }
-            
+        Platform.runLater(() -> {
+            consoleTextArea.appendText(formatConsoleResult(result));
             // Auto-scroll to bottom
             consoleTextArea.setScrollTop(Double.MAX_VALUE);
         });

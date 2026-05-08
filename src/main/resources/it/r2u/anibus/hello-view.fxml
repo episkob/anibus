@@ -2,7 +2,9 @@
 
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.ChoiceBox?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.MenuButton?>
 <?import javafx.scene.control.ProgressBar?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.Separator?>
@@ -27,7 +29,8 @@
             <children>
                 <Label text="Anibus" styleClass="nav-title" />
                 <Region HBox.hgrow="ALWAYS" />
-                <Button text="About" onAction="#onAboutClick" styleClass="nav-link" />
+                <MenuButton fx:id="configMenuButton" text="Configuration" styleClass="nav-menu-button" />
+                <Button fx:id="aboutButton" text="About" onAction="#onAboutClick" styleClass="nav-link" />
             </children>
         </HBox>
 
@@ -54,11 +57,11 @@
                                 <!-- Scan Target Card -->
                                 <VBox spacing="10" styleClass="card">
                                     <children>
-                                        <Label text="Scan Target" styleClass="section-title" />
+                                        <Label fx:id="sectionScanTargetLabel" text="Scan Target" styleClass="section-title" />
 
                                         <VBox spacing="3">
                                             <children>
-                                                <Label text="TARGET" styleClass="subtitle-label" />
+                                                <Label fx:id="labelTargetKey" text="TARGET" styleClass="subtitle-label" />
                                                 <TextField fx:id="hostTextField"
                                                            promptText="hostname, IP or URL" />
                                                 <Label fx:id="resolvedHostLabel" text=""
@@ -70,14 +73,14 @@
                                             <children>
                                                 <VBox spacing="3" HBox.hgrow="ALWAYS">
                                                     <children>
-                                                        <Label text="PORT RANGE" styleClass="subtitle-label" />
+                                                        <Label fx:id="labelPortRangeKey" text="PORT RANGE" styleClass="subtitle-label" />
                                                         <TextField fx:id="portsTextField"
                                                                    promptText="e.g. 1-1024" />
                                                     </children>
                                                 </VBox>
                                                 <VBox spacing="3" prefWidth="90">
                                                     <children>
-                                                        <Label text="THREADS" styleClass="subtitle-label" />
+                                                        <Label fx:id="labelThreadsKey" text="THREADS" styleClass="subtitle-label" />
                                                         <Spinner fx:id="threadSpinner" editable="true" />
                                                     </children>
                                                 </VBox>
@@ -87,7 +90,7 @@
                                         <Separator />
 
                                         <!-- Options with descriptions -->
-                                        <Label text="OPTIONS" styleClass="subtitle-label" />
+                                        <Label fx:id="labelOptionsKey" text="OPTIONS" styleClass="subtitle-label" />
 
                                         <VBox spacing="10">
                                             <children>
@@ -96,9 +99,9 @@
                                                         <CheckBox fx:id="jsAnalysisCheckBox" />
                                                         <VBox spacing="2">
                                                             <children>
-                                                                <Label text="JavaScript Analysis"
+                                                                <Label fx:id="optionJsTitle" text="JavaScript Analysis"
                                                                        styleClass="option-title" />
-                                                                <Label text="Finds API keys, DB strings and endpoints in JS"
+                                                                <Label fx:id="optionJsDesc" text="Finds API keys, DB strings and endpoints in JS"
                                                                        styleClass="option-desc" wrapText="true" />
                                                             </children>
                                                         </VBox>
@@ -109,9 +112,9 @@
                                                         <CheckBox fx:id="jsInjectionCheckBox" />
                                                         <VBox spacing="2">
                                                             <children>
-                                                                <Label text="SQL Injection Testing"
+                                                                <Label fx:id="optionSqlTitle" text="SQL Injection Testing"
                                                                        styleClass="option-title" />
-                                                                <Label text="Tests forms and endpoints for SQL injection"
+                                                                <Label fx:id="optionSqlDesc" text="Tests forms and endpoints for SQL injection"
                                                                        styleClass="option-desc" wrapText="true" />
                                                             </children>
                                                         </VBox>
@@ -135,7 +138,7 @@
                                                         onAction="#onStopButtonClick"
                                                         text="Stop"
                                                         disable="true"
-                                                        prefWidth="72"
+                                                        minWidth="52"
                                                         styleClass="stop-button" />
                                             </children>
                                         </HBox>
@@ -150,11 +153,11 @@
                                 <VBox fx:id="infoCard" spacing="8" styleClass="card"
                                       visible="false">
                                     <children>
-                                        <Label text="Host Info" styleClass="section-title" />
+                                        <Label fx:id="sectionHostInfoLabel" text="Host Info" styleClass="section-title" />
                                         <!-- IP -->
                                         <VBox spacing="2">
                                             <children>
-                                                <Label text="IP ADDRESS" styleClass="info-key" />
+                                                <Label fx:id="keyIpAddressLabel" text="IP ADDRESS" styleClass="info-key" />
                                                 <Label fx:id="infoIpLabel" text="-"
                                                        styleClass="info-value" wrapText="true" maxWidth="Infinity" />
                                             </children>
@@ -162,7 +165,7 @@
                                         <!-- Hostname -->
                                         <VBox spacing="2">
                                             <children>
-                                                <Label text="HOSTNAME" styleClass="info-key" />
+                                                <Label fx:id="keyHostnameLabel" text="HOSTNAME" styleClass="info-key" />
                                                 <Label fx:id="infoHostnameLabel" text="-"
                                                        styleClass="info-value" wrapText="true" maxWidth="Infinity" />
                                             </children>
@@ -172,13 +175,13 @@
                                             <children>
                                                 <VBox spacing="2" HBox.hgrow="ALWAYS" maxWidth="Infinity">
                                                     <children>
-                                                        <Label text="SCAN TIME" styleClass="info-key" />
+                                                        <Label fx:id="keyScanTimeLabel" text="SCAN TIME" styleClass="info-key" />
                                                         <Label fx:id="infoScanTimeLabel" text="-" styleClass="info-value" />
                                                     </children>
                                                 </VBox>
                                                 <VBox spacing="2" HBox.hgrow="ALWAYS" maxWidth="Infinity">
                                                     <children>
-                                                        <Label text="PORTS SCANNED" styleClass="info-key" />
+                                                        <Label fx:id="keyPortsScannedLabel" text="PORTS SCANNED" styleClass="info-key" />
                                                         <Label fx:id="infoPortsScannedLabel" text="-" styleClass="info-value" />
                                                     </children>
                                                 </VBox>
@@ -189,13 +192,13 @@
                                             <children>
                                                 <VBox spacing="2" HBox.hgrow="ALWAYS" maxWidth="Infinity">
                                                     <children>
-                                                        <Label text="OPEN PORTS" styleClass="info-key" />
+                                                        <Label fx:id="keyOpenPortsLabel" text="OPEN PORTS" styleClass="info-key" />
                                                         <Label fx:id="infoOpenPortsLabel" text="-" styleClass="info-value" />
                                                     </children>
                                                 </VBox>
                                                 <VBox spacing="2" HBox.hgrow="ALWAYS" maxWidth="Infinity">
                                                     <children>
-                                                        <Label text="AVG LATENCY" styleClass="info-key" />
+                                                        <Label fx:id="keyAvgLatencyLabel" text="AVG LATENCY" styleClass="info-key" />
                                                         <Label fx:id="infoAvgLatencyLabel" text="-" styleClass="info-value" />
                                                     </children>
                                                 </VBox>
@@ -218,7 +221,7 @@
                             <tabs>
 
                                 <!-- ── Tab: Scan Results ── -->
-                                <Tab text="Scan Results">
+                                <Tab fx:id="tabScanResults" text="Scan Results">
                                     <content>
                                         <VBox spacing="12" styleClass="tab-content">
                                             <children>
@@ -254,16 +257,16 @@
                                 </Tab>
 
                                 <!-- ── Tab: JS Analysis ── -->
-                                <Tab text="JS Analysis">
+                                <Tab fx:id="tabJsAnalysis" text="JS Analysis">
                                     <content>
                                         <StackPane styleClass="tab-content">
                                             <!-- Placeholder when no analysis done -->
                                             <VBox alignment="CENTER" spacing="10"
                                                   styleClass="placeholder-pane">
                                                 <children>
-                                                    <Label text="No analysis data"
+                                                    <Label fx:id="placeholderTitleLabel" text="No analysis data"
                                                            styleClass="placeholder-title" />
-                                                    <Label text="Enable JavaScript Analysis and run a scan"
+                                                    <Label fx:id="placeholderDescLabel" text="Enable JavaScript Analysis and run a scan"
                                                            styleClass="placeholder-desc"
                                                            wrapText="true" />
                                                 </children>
@@ -278,7 +281,7 @@
                                                         <children>
                                                             <VBox spacing="3">
                                                                 <children>
-                                                                    <Label text="ENDPOINTS"
+                                                                    <Label fx:id="keyEndpointsLabel" text="ENDPOINTS"
                                                                            styleClass="info-key" />
                                                                     <Label fx:id="jsEndpointsLabel"
                                                                            text="0"
@@ -287,7 +290,7 @@
                                                             </VBox>
                                                             <VBox spacing="3">
                                                                 <children>
-                                                                    <Label text="DATA STRUCTURES"
+                                                                    <Label fx:id="keyDataStructuresLabel" text="DATA STRUCTURES"
                                                                            styleClass="info-key" />
                                                                     <Label fx:id="jsDataStructuresLabel"
                                                                            text="0"
@@ -296,7 +299,7 @@
                                                             </VBox>
                                                             <VBox spacing="3">
                                                                 <children>
-                                                                    <Label text="DB SCHEMAS"
+                                                                    <Label fx:id="keyDbSchemasLabel" text="DB SCHEMAS"
                                                                            styleClass="info-key" />
                                                                     <Label fx:id="jsDbSchemasLabel"
                                                                            text="0"
@@ -305,7 +308,7 @@
                                                             </VBox>
                                                             <VBox spacing="3">
                                                                 <children>
-                                                                    <Label text="SENSITIVE INFO"
+                                                                    <Label fx:id="keySensitiveInfoLabel" text="SENSITIVE INFO"
                                                                            styleClass="info-key" />
                                                                     <Label fx:id="jsSensitiveInfoLabel"
                                                                            text="0"
@@ -314,7 +317,7 @@
                                                             </VBox>
                                                             <VBox spacing="3">
                                                                 <children>
-                                                                    <Label text="ARCHITECTURE"
+                                                                    <Label fx:id="keyArchitectureLabel" text="ARCHITECTURE"
                                                                            styleClass="info-key" />
                                                                     <Label fx:id="jsArchitectureLabel"
                                                                            text="-"
@@ -330,7 +333,7 @@
                                                                     visible="false" />
                                                         </children>
                                                     </HBox>
-                                                    <Label text="DATA STRUCTURES"
+                                                    <Label fx:id="subtitleDataStructuresLabel" text="DATA STRUCTURES"
                                                            styleClass="subtitle-label" />
                                                     <TreeView fx:id="jsStructureTree"
                                                               VBox.vgrow="ALWAYS"
@@ -339,6 +342,100 @@
                                                 </children>
                                             </VBox>
                                         </StackPane>
+                                    </content>
+                                </Tab>
+
+                                <!-- ── Tab: Proxy ── -->
+                                <Tab fx:id="tabProxy" text="Proxy">
+                                    <content>
+                                        <VBox spacing="0" styleClass="tab-content">
+                                            <children>
+
+                                                <!-- ── Active proxy header ── -->
+                                                <HBox spacing="10" alignment="CENTER_LEFT"
+                                                      styleClass="proxy-status-strip">
+                                                    <children>
+                                                        <Circle fx:id="proxyStatusDot" radius="5" fill="#8E8E93" />
+                                                        <Label fx:id="activeProxyLabel"
+                                                               text="No active proxy"
+                                                               styleClass="proxy-status-label" />
+                                                        <Button fx:id="rotateProxyButton"
+                                                                text="↻"
+                                                                onAction="#onRotateProxyClick"
+                                                                styleClass="proxy-rotate-button"
+                                                                visible="false"
+                                                                managed="false"
+                                                                minWidth="26" maxWidth="26"
+                                                                minHeight="22" maxHeight="22" />
+                                                        <Region HBox.hgrow="ALWAYS" />
+                                                        <Button fx:id="loadProxyButton"
+                                                                text="⬆  Load from file"
+                                                                onAction="#onLoadProxyClick"
+                                                                styleClass="secondary-button" />
+                                                        <Button fx:id="startProxyButton"
+                                                                text="▶  Start Harvesting"
+                                                                onAction="#onStartProxyClick"
+                                                                styleClass="scan-button" />
+                                                        <Button fx:id="clearProxyButton"
+                                                                text="Clear"
+                                                                onAction="#onClearProxyLogClick"
+                                                                styleClass="secondary-button" />
+                                                    </children>
+                                                </HBox>
+
+                                                <!-- ── Metrics bar ── -->
+                                                <HBox styleClass="proxy-stats-bar" spacing="0">
+                                                    <children>
+                                                        <VBox styleClass="proxy-stat-cell" HBox.hgrow="ALWAYS"
+                                                              alignment="CENTER" spacing="4">
+                                                            <children>
+                                                                <Label text="CANDIDATES" styleClass="proxy-stat-key" />
+                                                                <Label fx:id="proxyStatCandidates" text="—"
+                                                                       styleClass="proxy-stat-value" />
+                                                            </children>
+                                                        </VBox>
+                                                        <Separator orientation="VERTICAL" />
+                                                        <VBox styleClass="proxy-stat-cell" HBox.hgrow="ALWAYS"
+                                                              alignment="CENTER" spacing="4">
+                                                            <children>
+                                                                <Label text="LIVE PROXIES" styleClass="proxy-stat-key" />
+                                                                <Label fx:id="proxyStatLive" text="—"
+                                                                       styleClass="proxy-stat-live" />
+                                                            </children>
+                                                        </VBox>
+                                                        <Separator orientation="VERTICAL" />
+                                                        <VBox styleClass="proxy-stat-cell" HBox.hgrow="ALWAYS"
+                                                              alignment="CENTER" spacing="4">
+                                                            <children>
+                                                                <Label text="COUNTRIES" styleClass="proxy-stat-key" />
+                                                                <Label fx:id="proxyStatCountries" text="—"
+                                                                       styleClass="proxy-stat-value" />
+                                                            </children>
+                                                        </VBox>
+                                                        <Separator orientation="VERTICAL" />
+                                                        <VBox styleClass="proxy-stat-cell" HBox.hgrow="ALWAYS"
+                                                              alignment="CENTER" spacing="6">
+                                                            <children>
+                                                                <Label fx:id="proxyPhaseLabel" text="IDLE"
+                                                                       styleClass="proxy-stat-key" />
+                                                                <ProgressBar fx:id="proxyProgressBar"
+                                                                             prefWidth="140" progress="0"
+                                                                             visible="false"
+                                                                             styleClass="proxy-progress" />
+                                                            </children>
+                                                        </VBox>
+                                                    </children>
+                                                </HBox>
+
+                                                <!-- ── Live log ── -->
+                                                <TextArea fx:id="proxyLogArea"
+                                                          editable="false"
+                                                          wrapText="true"
+                                                          styleClass="console-view"
+                                                          VBox.vgrow="ALWAYS" />
+
+                                            </children>
+                                        </VBox>
                                     </content>
                                 </Tab>
 

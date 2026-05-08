@@ -1,6 +1,6 @@
 # Anibus — Scanner di Sicurezza di Rete Avanzato
 
-> **Versione:** 1.7.1 · **Autore:** Iaroslav Tsymbaliuk · **Ruolo:** Intern (2025–2026) @ r2u
+> **Versione:** 2.0.0 · **Autore:** Iaroslav Tsymbaliuk · **Ruolo:** Intern (2025–2026) @ r2u
 
 Uno scanner di sicurezza di rete desktop completo, realizzato con **Java 21 (JPMS)**, **JavaFX 21.0.5** e un tema **Bootstrap 5 Dark** personalizzato.
 Anibus va ben oltre un semplice port scanner: combina fingerprinting dei servizi, corrispondenza CVE, analisi dei sorgenti JavaScript, test di SQL injection, geolocalizzazione, ispezione SSL/TLS e rilevamento dell'infrastruttura in un'unica applicazione autonoma.
@@ -9,7 +9,7 @@ Anibus va ben oltre un semplice port scanner: combina fingerprinting dei servizi
 
 ## Indice
 
-- [Novità in 1.7.1](#novità-in-170)
+- [Novità in 2.0.0](#novità-in-200)
 - [Panoramica Funzionalità](#panoramica-funzionalità)
 - [Architettura](#architettura)
 - [Struttura del Progetto](#struttura-del-progetto)
@@ -25,7 +25,22 @@ Anibus va ben oltre un semplice port scanner: combina fingerprinting dei servizi
 
 ---
 
-## Novità in 1.7.1
+## Novità in 2.0.0
+
+| Area | Modifica |
+|------|----------|
+| **Modulo Proxy** | Pipeline completo: raccolta → validazione → geo-risoluzione → pool |
+| **Persistenza Pool** | Pool validato salvato in `~/.anibus/proxy-pool.json`; ricaricato all’avvio |
+| **Geo-Routing** | Seleziona automaticamente il proxy migliore per paese del target |
+| **Rotazione Manuale** | Pulsante ↻ accanto al proxy attivo per cambio manuale |
+| **Header Proxy** | Rileva e logga `Via`, `X-Forwarded-For`, `X-Real-IP` nei risultati scansione |
+| **Intestazione Scansione** | La console mostra TARGET e ROUTING (proxy o DIRECT) prima dei risultati |
+| **Stop Harvesting** | Il pulsante Clear diventa ■ Stop durante l’harvesting |
+| **Throttle Rete** | Semaforo limita i socket contemporanei a 200 (prima illimitati) |
+
+---
+
+## Novità in 1.8.0
 
 | Area | Modifica |
 |------|---------|
@@ -282,7 +297,7 @@ La scansione delle porte è puramente I/O-bound. I thread virtuali di Java 21 (`
 ## Interfaccia Utente
 
 ```
-┌──────────────────────────────── Anibus 1.7.1 ─────────────────────────────────┐
+┌────────────────────────────────── Anibus 2.0.0 ─────────────────────────────────────┐
 │ [●] Anibus  ░░░░░░░░░░░░░░░░░░░░░░░░  ● Connesso  192.168.1.1                │  ← Nav bar
 │───────────────────────────────────────────────────────────────────────────────│
 │ ┌── Scan Target ───────────────┐  ┌── [Scan Results] [JS Analysis] ──────────┐│
@@ -356,28 +371,28 @@ cd anibus
 
 ```bash
 ./mvnw clean package -DskipTests
-java -jar target/anibus-1.7.1.jar
+java -jar target/anibus-2.0.0.jar
 ```
 
 **Windows:**
 
 ```cmd
 mvnw.cmd clean package -DskipTests
-java -jar target\anibus-1.7.1.jar
+java -jar target\anibus-2.0.0.jar
 ```
 
 **Linux — Wayland / XWayland:**
 
 ```bash
 xhost +local:
-DISPLAY=:0 java -jar target/anibus-1.7.1.jar
+DISPLAY=:0 java -jar target/anibus-2.0.0.jar
 ```
 
-**Da terminale Flatpak VS Code:**
+**Da un terminale Flatpak VS Code:**
 
 ```bash
 flatpak-spawn --host xhost +local:
-DISPLAY=:0 java -jar target/anibus-1.7.1.jar
+DISPLAY=:0 java -jar target/anibus-2.0.0.jar
 ```
 
 ---
@@ -479,6 +494,37 @@ users,POSTGRESQL,95%,"id|email|password_hash"
   </databaseSchemas>
 </jsAnalysis>
 ```
+
+---
+
+## Roadmap
+
+### v2.0.0 — Modulo Proxy
+
+- ✅ Raccolta proxy (Phase 1)
+- ✅ Validazione triple-handshake con virtual threads (Phase 2)
+- ✅ Geo-risoluzione tramite ip-api.com (Phase 3)
+- ✅ `GeoRoutingStrategy` — stesso paese → vicini → fallback globale
+- ✅ `ProxyStore` — salvataggio in `~/.anibus/proxy-pool.json`
+- ✅ Pulsante "Carica da file" — ripristino senza re-harvesting
+- ✅ Rotazione automatica al cambio host
+- ✅ Rotazione manuale — pulsante ↻
+- ✅ Throttle rete (200 socket contemporanei)
+- ✅ Rilevamento header proxy nei risultati scansione
+
+### Pianificato
+
+**Network Layer**
+- 🟡 **Scansione UDP**
+- 🟡 **Subdomain Enumeration**
+
+**Analysis Layer**
+- 🟡 **Analisi Source Map**
+- 🟡 **Param Miner**
+
+**Export e Reportistica**
+- 🟡 **Diff Mode**
+- 🟡 **Pianificatore Scansioni**
 
 ---
 

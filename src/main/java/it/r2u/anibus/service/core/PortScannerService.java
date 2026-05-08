@@ -7,7 +7,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import it.r2u.anibus.model.PortRegistry;
+import it.r2u.anibus.model.ScanContext;
 import it.r2u.anibus.service.network.VersionExtractor;
+import it.r2u.anibus.service.network.proxy.ProxyConnectionFactory;
 
 /**
  * Thin coordinator: connection probing and port-range parsing.
@@ -25,13 +27,19 @@ public class PortScannerService {
 
     private static final int TIMEOUT = 200;
     private final BannerGrabber bannerGrabber;
+    private final ProxyConnectionFactory proxyFactory;
 
     public PortScannerService() {
-        this(new BannerGrabber(TIMEOUT));
+        this(new BannerGrabber(TIMEOUT), new ProxyConnectionFactory());
     }
 
     public PortScannerService(BannerGrabber bannerGrabber) {
-        this.bannerGrabber = bannerGrabber;
+        this(bannerGrabber, new ProxyConnectionFactory());
+    }
+
+    public PortScannerService(BannerGrabber bannerGrabber, ProxyConnectionFactory proxyFactory) {
+        this.bannerGrabber  = bannerGrabber;
+        this.proxyFactory   = proxyFactory;
     }
 
     /* -- Port-range parsing ----------------------------------- */
@@ -61,6 +69,33 @@ public class PortScannerService {
 
     public boolean isPortOpen(String host, int port) {
         return measurePortLatency(host, port) >= 0;
+    }
+
+    // ── Proxy-aware variants (ScanContext overloads) ────────────────────────
+
+    /**
+     * Measure port latency routing through the proxy in {@code context}.
+     * Falls back to a direct connection if proxy is disabled or absent.
+     * Returns -1 if the port is closed or the proxy fails.
+     */
+    public long measurePortLatency(ScanContext context, int port) {
+        if (!context.proxyEnabled() || context.activeProxy().isEmpty()) {
+            return measurePortLatency(context.targetHost(), port);
+        }
+        try {
+            long start = System.nanoTime();
+            proxyFactory.createSocket(context, context.targetHost(), port).close();
+            return (System.nanoTime() - start) / 1_000_000;
+        } catch (IOException e) {
+            return -1;
+        }
+    }
+
+    /**
+     * Check whether a port is open, routing through the proxy in {@code context}.
+     */
+    public boolean isPortOpen(ScanContext context, int port) {
+        return measurePortLatency(context, port) >= 0;
     }
 
     /* -- Delegates -------------------------------------------- */

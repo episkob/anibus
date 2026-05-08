@@ -6,7 +6,7 @@
 
     <groupId>it.r2u</groupId>
     <artifactId>anibus</artifactId>
-    <version>1.7.1</version>
+    <version>2.0.0</version>
 
     <properties>
         <maven.compiler.release>21</maven.compiler.release>
@@ -90,6 +90,7 @@
             <version>${javafx.version}</version>
             <classifier>mac</classifier>
         </dependency>
+
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
@@ -175,6 +176,33 @@
                                 <exclude>META-INF/*.SF</exclude>
                                 <exclude>META-INF/*.DSA</exclude>
                                 <exclude>META-INF/*.RSA</exclude>
+                                <!-- Remove module-info to suppress strong encapsulation warnings -->
+                                <exclude>module-info.class</exclude>
+                                <!-- Remove GraalVM substrate metadata duplicated across platform JARs -->
+                                <exclude>META-INF/substrate/**</exclude>
+                            </excludes>
+                        </filter>
+                        <!-- Windows JavaFX JARs: keep only native .dll libs, drop duplicate .class files -->
+                        <filter>
+                            <artifact>org.openjfx:*:jar:win</artifact>
+                            <excludes>
+                                <exclude>**/*.class</exclude>
+                                <exclude>META-INF/**</exclude>
+                            </excludes>
+                        </filter>
+                        <!-- macOS JavaFX JARs: keep only native .dylib libs, drop duplicate .class files -->
+                        <filter>
+                            <artifact>org.openjfx:*:jar:mac</artifact>
+                            <excludes>
+                                <exclude>**/*.class</exclude>
+                                <exclude>META-INF/**</exclude>
+                            </excludes>
+                        </filter>
+                        <filter>
+                            <artifact>org.openjfx:*:jar:mac-aarch64</artifact>
+                            <excludes>
+                                <exclude>**/*.class</exclude>
+                                <exclude>META-INF/**</exclude>
                             </excludes>
                         </filter>
                     </filters>

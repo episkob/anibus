@@ -35,6 +35,7 @@ public class HTTPAnalyzer {
         private SSLCertInfo sslCert;
         private final Map<String, String> securityHeaders;
         private final Map<String, String> rawHeaders;
+        private final Map<String, String> proxyHeaders;
         private String cms;
         private final List<String> technologies;
         private int statusCode;
@@ -44,6 +45,7 @@ public class HTTPAnalyzer {
             this.url = url;
             this.securityHeaders = new HashMap<>();
             this.rawHeaders = new HashMap<>();
+            this.proxyHeaders = new HashMap<>();
             this.technologies = new ArrayList<>();
         }
         
@@ -55,6 +57,7 @@ public class HTTPAnalyzer {
         public void setSslCert(SSLCertInfo sslCert) { this.sslCert = sslCert; }
         public Map<String, String> getSecurityHeaders() { return securityHeaders; }
         public Map<String, String> getRawHeaders() { return rawHeaders; }
+        public Map<String, String> getProxyHeaders() { return proxyHeaders; }
         public String getCms() { return cms; }
         public void setCms(String cms) { this.cms = cms; }
         public List<String> getTechnologies() { return technologies; }
@@ -89,7 +92,8 @@ public class HTTPAnalyzer {
             }
             
             sb.append(formatSecurityHeaders());
-            
+            sb.append(formatProxyHeaders());
+
             return sb.toString().trim();
         }
         
@@ -113,6 +117,15 @@ public class HTTPAnalyzer {
                 }
             }
             
+            return sb.toString();
+        }
+
+        private String formatProxyHeaders() {
+            if (proxyHeaders.isEmpty()) return "";
+            StringBuilder sb = new StringBuilder();
+            sb.append("\n[PROXY] Proxy Headers detected:\n");
+            proxyHeaders.forEach((k, v) ->
+                    sb.append("  ⚠\uFE0F  ").append(k).append(": ").append(v).append("\n"));
             return sb.toString();
         }
     }
@@ -251,6 +264,18 @@ public class HTTPAnalyzer {
                     // CMS detection from headers
                     if (key.equalsIgnoreCase("X-Powered-By")) {
                         detectTechnologyFromHeader(info, value);
+                    }
+
+                    // Proxy header detection
+                    if (key.equalsIgnoreCase("Via") ||
+                        key.equalsIgnoreCase("X-Forwarded-For") ||
+                        key.equalsIgnoreCase("X-Forwarded-Host") ||
+                        key.equalsIgnoreCase("X-Forwarded-Proto") ||
+                        key.equalsIgnoreCase("X-Real-IP") ||
+                        key.equalsIgnoreCase("Forwarded") ||
+                        key.equalsIgnoreCase("X-Proxy-ID") ||
+                        key.equalsIgnoreCase("Proxy-Agent")) {
+                        info.getProxyHeaders().put(key, value);
                     }
                 }
             }
