@@ -1,8 +1,9 @@
 package it.r2u.anibus.coordinator;
 
-import javafx.beans.property.DoubleProperty;
 import java.util.HashMap;
 import java.util.Map;
+
+import javafx.beans.property.DoubleProperty;
 
 /**
  * Facade for managing scan operations.
@@ -78,7 +79,7 @@ public class ScanCoordinator {
         if (currentStrategy == null) {
             throw new IllegalStateException("No strategy selected");
         }
-        return currentStrategy.progressProperty();
+        return (DoubleProperty) currentStrategy.progressProperty();
     }
     
     /**

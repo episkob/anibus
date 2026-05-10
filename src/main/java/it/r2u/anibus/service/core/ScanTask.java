@@ -13,6 +13,7 @@ import it.r2u.anibus.model.PortScanResult;
 import it.r2u.anibus.service.analysis.JavaScriptSecurityAnalyzer;
 import it.r2u.anibus.service.analysis.JavaScriptSecurityAnalyzer.AnalysisDepth;
 import javafx.application.Platform;
+import javafx.beans.property.StringProperty;
 import javafx.concurrent.Task;
 
 /**
@@ -47,21 +48,29 @@ public class ScanTask extends Task<Void> {
     private final Callbacks callbacks;
     private ExecutorService executor;
     private final JavaScriptSecurityAnalyzer jsAnalyzer;
+    private final boolean ownsJsAnalyzer;
 
     public ScanTask(String host, int startPort, int endPort,
                     PortScannerService scanner, Callbacks callbacks) {
-        this(host, startPort, endPort, scanner, callbacks, new JavaScriptSecurityAnalyzer());
+        this(host, startPort, endPort, scanner, callbacks, new JavaScriptSecurityAnalyzer(), true);
     }
 
     public ScanTask(String host, int startPort, int endPort,
                     PortScannerService scanner, Callbacks callbacks,
                     JavaScriptSecurityAnalyzer jsAnalyzer) {
+        this(host, startPort, endPort, scanner, callbacks, jsAnalyzer, false);
+    }
+
+    private ScanTask(String host, int startPort, int endPort,
+                    PortScannerService scanner, Callbacks callbacks,
+                    JavaScriptSecurityAnalyzer jsAnalyzer, boolean ownsJsAnalyzer) {
         this.host        = host;
         this.startPort   = startPort;
         this.endPort     = endPort;
         this.scanner     = scanner;
         this.callbacks   = callbacks;
         this.jsAnalyzer  = jsAnalyzer;
+        this.ownsJsAnalyzer = ownsJsAnalyzer;
     }
 
     @Override
@@ -90,14 +99,14 @@ public class ScanTask extends Task<Void> {
                 CompletableFuture
                     .supplyAsync(() -> scanner.measurePortLatency(ip, p), executor)
                     .thenComposeAsync(latency -> {
-                        if (latency < 0) return CompletableFuture.completedFuture(null);
+                        if (latency < 0) return CompletableFuture.<PortScanResult>completedFuture(null);
                         return CompletableFuture.supplyAsync(
                             () -> buildBaseResult(ip, p, latency), executor);
                     }, executor)
-                    .thenAcceptAsync(result -> {
-                        if (result == null) return;
+                    .thenComposeAsync(result -> {
+                        if (result == null) return CompletableFuture.completedFuture((Void) null);
                         Platform.runLater(() -> callbacks.onResult(result));
-                        enrichConcurrently(result, ip, p);
+                        return enrichConcurrently(result, ip, p);
                     }, executor)
                     .whenComplete((v, err) -> {
                         latch.countDown();
@@ -127,7 +136,7 @@ public class ScanTask extends Task<Void> {
      * Stage 4: VulnerabilityScanner and (HTTP ports) JS analysis run in parallel.
      * The banner property is updated on the JavaFX thread once both futures complete.
      */
-    private void enrichConcurrently(PortScanResult result, String ip, int port) {
+    private CompletableFuture<Void> enrichConcurrently(PortScanResult result, String ip, int port) {
         CompletableFuture<String> vulnFuture = CompletableFuture.supplyAsync(() -> {
             List<VulnerabilityScanner.Vulnerability> vulns =
                 VulnerabilityScanner.scanVulnerabilities(result.getService(), result.getBanner());
@@ -148,7 +157,7 @@ public class ScanTask extends Task<Void> {
               }, executor)
             : CompletableFuture.completedFuture("");
 
-        CompletableFuture.allOf(vulnFuture, jsFuture).thenRun(() -> {
+        return CompletableFuture.allOf(vulnFuture, jsFuture).thenRun(() -> {
             String vulns = vulnFuture.join();
             String js    = jsFuture.join();
             if (vulns.isEmpty() && js.isEmpty()) return;
@@ -156,7 +165,7 @@ public class ScanTask extends Task<Void> {
             StringBuilder enriched = new StringBuilder(base);
             if (!vulns.isEmpty()) enriched.append("\n").append(vulns);
             if (!js.isEmpty())    enriched.append("\n").append(js);
-            Platform.runLater(() -> result.bannerProperty().set(enriched.toString()));
+            Platform.runLater(() -> ((StringProperty) result.bannerProperty()).set(enriched.toString()));
         });
     }
 
@@ -166,5 +175,6 @@ public class ScanTask extends Task<Void> {
 
     public void shutdown() {
         if (executor != null && !executor.isShutdown()) executor.shutdownNow();
+        if (ownsJsAnalyzer) jsAnalyzer.shutdown();
     }
 }

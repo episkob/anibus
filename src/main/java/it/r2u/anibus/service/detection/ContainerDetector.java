@@ -7,7 +7,6 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -16,9 +15,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 
 /**
  * Detects containerization and container orchestration platforms.
@@ -352,16 +348,8 @@ public class ContainerDetector {
             conn.setRequestProperty("User-Agent", "Anibus/1.0");
             conn.setInstanceFollowRedirects(false);
 
-            if (ssl && conn instanceof HttpsURLConnection httpsConn) {
-                TrustManager[] trustAll = {new X509TrustManager() {
-                    @Override public X509Certificate[] getAcceptedIssuers() { return null; }
-                    @Override public void checkClientTrusted(X509Certificate[] c, String a) {}
-                    @Override public void checkServerTrusted(X509Certificate[] c, String a) {}
-                }};
-                SSLContext sc = SSLContext.getInstance("TLS");
-                sc.init(null, trustAll, new java.security.SecureRandom());
-                httpsConn.setSSLSocketFactory(sc.getSocketFactory());
-                httpsConn.setHostnameVerifier((h, s) -> true);
+            if (ssl && conn instanceof HttpsURLConnection) {
+                // Keep default HTTPS behavior.
             }
 
             int status = conn.getResponseCode();
@@ -380,7 +368,7 @@ public class ContainerDetector {
                 conn.disconnect();
                 return sb.toString();
             }
-        } catch (IOException | java.security.GeneralSecurityException | java.net.URISyntaxException e) {
+        } catch (IOException | java.net.URISyntaxException e) {
             return null;
         }
     }

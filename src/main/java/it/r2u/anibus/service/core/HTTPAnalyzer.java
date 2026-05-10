@@ -16,9 +16,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 
 /**
  * Advanced HTTP Analyzer
@@ -206,28 +203,19 @@ public class HTTPAnalyzer {
             conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
             conn.setInstanceFollowRedirects(true);
             
-            // For HTTPS, get SSL certificate info
+            // For HTTPS, try to get SSL certificate info using default JVM trust/hostname validation
             if (isSSL && conn instanceof HttpsURLConnection httpsConn) {
-                
-                // Trust all certificates for scanning purposes
-                TrustManager[] trustAll = new TrustManager[]{new X509TrustManager() {
-                    @Override public X509Certificate[] getAcceptedIssuers() { return null; }
-                    @Override public void checkClientTrusted(X509Certificate[] certs, String authType) {}
-                    @Override public void checkServerTrusted(X509Certificate[] certs, String authType) {}
-                }};
-                
-                SSLContext sc = SSLContext.getInstance("TLS");
-                sc.init(null, trustAll, new java.security.SecureRandom());
-                httpsConn.setSSLSocketFactory(sc.getSocketFactory());
-                httpsConn.setHostnameVerifier((hostname, session) -> true);
-                
                 conn.connect();
-                
-                // Get certificate
-                Certificate[] certs = httpsConn.getServerCertificates();
-                if (certs != null && certs.length > 0 && certs[0] instanceof X509Certificate) {
-                    X509Certificate cert = (X509Certificate) certs[0];
-                    info.setSslCert(extractCertInfo(cert));
+
+                // Certificate extraction is best-effort and should not break the whole HTTP analysis.
+                try {
+                    Certificate[] certs = httpsConn.getServerCertificates();
+                    if (certs != null && certs.length > 0 && certs[0] instanceof X509Certificate) {
+                        X509Certificate cert = (X509Certificate) certs[0];
+                        info.setSslCert(extractCertInfo(cert));
+                    }
+                } catch (javax.net.ssl.SSLPeerUnverifiedException | IllegalStateException ignored) {
+                    // Continue with headers/body analysis even when cert details are unavailable.
                 }
             } else {
                 conn.connect();
@@ -307,7 +295,7 @@ public class HTTPAnalyzer {
             
             conn.disconnect();
             
-        } catch (java.io.IOException | java.security.GeneralSecurityException | java.net.URISyntaxException e) {
+        } catch (java.io.IOException | java.net.URISyntaxException e) {
             // Silently fail
         }
         

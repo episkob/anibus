@@ -14,6 +14,7 @@ import it.r2u.anibus.service.network.CloudMetadataProbe;
 import it.r2u.anibus.service.network.ReverseDnsExpander;
 import it.r2u.anibus.service.network.SubnetScanner;
 import javafx.application.Platform;
+import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.concurrent.Task;
 
 /**
@@ -158,6 +159,19 @@ public class ServiceDetectionTask extends Task<Void> {
     @Override protected void succeeded() { super.succeeded(); callbacks.onCompleted(); }
     @Override protected void cancelled() { super.cancelled(); callbacks.onCancelled(); }
     @Override protected void failed()    { super.failed();    callbacks.onFailed(getException().getMessage()); }
+
+    // Explicit wrappers help callers rely on stable API regardless of inherited-method resolution quirks.
+    public ReadOnlyDoubleProperty taskProgressProperty() {
+        return progressProperty();
+    }
+
+    public boolean taskIsRunning() {
+        return isRunning();
+    }
+
+    public boolean requestCancel() {
+        return cancel();
+    }
 
     public void shutdown() {
         if (executor != null && !executor.isShutdown()) executor.shutdownNow();

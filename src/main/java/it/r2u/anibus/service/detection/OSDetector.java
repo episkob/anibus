@@ -2,6 +2,7 @@ package it.r2u.anibus.service.detection;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -66,9 +67,13 @@ public class OSDetector {
                 pb = new ProcessBuilder("ping", "-c", "1", host);
             }
             
+            pb.redirectErrorStream(true);
             Process process = pb.start();
             String output = new String(process.getInputStream().readAllBytes());
-            process.waitFor();
+            if (!process.waitFor(3, TimeUnit.SECONDS)) {
+                process.destroyForcibly();
+                return null;
+            }
             
             // Parse TTL from ping output
             Pattern ttlPattern = Pattern.compile("(?:ttl|TTL)\\s*[=:]?\\s*(\\d+)", Pattern.CASE_INSENSITIVE);
@@ -79,7 +84,10 @@ public class OSDetector {
                 return analyzeOSFromTTL(ttl, "TTL Analysis");
             }
             
-        } catch (IOException | InterruptedException e) {
+        } catch (IOException e) {
+            // Silently fail
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             // Silently fail
         }
         
