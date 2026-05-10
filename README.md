@@ -1,6 +1,6 @@
 # Anibus — Advanced Network Security Scanner
 
-> **Version:** 2.0.0 · **Author:** Iaroslav Tsymbaliuk · **Position:** Intern (2025–2026) @ r2u
+> **Version:** 2.0.1 · **Author:** Iaroslav Tsymbaliuk · **Position:** Intern (2025–2026) @ r2u
 
 A full-featured desktop network security scanner built with **Java 21 (JPMS)**, **JavaFX 21.0.5**, and a custom **Bootstrap 5 Dark** CSS theme.
 Anibus goes far beyond a simple port scanner — it combines service fingerprinting, CVE matching, JavaScript source analysis, SQL injection testing, geolocation, SSL/TLS inspection and infrastructure detection into a single self-contained desktop application.
@@ -9,7 +9,7 @@ Anibus goes far beyond a simple port scanner — it combines service fingerprint
 
 ## Table of Contents
 
-- [What's New in 2.0.0](#whats-new-in-200)
+- [What's New in 2.0.1](#whats-new-in-201)
 - [Feature Overview](#feature-overview)
 - [Architecture](#architecture)
 - [Project Structure](#project-structure)
@@ -25,36 +25,15 @@ Anibus goes far beyond a simple port scanner — it combines service fingerprint
 
 ---
 
-## What's New in 2.0.0
+## What's New in 2.0.1
 
 | Area | Change |
 |------|--------|
-| **Proxy Module** | Full proxy harvesting pipeline: harvest → validate → geo-resolve → pool |
-| **Proxy Persistence** | Validated pool saved to `~/.anibus/proxy-pool.json`; reloaded on next start |
-| **Geo-Routing** | Auto-selects best proxy by target country on every scan; switches on host change |
-| **Manual Rotation** | ↻ button next to active proxy for one-click manual proxy switch |
-| **Proxy Headers** | Detects and logs `Via`, `X-Forwarded-For`, `X-Real-IP` and other proxy headers in scan output |
-| **Scan Header** | Console shows TARGET and ROUTING (proxy or DIRECT) before scan results |
-| **Stop Harvesting** | Clear button becomes ■ Stop during harvest; cancellation at each phase boundary |
-| **Progress Feedback** | Phase 2 emits "Checked N / M" every 500 proxies; progress bar live |
-| **Network Throttle** | Semaphore limits concurrent validation sockets to 200 (was unbounded) |
-| **Deprecated API** | `new Locale("ru")` → `Locale.of("ru")` |
-
----
-
-## What's New in 1.8.0
-
-| Area | Change |
-|------|--------|
-| Architecture | Service layer reorganised into 6 focused subpackages |
-| Model | `LeakInfo` moved to top-level `model/` as an immutable class |
-| DI | Constructor injection throughout — zero DI frameworks |
-| UI | Full sidebar + TabPane redesign |
-| Theme | Complete Bootstrap 5 Dark CSS rewrite |
-| Leak detection | Sensitive data exclusively in JS Analysis tab (not in scan banners) |
-| Tests | 49 JUnit 5 unit tests |
-| Language | English-only interface |
-| Export | JS Analysis now exports to CSV or XML (same flow as port scan) |
+| **Proxy Chain UI** | Added visible proxy chain panel in Proxy tab to show the active route |
+| **Chain Actions** | Added `Build Chain` button and controller action for chain initialization |
+| **Localization (i18n)** | Proxy Chain Builder dialog fully localized in EN/IT/RU bundles |
+| **Stability** | Fixed FXML/controller binding issues that caused startup failures |
+| **Versioning** | Patch release bump from `2.0.0` to `2.0.1` |
 
 ---
 
@@ -352,7 +331,7 @@ Port scanning is purely I/O-bound. Java 21 virtual threads (`Executors.newVirtua
 | Java | 21 (LTS) | Language, JPMS module system, virtual threads |
 | JavaFX | 21.0.5 | UI framework (FXML + CSS) |
 | Bootstrap 5 Dark (CSS) | Custom port | Visual design system |
-| Maven Shade Plugin | 3.5.0 | Fat JAR with bundled JavaFX natives |
+| Maven Shade Plugin | 3.5.1 | Fat JAR with bundled JavaFX natives |
 | JUnit 5 | 5.10.2 | Unit testing |
 | junit-jupiter-params | 5.10.2 | Parameterised tests |
 
@@ -383,28 +362,30 @@ cd anibus
 
 ```bash
 ./mvnw clean package -DskipTests
-java -jar target/anibus-2.0.0.jar
+java -jar anibus-2.0.1.jar
 ```
+
+Executable shaded JAR is generated in the project root as `anibus-2.0.1.jar`.
 
 **Windows:**
 
 ```cmd
 mvnw.cmd clean package -DskipTests
-java -jar target\anibus-2.0.0.jar
+java -jar anibus-2.0.1.jar
 ```
 
 **Linux — Wayland / XWayland:**
 
 ```bash
 xhost +local:
-DISPLAY=:0 java -jar target/anibus-1.8.0.jar
+DISPLAY=:0 java -jar anibus-2.0.1.jar
 ```
 
 **From a Flatpak VS Code terminal:**
 
 ```bash
 flatpak-spawn --host xhost +local:
-DISPLAY=:0 java -jar target/anibus-2.0.0.jar
+DISPLAY=:0 java -jar anibus-2.0.1.jar
 ```
 
 ---
@@ -452,12 +433,19 @@ Both tabs have an independent **Export** button that opens a format dialog:
 
 | Test class | Tests | Covers |
 |-----------|-------|--------|
-| `PortScannerServiceTest` | 9 | Port range parsing, thread safety, null inputs |
-| `LeakInfoTest` | 22 | Priority inference, placeholder detection, builder |
-| `WebSourceAnalyzerTest` | 8 | JS source parsing, endpoint extraction |
+| `LeakInfoTest` | 15 | Priority inference, placeholder detection, builder |
+| `PortScannerServiceTest` | 7 | Port range parsing, thread safety, null inputs |
+| `WebSourceAnalyzerTest` | 6 | JS source parsing, endpoint extraction |
 | `WebSourceAnalyzerLeakInfoTest` | 3 | LeakInfo integration |
 | `JavaScriptSecurityAnalyzerServiceInferenceTest` | 7 | DB engine and framework detection |
-| **Total** | **49** | |
+| `ProxyChainServiceTest` | 3 | Multi-hop HTTP CONNECT proxy chaining |
+| `UdpScannerServiceTest` | 2 | UDP scan probe/response behavior |
+| `SubdomainEnumerationServiceTest` | 2 | Passive/active subdomain discovery output |
+| `SourceMapAnalyzerTest` | 2 | Source map parsing and reconstruction flow |
+| `ParamMinerServiceTest` | 2 | Hidden parameter reflection discovery |
+| `ScanDiffServiceTest` | 2 | Diffing two XML scan exports |
+| `ScanSchedulerServiceTest` | 2 | Periodic scan execution and cancellation |
+| **Total** | **53** | |
 
 ---
 
@@ -511,32 +499,31 @@ users,POSTGRESQL,95%,"id|email|password_hash"
 
 ## Roadmap
 
-### v2.0.0 — Proxy Module
+### v2.0.1 — Patch Release
 
-- ✅ Proxy harvesting (Phase 1) from public sources
-- ✅ Triple-handshake validation with virtual threads (Phase 2)
-- ✅ Geo-resolution with ip-api.com (Phase 3)
-- ✅ `GeoRoutingStrategy` — same-country → neighbour → global fallback
-- ✅ `ProxyStore` — persist pool to `~/.anibus/proxy-pool.json`
-- ✅ "Load from file" button — restore pool without re-harvesting
-- ✅ Auto proxy rotation on host change
-- ✅ Manual ↻ rotate button
-- ✅ Network throttle (semaphore, 200 concurrent sockets)
-- ✅ Proxy headers detection in scan output
+- ✅ Added Proxy tab chain display card (`ACTIVE CHAIN`)
+- ✅ Added `Build Chain` UI button and handler wiring
+- ✅ Added localized Proxy Chain Builder dialog content (EN/IT/RU)
+- ✅ Fixed FXML structure/binding regressions affecting startup
+- ✅ Updated docs and artifact references to `2.0.1`
 
 ### Planned
 
-**Network Layer**
-- 🟡 **UDP Scanning** — probes DNS (53), SNMP (161/162), NTP (123), mDNS (5353), SSDP (1900), NetBIOS (137), TFTP (69), Syslog (514) with protocol-specific payloads and banner parsing
-- 🟡 **Subdomain Enumeration** — passive discovery via [crt.sh](https://crt.sh) Certificate Transparency logs + active DNS brute-force wordlist (70+ common prefixes), DNS-verified results
+**P1 — Core Growth Modules**
+- 🟡 **Visual Proxy Chain Manager** — drag/drop hops, live hop health, path preview, and profile presets
+- 🟡 **Web Crawler + Auth Flows** — authenticated crawling with cookie/session handling and protected route coverage
+- 🟡 **CVE Intelligence Sync** — scheduled NVD/CISA updates with risk prioritization (EPSS/KEV-aware)
 
-**Analysis Layer**
-- 🟡 **Source Map Analysis** — detects and fetches `.js.map` files, reconstructs original source paths and embedded source content, runs full leak analysis over de-minified code
-- 🟡 **Param Miner** — discovers hidden GET/POST parameters via canary injection; flags reflected params (XSS/SSRF risk), status changes and body length deltas
+**P2 — Security Coverage Modules**
+- 🟡 **API Security Testing** — OpenAPI/Swagger-driven checks for auth bypass, IDOR/BOLA heuristics, and mass assignment
+- 🟡 **Cloud Misconfiguration Scanner** — checks for exposed storage, metadata abuse paths, and weak cloud defaults
+- 🟡 **Attack Surface Discovery** — discovery of related domains/subdomains/IP assets and external exposure map
+- 🟡 **SQL-to-DB Extraction Pipeline** — after confirmed SQL injection or credential discovery, extract real DB metadata (tables, columns, types) and optional row previews; supports MySQL, PostgreSQL, MongoDB routed through the existing proxy chain infrastructure
 
-**Export & Reporting**
-- 🟡 **Diff Mode** — compare two XML scan exports side by side; highlights new open ports, closed ports and changed service/version info
-- 🟡 **Scan Scheduler** — repeat scans at a configurable interval (e.g. every 2 h) with callback on result change
+**P3 — Platform & Reporting Modules**
+- 🟡 **Headless/API Mode** — CLI and REST execution for CI/CD and scheduled scans without GUI
+- 🟡 **SIEM/DevSecOps Integrations** — issue trackers, chat notifications, and export pipelines to SIEM tools
+- 🟡 **Compliance Profiles** — packaged check sets for ASVS/CIS/PCI-style reporting
 
 ---
 
