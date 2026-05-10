@@ -1,5 +1,6 @@
 package it.r2u.anibus;
 
+import java.io.File;
 import it.r2u.anibus.coordinator.*;
 import it.r2u.anibus.handlers.*;
 import it.r2u.anibus.model.DataStructureInfo;
@@ -14,8 +15,14 @@ import it.r2u.anibus.network.HostResolver;
 import it.r2u.anibus.network.NetworkStatusMonitor;
 import it.r2u.anibus.service.detection.EnhancedServiceDetector;
 import it.r2u.anibus.service.analysis.JavaScriptSecurityAnalyzer;
+import it.r2u.anibus.service.analysis.ParamMinerService;
+import it.r2u.anibus.service.analysis.SourceMapAnalyzer;
 import it.r2u.anibus.service.core.PortScannerService;
+import it.r2u.anibus.service.core.ScanSchedulerService;
+import it.r2u.anibus.service.core.UdpScannerService;
 import it.r2u.anibus.service.analysis.SQLInjectionAnalyzer;
+import it.r2u.anibus.service.export.ScanDiffService;
+import it.r2u.anibus.service.network.SubdomainEnumerationService;
 import it.r2u.anibus.ui.AlertHelper;
 import it.r2u.anibus.ui.ConsoleViewManager;
 import it.r2u.anibus.ui.InfoCardManager;
@@ -29,6 +36,7 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.RadioMenuItem;
 import javafx.scene.control.ToggleGroup;
+import javafx.stage.FileChooser;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.Circle;
 
@@ -39,6 +47,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.time.Duration;
 
 /**
  * Refactored UI controller following SOLID principles.
@@ -115,6 +124,14 @@ public class AnibusController {
     @FXML private Tab    tabScanResults;
     @FXML private Tab    tabJsAnalysis;
     @FXML private Tab    tabProxy;
+    @FXML private Label  plannedFeaturesLabel;
+    @FXML private Button udpScanButton;
+    @FXML private Button subdomainButton;
+    @FXML private Button sourceMapButton;
+    @FXML private Button paramMinerButton;
+    @FXML private Button diffModeButton;
+    @FXML private Button schedulerStartButton;
+    @FXML private Button schedulerStopButton;
     @FXML private TextArea proxyLogArea;
     @FXML private Label    activeProxyLabel;
     @FXML private Circle   proxyStatusDot;
@@ -135,9 +152,14 @@ public class AnibusController {
     @FXML private Label  keySensitiveInfoLabel;
     @FXML private Label  keyArchitectureLabel;
     @FXML private Label  subtitleDataStructuresLabel;
+    @FXML private TextArea chainDisplayArea;
+    @FXML private VBox    chainDisplayCard;
+    @SuppressWarnings("unused")
+    @FXML private Button  buildChainButton;  // injected by FXMLLoader, used via onBuildChainClick()
 
     /* -- State ------------------------------------------------ */
     private final ObservableList<PortScanResult> results = FXCollections.observableArrayList();
+    private final List<ProxyNode> currentProxyChain = new java.util.ArrayList<>();
     private Task<Void> jsAnalysisTask;
     private JavaScriptAnalysisResult lastJsAnalysisResult;
     private boolean scanningInProgress = false;
@@ -156,6 +178,12 @@ public class AnibusController {
     private InfoCardManager        infoCardManager;
     private JavaScriptSecurityAnalyzer jsAnalyzer;
     private SQLInjectionAnalyzer injectionAnalyzer;
+    private SourceMapAnalyzer sourceMapAnalyzer;
+    private ParamMinerService paramMinerService;
+    private SubdomainEnumerationService subdomainEnumerationService;
+    private UdpScannerService udpScannerService;
+    private ScanDiffService scanDiffService;
+    private ScanSchedulerService scanSchedulerService;
     
     /* -- Coordinators and Handlers (SOLID refactoring) -------- */
     private ScanCoordinator        scanCoordinator;
@@ -184,6 +212,12 @@ public class AnibusController {
         hostResolver = new HostResolver();
         jsAnalyzer = new JavaScriptSecurityAnalyzer();
         injectionAnalyzer = new SQLInjectionAnalyzer();
+        sourceMapAnalyzer = new SourceMapAnalyzer();
+        paramMinerService = new ParamMinerService();
+        subdomainEnumerationService = new SubdomainEnumerationService();
+        udpScannerService = new UdpScannerService();
+        scanDiffService = new ScanDiffService();
+        scanSchedulerService = new ScanSchedulerService();
         
         // Create and configure UI managers
         Tooltip networkTooltip = new Tooltip("Checking network");
@@ -275,7 +309,7 @@ public class AnibusController {
         it.r2u.anibus.service.network.proxy.ProxyStore ps =
                 new it.r2u.anibus.service.network.proxy.ProxyStore();
         if (ps.exists()) {
-            loadProxyButton.setText("⬆  Load from file ✓");
+            loadProxyButton.setText(LanguageManager.getInstance().get("btn.loadFromFile") + " ✓");
             loadProxyButton.setTooltip(new Tooltip(
                     "Cached pool found: " + ps.getStorePath()));
         }
@@ -332,9 +366,339 @@ public class AnibusController {
         MenuItem runTraceroute = new MenuItem("Run Traceroute...");
         runTraceroute.setOnAction(e -> tracerouteHandler.runTraceroute(
             hostTextField.getText(), consoleTextArea));
+
+        MenuItem runUdpScan = new MenuItem("Run UDP Scan (common ports)");
+        runUdpScan.setOnAction(e -> runUdpScan());
+
+        MenuItem runSubdomainEnum = new MenuItem("Enumerate Subdomains");
+        runSubdomainEnum.setOnAction(e -> runSubdomainEnumeration());
+
+        MenuItem runSourceMap = new MenuItem("Analyze Source Maps");
+        runSourceMap.setOnAction(e -> runSourceMapAnalysis());
+
+        MenuItem runParamMiner = new MenuItem("Run Param Miner");
+        runParamMiner.setOnAction(e -> runParamMiner());
+
+        MenuItem runDiffMode = new MenuItem("Diff Current Results with XML...");
+        runDiffMode.setOnAction(e -> runDiffMode());
+
+        MenuItem startScheduler = new MenuItem("Start Scheduled Scan (30m)");
+        startScheduler.setOnAction(e -> startScheduledScan());
+
+        MenuItem stopScheduler = new MenuItem("Stop Scheduled Scan");
+        stopScheduler.setOnAction(e -> stopScheduledScan());
         
         consoleTextArea.setContextMenu(new ContextMenu(
-            copyAll, copyResults, new SeparatorMenuItem(), runTraceroute));
+            copyAll, copyResults,
+            new SeparatorMenuItem(),
+            runTraceroute, runUdpScan, runSubdomainEnum,
+            runSourceMap, runParamMiner,
+            new SeparatorMenuItem(),
+            runDiffMode,
+            new SeparatorMenuItem(),
+            startScheduler, stopScheduler));
+    }
+
+    private void runUdpScan() {
+        String host = extractHostOrDomain(hostTextField.getText());
+        if (host.isBlank()) {
+            setStatus("Enter a host or URL before UDP scan");
+            return;
+        }
+
+        Task<List<PortScanResult>> task = new Task<>() {
+            @Override
+            protected List<PortScanResult> call() {
+                return udpScannerService.scan(host, null, progress -> updateProgress(progress, 1.0));
+            }
+        };
+
+        progressBar.progressProperty().unbind();
+        progressBar.progressProperty().bind(task.progressProperty());
+        progressBar.setVisible(true);
+        setStatus("Running UDP scan on " + host + "...");
+
+        task.setOnSucceeded(ev -> {
+            progressBar.progressProperty().unbind();
+            progressBar.setVisible(false);
+            List<PortScanResult> udpResults = task.getValue();
+            if (udpResults == null || udpResults.isEmpty()) {
+                setStatus("UDP scan completed: no responsive UDP ports detected");
+                return;
+            }
+            results.addAll(udpResults);
+            consoleViewManager.appendRawText("\n=== UDP SCAN RESULTS ===\n");
+            udpResults.forEach(consoleViewManager::appendToConsole);
+            setStatus("UDP scan completed: " + udpResults.size() + " result(s)");
+        });
+
+        task.setOnFailed(ev -> {
+            progressBar.progressProperty().unbind();
+            progressBar.setVisible(false);
+            Throwable ex = task.getException();
+            setStatus("UDP scan failed: " + (ex != null ? ex.getMessage() : "unknown error"));
+        });
+
+        Thread worker = new Thread(task);
+        worker.setDaemon(true);
+        worker.start();
+    }
+
+    private void runSubdomainEnumeration() {
+        String host = extractHostOrDomain(hostTextField.getText());
+        String domain = normalizeRootDomain(host);
+        if (domain == null || domain.isBlank()) {
+            setStatus("Enter a valid domain for subdomain enumeration");
+            return;
+        }
+
+        Task<List<SubdomainEnumerationService.SubdomainResult>> task = new Task<>() {
+            @Override
+            protected List<SubdomainEnumerationService.SubdomainResult> call() {
+                return subdomainEnumerationService.enumerate(domain, true, p -> updateProgress(p, 1.0));
+            }
+        };
+
+        progressBar.progressProperty().unbind();
+        progressBar.progressProperty().bind(task.progressProperty());
+        progressBar.setVisible(true);
+        setStatus("Enumerating subdomains for " + domain + "...");
+
+        task.setOnSucceeded(ev -> {
+            progressBar.progressProperty().unbind();
+            progressBar.setVisible(false);
+            List<SubdomainEnumerationService.SubdomainResult> found = task.getValue();
+            consoleViewManager.appendRawText("\n" + SubdomainEnumerationService.formatReport(found, domain) + "\n");
+            setStatus("Subdomain enumeration completed: " + found.size() + " live subdomain(s)");
+        });
+
+        task.setOnFailed(ev -> {
+            progressBar.progressProperty().unbind();
+            progressBar.setVisible(false);
+            Throwable ex = task.getException();
+            setStatus("Subdomain enumeration failed: " + (ex != null ? ex.getMessage() : "unknown error"));
+        });
+
+        Thread worker = new Thread(task);
+        worker.setDaemon(true);
+        worker.start();
+    }
+
+    private void runSourceMapAnalysis() {
+        if (lastJsAnalysisResult == null || lastJsAnalysisResult.getJsFiles() == null) {
+            setStatus("Run JavaScript analysis first to discover JS files");
+            return;
+        }
+
+        List<String> jsUrls = lastJsAnalysisResult.getJsFiles().stream()
+            .filter(u -> u != null && u.startsWith("http") && u.contains(".js"))
+            .distinct()
+            .limit(10)
+            .toList();
+
+        if (jsUrls.isEmpty()) {
+            setStatus("No HTTP(S) JS files available for source map analysis");
+            return;
+        }
+
+        Task<String> task = new Task<>() {
+            @Override
+            protected String call() {
+                StringBuilder sb = new StringBuilder();
+                int total = jsUrls.size();
+                int idx = 0;
+                for (String jsUrl : jsUrls) {
+                    SourceMapAnalyzer.SourceMapResult sm = sourceMapAnalyzer.analyzeFromJsUrl(jsUrl);
+                    sb.append("\n--- ").append(jsUrl).append(" ---\n");
+                    sb.append(SourceMapAnalyzer.formatReport(sm)).append("\n");
+                    if (sm.ok()) {
+                        List<LeakInfo> leaks = SourceMapAnalyzer.extractLeaks(sm);
+                        if (!leaks.isEmpty()) {
+                            sb.append("Leaks from source map content: ").append(leaks.size()).append("\n");
+                        }
+                    }
+                    idx++;
+                    updateProgress(idx, total);
+                }
+                return sb.toString();
+            }
+        };
+
+        progressBar.progressProperty().unbind();
+        progressBar.progressProperty().bind(task.progressProperty());
+        progressBar.setVisible(true);
+        setStatus("Analyzing source maps...");
+
+        task.setOnSucceeded(ev -> {
+            progressBar.progressProperty().unbind();
+            progressBar.setVisible(false);
+            consoleViewManager.appendRawText("\n=== SOURCE MAP ANALYSIS ===\n" + task.getValue() + "\n");
+            setStatus("Source map analysis completed");
+        });
+
+        task.setOnFailed(ev -> {
+            progressBar.progressProperty().unbind();
+            progressBar.setVisible(false);
+            Throwable ex = task.getException();
+            setStatus("Source map analysis failed: " + (ex != null ? ex.getMessage() : "unknown error"));
+        });
+
+        Thread worker = new Thread(task);
+        worker.setDaemon(true);
+        worker.start();
+    }
+
+    private void runParamMiner() {
+        String target = ensureHttpUrl(hostTextField.getText());
+        if (target.isBlank()) {
+            setStatus("Enter a target URL for param miner");
+            return;
+        }
+
+        Task<List<ParamMinerService.ParamFinding>> task = new Task<>() {
+            @Override
+            protected List<ParamMinerService.ParamFinding> call() {
+                return paramMinerService.mine(target, true, p -> updateProgress(p, 1.0));
+            }
+        };
+
+        progressBar.progressProperty().unbind();
+        progressBar.progressProperty().bind(task.progressProperty());
+        progressBar.setVisible(true);
+        setStatus("Running param miner on " + target + "...");
+
+        task.setOnSucceeded(ev -> {
+            progressBar.progressProperty().unbind();
+            progressBar.setVisible(false);
+            List<ParamMinerService.ParamFinding> findings = task.getValue();
+            consoleViewManager.appendRawText("\n" + ParamMinerService.formatReport(findings, target) + "\n");
+            setStatus("Param miner completed: " + findings.size() + " interesting parameter(s)");
+        });
+
+        task.setOnFailed(ev -> {
+            progressBar.progressProperty().unbind();
+            progressBar.setVisible(false);
+            Throwable ex = task.getException();
+            setStatus("Param miner failed: " + (ex != null ? ex.getMessage() : "unknown error"));
+        });
+
+        Thread worker = new Thread(task);
+        worker.setDaemon(true);
+        worker.start();
+    }
+
+    private void runDiffMode() {
+        if (results.isEmpty()) {
+            setStatus("No current scan results to compare");
+            return;
+        }
+
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("Select previous XML export");
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("XML Files", "*.xml"));
+        File oldFile = chooser.showOpenDialog(consoleTextArea.getScene().getWindow());
+        if (oldFile == null) return;
+
+        Task<ScanDiffService.DiffResult> task = new Task<>() {
+            @Override
+            protected ScanDiffService.DiffResult call() throws Exception {
+                return scanDiffService.diffWithCurrent(oldFile, List.copyOf(results));
+            }
+        };
+
+        setStatus("Computing diff against " + oldFile.getName() + "...");
+        task.setOnSucceeded(ev -> {
+            ScanDiffService.DiffResult diff = task.getValue();
+            consoleViewManager.appendRawText("\n" + ScanDiffService.formatReport(diff) + "\n");
+            setStatus("Diff mode completed");
+        });
+        task.setOnFailed(ev -> {
+            Throwable ex = task.getException();
+            setStatus("Diff mode failed: " + (ex != null ? ex.getMessage() : "unknown error"));
+        });
+
+        Thread worker = new Thread(task);
+        worker.setDaemon(true);
+        worker.start();
+    }
+
+    private void startScheduledScan() {
+        if (scanSchedulerService.isRunning()) {
+            setStatus(scanSchedulerService.statusString());
+            return;
+        }
+
+        String host = extractHostOrDomain(hostTextField.getText());
+        int[] ports = scanner.parsePortsRange(portsTextField.getText());
+        if (host.isBlank() || ports == null) {
+            setStatus("Provide host and valid port range before scheduling");
+            return;
+        }
+
+        int start = ports[0];
+        int end = ports[1];
+
+        scanSchedulerService.schedule(Duration.ofMinutes(30),
+            () -> runScheduledTcpSnapshot(host, start, end),
+            snapshot -> Platform.runLater(() -> {
+                results.setAll(snapshot.results());
+                consoleViewManager.clear();
+                consoleViewManager.appendRawText("=== SCHEDULED SCAN ===\n");
+                snapshot.results().forEach(consoleViewManager::appendToConsole);
+                setStatus("Scheduled scan finished at " + snapshot.formattedTimestamp() +
+                        " (" + snapshot.results().size() + " open port(s))");
+            }),
+            error -> Platform.runLater(() -> setStatus("Scheduled scan failed: " + error))
+        );
+
+        setStatus("Scheduled scan started (every 30 minutes)");
+    }
+
+    private void stopScheduledScan() {
+        scanSchedulerService.cancel();
+        setStatus("Scheduled scan stopped");
+    }
+
+    private List<PortScanResult> runScheduledTcpSnapshot(String host, int startPort, int endPort) {
+        List<PortScanResult> snapshot = new java.util.ArrayList<>();
+        for (int port = startPort; port <= endPort; port++) {
+            long latency = scanner.measurePortLatency(host, port);
+            if (latency < 0) continue;
+            String banner = scanner.getBanner(host, port);
+            String service = scanner.getServiceName(port);
+            String protocol = scanner.getProtocol(port, banner);
+            String version = scanner.extractVersion(banner);
+            snapshot.add(new PortScanResult(port, service, banner, protocol, latency, version, "Open", "Scheduled"));
+        }
+        return snapshot;
+    }
+
+    private String extractHostOrDomain(String input) {
+        if (input == null) return "";
+        String trimmed = input.trim();
+        if (trimmed.isBlank()) return "";
+        try {
+            String candidate = trimmed;
+            if (!candidate.startsWith("http://") && !candidate.startsWith("https://")) {
+                candidate = "https://" + candidate;
+            }
+            URI uri = new URI(candidate);
+            if (uri.getHost() != null) {
+                return uri.getHost().trim();
+            }
+        } catch (URISyntaxException ignored) {
+            // Fallback to host sanitizer for raw hostnames/IPs.
+        }
+        return hostResolver.sanitizeHost(trimmed);
+    }
+
+    private String ensureHttpUrl(String input) {
+        String host = extractHostOrDomain(input);
+        if (host.isBlank()) return "";
+        if (input != null && (input.startsWith("http://") || input.startsWith("https://"))) {
+            return input.trim();
+        }
+        return "https://" + host;
     }
     
     private void setupResolvedHostContextMenu() {
@@ -422,6 +786,41 @@ public class AnibusController {
     }
 
     @FXML
+    protected void onUdpScanClick() {
+        runUdpScan();
+    }
+
+    @FXML
+    protected void onSubdomainEnumClick() {
+        runSubdomainEnumeration();
+    }
+
+    @FXML
+    protected void onSourceMapClick() {
+        runSourceMapAnalysis();
+    }
+
+    @FXML
+    protected void onParamMinerClick() {
+        runParamMiner();
+    }
+
+    @FXML
+    protected void onDiffModeClick() {
+        runDiffMode();
+    }
+
+    @FXML
+    protected void onSchedulerStartClick() {
+        startScheduledScan();
+    }
+
+    @FXML
+    protected void onSchedulerStopClick() {
+        stopScheduledScan();
+    }
+
+    @FXML
     protected void onClearClick() {
         if (isJsAnalysisMode) {
             // If in JS mode, clear JS results
@@ -458,8 +857,9 @@ public class AnibusController {
 
     @FXML
     protected void onStartProxyClick() {
+        LanguageManager lm = LanguageManager.getInstance();
         startProxyButton.setDisable(true);
-        clearProxyButton.setText("■  Stop");
+        clearProxyButton.setText(lm.get("btn.stopHarvesting"));
         proxyHarvesting = true;
         proxyLogArea.clear();
         appendProxyLog("═══════════════════════════════════════\n");
@@ -483,12 +883,12 @@ public class AnibusController {
         proxyRoutingService.initializeAsync().thenRun(() -> Platform.runLater(() -> {
             proxyHarvesting = false;
             startProxyButton.setDisable(false);
-            clearProxyButton.setText("Clear");
+            clearProxyButton.setText(lm.get("btn.clear"));
             proxyProgressBar.setVisible(false);
             if (proxyRoutingService.isReady()) {
                 appendProxyLog("\n✓ Pool ready — " + proxyRoutingService.poolSize() + " live proxies\n");
                 if (proxyRoutingService.hasSavedPool()) {
-                    loadProxyButton.setText("⬆  Load from file ✓");
+                    loadProxyButton.setText(LanguageManager.getInstance().get("btn.loadFromFile") + " ✓");
                     loadProxyButton.setTooltip(new Tooltip(
                             "Cached pool: " + proxyRoutingService.savedPoolPath()));
                 }
@@ -566,12 +966,13 @@ public class AnibusController {
 
     @FXML
     protected void onClearProxyLogClick() {
+        LanguageManager lm = LanguageManager.getInstance();
         if (proxyHarvesting && proxyRoutingService != null) {
             // Stop the running harvester
             proxyRoutingService.cancel();
             proxyHarvesting = false;
             startProxyButton.setDisable(false);
-            clearProxyButton.setText("Clear");
+            clearProxyButton.setText(lm.get("btn.clear"));
             appendProxyLog("\n■ Harvesting stopped by user.\n");
             return;
         }
@@ -648,6 +1049,60 @@ public class AnibusController {
         proxyLogArea.setScrollTop(Double.MAX_VALUE);
     }
 
+    /**
+     * Handle "Build Chain" button click to create/edit proxy chain.
+     */
+    @FXML
+    protected void onBuildChainClick() {
+        LanguageManager lm = LanguageManager.getInstance();
+        
+        if (proxyRoutingService == null || !proxyRoutingService.isReady()) {
+            Alert alert = new Alert(Alert.AlertType.WARNING);
+            alert.setTitle(lm.get("dialog.chainBuilder.emptyTitle"));
+            alert.setHeaderText(lm.get("dialog.chainBuilder.emptyHeader"));
+            alert.setContentText(lm.get("dialog.chainBuilder.emptyContent"));
+            alert.showAndWait();
+            return;
+        }
+
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(lm.get("dialog.chainBuilder.title"));
+        alert.setHeaderText(lm.get("dialog.chainBuilder.header"));
+        String content = lm.get("dialog.chainBuilder.content");
+        alert.setContentText(String.format(content, proxyRoutingService.poolSize()));
+        alert.showAndWait();
+        
+        if (currentActiveProxy != null) {
+            currentProxyChain.clear();
+            currentProxyChain.add(currentActiveProxy);
+            displayProxyChain();
+            String chainMsg = String.format(
+                lm.get("dialog.chain.initialized"),
+                currentActiveProxy.host(),
+                currentActiveProxy.port()
+            );
+            appendProxyLog("\n" + chainMsg + "\n");
+        }
+    }
+
+    /**
+     * Display current proxy chain in the UI chain display area.
+     */
+    private void displayProxyChain() {
+        if (currentProxyChain.isEmpty()) {
+            chainDisplayCard.setVisible(false);
+            chainDisplayCard.setManaged(false);
+            return;
+        }
+
+        chainDisplayCard.setVisible(true);
+        chainDisplayCard.setManaged(true);
+        
+        // Use ProxyChainService.formatChain() for consistent formatting
+        String chainDisplay = it.r2u.anibus.service.network.proxy.ProxyChainService.formatChain(currentProxyChain);
+        chainDisplayArea.setText(chainDisplay);
+    }
+
     /* -- Language switching ----------------------------------- */
 
     /**
@@ -700,6 +1155,18 @@ public class AnibusController {
         tabJsAnalysis.setText(lm.get("tab.jsAnalysis"));
         tabProxy.setText(lm.get("tab.proxy"));
         startProxyButton.setText(lm.get("btn.startHarvesting"));
+        clearProxyButton.setText(lm.get("btn.clear"));
+        loadProxyButton.setText(lm.get("btn.loadFromFile"));
+        rotateProxyButton.setText(lm.get("btn.rotateProxy"));
+
+        plannedFeaturesLabel.setText(lm.get("section.plannedFeatures"));
+        udpScanButton.setText(lm.get("btn.udpScan"));
+        subdomainButton.setText(lm.get("btn.subdomains"));
+        sourceMapButton.setText(lm.get("btn.sourceMaps"));
+        paramMinerButton.setText(lm.get("btn.paramMiner"));
+        diffModeButton.setText(lm.get("btn.diffMode"));
+        schedulerStartButton.setText(lm.get("btn.schedulerOn"));
+        schedulerStopButton.setText(lm.get("btn.schedulerOff"));
 
         // JS Analysis pane
         placeholderTitleLabel.setText(lm.get("placeholder.noData"));

@@ -246,6 +246,35 @@
                                                                 disable="true" />
                                                     </children>
                                                 </HBox>
+
+                                                <!-- Planned roadmap features: now accessible with visible controls -->
+                                                <HBox spacing="8" alignment="CENTER_LEFT">
+                                                    <children>
+                                                        <Label fx:id="plannedFeaturesLabel" text="Planned Features:" styleClass="subtitle-label" />
+                                                        <Button fx:id="udpScanButton" text="UDP Scan"
+                                                            onAction="#onUdpScanClick"
+                                                            styleClass="secondary-button" />
+                                                        <Button fx:id="subdomainButton" text="Subdomains"
+                                                            onAction="#onSubdomainEnumClick"
+                                                            styleClass="secondary-button" />
+                                                        <Button fx:id="sourceMapButton" text="Source Maps"
+                                                            onAction="#onSourceMapClick"
+                                                            styleClass="secondary-button" />
+                                                        <Button fx:id="paramMinerButton" text="Param Miner"
+                                                            onAction="#onParamMinerClick"
+                                                            styleClass="secondary-button" />
+                                                        <Button fx:id="diffModeButton" text="Diff Mode"
+                                                            onAction="#onDiffModeClick"
+                                                            styleClass="secondary-button" />
+                                                        <Button fx:id="schedulerStartButton" text="Scheduler ON"
+                                                            onAction="#onSchedulerStartClick"
+                                                            styleClass="secondary-button" />
+                                                        <Button fx:id="schedulerStopButton" text="Scheduler OFF"
+                                                            onAction="#onSchedulerStopClick"
+                                                            styleClass="secondary-button" />
+                                                    </children>
+                                                </HBox>
+
                                                 <TextArea fx:id="consoleTextArea"
                                                           editable="false"
                                                           wrapText="true"
@@ -372,6 +401,10 @@
                                                                 text="⬆  Load from file"
                                                                 onAction="#onLoadProxyClick"
                                                                 styleClass="secondary-button" />
+                                                        <Button fx:id="buildChainButton"
+                                                                text="⛓  Build Chain"
+                                                                onAction="#onBuildChainClick"
+                                                                styleClass="secondary-button" />
                                                         <Button fx:id="startProxyButton"
                                                                 text="▶  Start Harvesting"
                                                                 onAction="#onStartProxyClick"
@@ -382,6 +415,19 @@
                                                                 styleClass="secondary-button" />
                                                     </children>
                                                 </HBox>
+
+                                                <!-- ── Proxy Chain Display ── -->
+                                                <VBox spacing="4" styleClass="card" fx:id="chainDisplayCard"
+                                                      visible="false" managed="false">
+                                                    <children>
+                                                        <Label text="ACTIVE CHAIN" styleClass="subtitle-label" />
+                                                        <TextArea fx:id="chainDisplayArea"
+                                                                  prefRowCount="3"
+                                                                  editable="false"
+                                                                  wrapText="true"
+                                                                  styleClass="chain-display" />
+                                                    </children>
+                                                </VBox>
 
                                                 <!-- ── Metrics bar ── -->
                                                 <HBox styleClass="proxy-stats-bar" spacing="0">

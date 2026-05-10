@@ -1,13 +1,14 @@
 package it.r2u.anibus.service.network.proxy;
 
-import it.r2u.anibus.model.ScanContext;
-
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.net.Socket;
 import java.net.URI;
+import java.util.List;
+
+import it.r2u.anibus.model.ScanContext;
 
 /**
  * Central factory for all proxied network resources.
@@ -25,6 +26,8 @@ import java.net.URI;
 public class ProxyConnectionFactory {
 
     private static final int CONNECT_TIMEOUT_MS = 5_000;
+
+    private final ProxyChainService chainService = new ProxyChainService();
 
     /**
      * Create a connected {@link Socket} to {@code targetHost:targetPort},
@@ -81,5 +84,38 @@ public class ProxyConnectionFactory {
         conn.setReadTimeout(CONNECT_TIMEOUT_MS);
         conn.setRequestProperty("User-Agent", "Anibus-Scanner/1.8");
         return conn;
+    }
+
+    /**
+     * Create a connected {@link Socket} through a proxy chain.
+     * The chain is traversed in order: Proxy1 -> Proxy2 -> ... -> Target.
+     *
+     * @param proxyChain list of proxy nodes to tunnel through (in order)
+     * @param targetHost the final target hostname
+     * @param targetPort the final target port
+     * @return a connected Socket to the target through the entire proxy chain
+     * @throws IOException if any link in the chain fails
+     */
+    public Socket createSocketThroughChain(List<ProxyNode> proxyChain, String targetHost, int targetPort)
+            throws IOException {
+        if (proxyChain == null || proxyChain.isEmpty()) {
+            throw new IllegalArgumentException("Proxy chain cannot be empty");
+        }
+        return chainService.connectThroughChain(proxyChain, targetHost, targetPort);
+    }
+
+    /**
+     * Create a socket to a specific port through a proxy chain for HTTP analysis.
+     * Useful for banner grabbing, certificate extraction, and other port-specific tasks.
+     *
+     * @param proxyChain list of proxies to chain
+     * @param targetHost target hostname
+     * @param targetPort target port
+     * @return connected socket through the chain
+     * @throws IOException if connection fails
+     */
+    public Socket createSocketThroughChainForPort(List<ProxyNode> proxyChain, String targetHost, int targetPort)
+            throws IOException {
+        return createSocketThroughChain(proxyChain, targetHost, targetPort);
     }
 }

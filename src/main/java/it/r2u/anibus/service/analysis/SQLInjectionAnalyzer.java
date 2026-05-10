@@ -8,7 +8,6 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -25,9 +24,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 
 import it.r2u.anibus.model.EndpointInfo;
 
@@ -788,23 +784,15 @@ public class SQLInjectionAnalyzer {
     }
 
     /**
-     * Send HTTP request with SSL bypass for testing.
+     * Send HTTP request using default JVM TLS/hostname verification.
      */
     private HttpResponse sendRequest(String url, String method, String body) {
         if (method == null) method = "GET";
         try {
             HttpURLConnection conn = (HttpURLConnection) URI.create(url).toURL().openConnection();
             if (conn == null) return null;
-
-            if (conn instanceof HttpsURLConnection httpsConn) {
-                SSLContext sc = SSLContext.getInstance("TLS");
-                sc.init(null, new TrustManager[]{new X509TrustManager() {
-                    @Override public X509Certificate[] getAcceptedIssuers() { return null; }
-                    @Override public void checkClientTrusted(X509Certificate[] c, String a) {}
-                    @Override public void checkServerTrusted(X509Certificate[] c, String a) {}
-                }}, new java.security.SecureRandom());
-                httpsConn.setSSLSocketFactory(sc.getSocketFactory());
-                httpsConn.setHostnameVerifier((h, s) -> true);
+            if (conn instanceof HttpsURLConnection) {
+                // Keep default HTTPS behavior.
             }
 
             conn.setRequestMethod("GET".equalsIgnoreCase(method) || "DELETE".equalsIgnoreCase(method) ? method.toUpperCase() : "POST");
@@ -839,7 +827,7 @@ public class SQLInjectionAnalyzer {
             conn.disconnect();
             return new HttpResponse(statusCode, responseBody.toString());
 
-        } catch (IOException | java.security.GeneralSecurityException e) {
+        } catch (IOException e) {
             return null;
         }
     }

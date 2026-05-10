@@ -236,19 +236,9 @@ public class IoTDetector {
             conn.setRequestProperty("User-Agent", "Mozilla/5.0");
             conn.setInstanceFollowRedirects(true);
             
-            // For HTTPS, trust all certificates
-            if (conn instanceof javax.net.ssl.HttpsURLConnection httpsConn) {
-                javax.net.ssl.TrustManager[] trustAll = new javax.net.ssl.TrustManager[]{
-                    new javax.net.ssl.X509TrustManager() {
-                        @Override public java.security.cert.X509Certificate[] getAcceptedIssuers() { return null; }
-                        @Override public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType) {}
-                        @Override public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType) {}
-                    }
-                };
-                javax.net.ssl.SSLContext sc = javax.net.ssl.SSLContext.getInstance("TLS");
-                sc.init(null, trustAll, new java.security.SecureRandom());
-                httpsConn.setSSLSocketFactory(sc.getSocketFactory());
-                httpsConn.setHostnameVerifier((hostname, session) -> true);
+            // For HTTPS, keep default JVM certificate and hostname verification.
+            if (conn instanceof javax.net.ssl.HttpsURLConnection) {
+                // Default verification is intentionally preserved.
             }
             
             int responseCode = conn.getResponseCode();
@@ -405,7 +395,7 @@ public class IoTDetector {
             
             conn.disconnect();
             
-        } catch (java.io.IOException | java.security.GeneralSecurityException | java.net.URISyntaxException e) {
+        } catch (java.io.IOException | java.net.URISyntaxException e) {
             // Silently fail
         }
         

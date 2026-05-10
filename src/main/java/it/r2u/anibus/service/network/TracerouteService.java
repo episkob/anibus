@@ -1,10 +1,12 @@
 package it.r2u.anibus.service.network;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -16,9 +18,10 @@ public class TracerouteService {
     
     private static final int MAX_HOPS = 30;
     private static final int TIMEOUT_MS = 5000;
+    private static final int PROCESS_TIMEOUT_MS = 120000;
     
     public static class Hop {
-        private int hopNumber;
+        private final int hopNumber;
         private String ipAddress;
         private String hostname;
         private long rtt1; // Round-trip time 1 (ms)
@@ -91,9 +94,9 @@ public class TracerouteService {
     }
     
     public static class TraceRoute {
-        private String targetHost;
+        private final String targetHost;
         private String targetIP;
-        private List<Hop> hops;
+        private final List<Hop> hops;
         private int totalHops;
         private boolean reachedTarget;
         
@@ -159,37 +162,42 @@ public class TracerouteService {
                 pb = new ProcessBuilder("traceroute", "-m", String.valueOf(MAX_HOPS), "-w", "3", host);
             }
             
+            pb.redirectErrorStream(true);
             Process process = pb.start();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            
             String line;
             int hopCount = 0;
             boolean isWindows = os.contains("win");
-            
-            while ((line = reader.readLine()) != null) {
-                Hop hop = parseTracerouteLine(line, isWindows);
-                
-                if (hop != null) {
-                    result.getHops().add(hop);
-                    hopCount++;
-                    
-                    // Check if we reached the target
-                    if (hop.getIpAddress() != null && hop.getIpAddress().equals(result.getTargetIP())) {
-                        result.setReachedTarget(true);
-                        result.setTotalHops(hopCount);
-                        break;
+
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                while ((line = reader.readLine()) != null) {
+                    Hop hop = parseTracerouteLine(line, isWindows);
+
+                    if (hop != null) {
+                        result.getHops().add(hop);
+                        hopCount++;
+
+                        // Check if we reached the target
+                        if (hop.getIpAddress() != null && hop.getIpAddress().equals(result.getTargetIP())) {
+                            result.setReachedTarget(true);
+                            result.setTotalHops(hopCount);
+                            break;
+                        }
                     }
                 }
             }
-            
-            reader.close();
-            process.waitFor();
+
+            if (!process.waitFor(PROCESS_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
+                process.destroyForcibly();
+            }
             
             if (!result.isReachedTarget()) {
                 result.setTotalHops(hopCount);
             }
             
-        } catch (Exception e) {
+        } catch (IOException | RuntimeException e) {
+            // Return partial results or empty
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             // Return partial results or empty
         }
         
@@ -313,7 +321,7 @@ public class TracerouteService {
             if (address.isReachable(TIMEOUT_MS)) {
                 return System.currentTimeMillis() - start;
             }
-        } catch (Exception e) {
+        } catch (IOException | SecurityException e) {
             // Silently fail
         }
         

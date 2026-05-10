@@ -3,10 +3,10 @@ package it.r2u.anibus.coordinator;
 import java.util.List;
 
 import it.r2u.anibus.model.PortScanResult;
-import it.r2u.anibus.service.network.CloudMetadataProbe;
-import it.r2u.anibus.service.detection.EnhancedServiceDetector;
-import it.r2u.anibus.service.network.ReverseDnsExpander;
 import it.r2u.anibus.service.core.ServiceDetectionTask;
+import it.r2u.anibus.service.detection.EnhancedServiceDetector;
+import it.r2u.anibus.service.network.CloudMetadataProbe;
+import it.r2u.anibus.service.network.ReverseDnsExpander;
 import javafx.application.Platform;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
@@ -85,20 +85,21 @@ public class ServiceDetectionStrategy implements ScanStrategy {
             }
         );
         
-        progress.bind(activeTask.progressProperty());
-        new Thread(activeTask).start();
+        progress.bind(activeTask.taskProgressProperty());
+        Thread worker = new Thread(activeTask::run);
+        worker.start();
     }
     
     @Override
     public void cancel() {
-        if (activeTask != null && activeTask.isRunning()) {
-            activeTask.cancel();
+        if (activeTask != null && activeTask.taskIsRunning()) {
+            activeTask.requestCancel();
         }
     }
     
     @Override
     public boolean isRunning() {
-        return activeTask != null && activeTask.isRunning();
+        return activeTask != null && activeTask.taskIsRunning();
     }
     
     @Override

@@ -4,7 +4,6 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URI;
-import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -21,9 +20,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 
 import it.r2u.anibus.model.ArchitectureInfo;
 import it.r2u.anibus.model.DataStructureInfo;
@@ -307,20 +303,12 @@ public class JavaScriptSecurityAnalyzer {
     }
 
     /**
-     * Opens an HTTP(S) connection with SSL trust-all for scanning purposes.
+     * Opens an HTTP(S) connection using default JVM TLS/hostname verification.
      */
     private HttpURLConnection openConnection(String url) throws Exception {
         HttpURLConnection conn = (HttpURLConnection) new URI(url).toURL().openConnection();
-        if (conn instanceof HttpsURLConnection httpsConn) {
-            TrustManager[] trustAll = {new X509TrustManager() {
-                @Override public X509Certificate[] getAcceptedIssuers() { return null; }
-                @Override public void checkClientTrusted(X509Certificate[] c, String t) {}
-                @Override public void checkServerTrusted(X509Certificate[] c, String t) {}
-            }};
-            SSLContext sc = SSLContext.getInstance("TLS");
-            sc.init(null, trustAll, new java.security.SecureRandom());
-            httpsConn.setSSLSocketFactory(sc.getSocketFactory());
-            httpsConn.setHostnameVerifier((h, s) -> true);
+        if (conn instanceof HttpsURLConnection) {
+            // Keep default HTTPS behavior.
         }
         return conn;
     }
