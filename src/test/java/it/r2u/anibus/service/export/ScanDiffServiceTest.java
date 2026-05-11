@@ -98,4 +98,25 @@ class ScanDiffServiceTest {
         assertFalse(diff.hasChanges());
         assertEquals("Diff: no changes detected between scans.", ScanDiffService.formatReport(diff));
     }
+
+      @Test
+      void returnsNoChangesForEmptySnapshots() throws IOException {
+        Path oldXml = tempDir.resolve("empty.xml");
+        Files.writeString(oldXml, """
+            <?xml version=\"1.0\" encoding=\"UTF-8\"?>
+            <scan>
+              <meta timestamp=\"2026-05-10T00:00:00\" total=\"0\"/>
+              <results>
+              </results>
+            </scan>
+            """);
+
+        ScanDiffService service = new ScanDiffService();
+        ScanDiffService.DiffResult diff = service.diffWithCurrent(oldXml.toFile(), List.of());
+
+        assertFalse(diff.hasChanges());
+        assertEquals(0, diff.addedCount());
+        assertEquals(0, diff.removedCount());
+        assertEquals(0, diff.changedCount());
+      }
 }

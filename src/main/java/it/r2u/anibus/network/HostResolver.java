@@ -41,14 +41,26 @@ public class HostResolver {
         }
         
         // Remove port number from hostname if present (e.g., example.com:8080)
-        int colonIndex = cleaned.indexOf(':');
-        if (colonIndex != -1) {
-            // Check if it's not an IPv6 address
-            if (!cleaned.contains("[") && !cleaned.contains("]")) {
+        // Strip brackets from IPv6 literals like [::1] → ::1
+        if (cleaned.startsWith("[") && cleaned.contains("]")) {
+            cleaned = cleaned.substring(1, cleaned.indexOf(']'));
+        }
+
+        // Remove port number from hostname if present (e.g., example.com:8080)
+        // Skip for IPv6 addresses (contain multiple colons)
+        boolean isIPv6 = cleaned.chars().filter(c -> c == ':').count() > 1;
+        if (!isIPv6) {
+            int colonIndex = cleaned.indexOf(':');
+            if (colonIndex != -1) {
                 cleaned = cleaned.substring(0, colonIndex);
             }
         }
-        
+
+        // Skip IDN conversion for IP addresses (IPv4 or IPv6)
+        if (isIPv6 || cleaned.matches("\\d{1,3}(\\.\\d{1,3}){3}")) {
+            return cleaned.trim();
+        }
+
         // Convert internationalized domain names to ASCII (Punycode)
         // This handles Cyrillic domains like фсб.рф -> xn--b1aew.xn--p1ai
         try {

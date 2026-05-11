@@ -118,6 +118,7 @@ public class ProxyChainService {
                 Host: %s:%d
                 Proxy-Connection: keep-alive
                 User-Agent: Anibus-Scanner/1.8
+
                 """.formatted(host, port, host, port).replace("\n", "\r\n");
 
         try {

@@ -1,6 +1,6 @@
 # Anibus — Scanner di Sicurezza di Rete Avanzato
 
-> **Versione:** 2.0.1 · **Autore:** Iaroslav Tsymbaliuk · **Ruolo:** Intern (2025–2026) @ r2u
+> **Versione:** 2.1.0 · **Autore:** Iaroslav Tsymbaliuk · **Ruolo:** Intern (2025–2026) @ r2u
 
 Uno scanner di sicurezza di rete desktop completo, realizzato con **Java 21 (JPMS)**, **JavaFX 21.0.5** e un tema **Bootstrap 5 Dark** personalizzato.
 Anibus va ben oltre un semplice port scanner: combina fingerprinting dei servizi, corrispondenza CVE, analisi dei sorgenti JavaScript, test di SQL injection, geolocalizzazione, ispezione SSL/TLS e rilevamento dell'infrastruttura in un'unica applicazione autonoma.
@@ -9,7 +9,7 @@ Anibus va ben oltre un semplice port scanner: combina fingerprinting dei servizi
 
 ## Indice
 
-- [Novità in 2.0.1](#novità-in-201)
+- [Novità in 2.1.0](#novità-in-210)
 - [Panoramica Funzionalità](#panoramica-funzionalità)
 - [Architettura](#architettura)
 - [Struttura del Progetto](#struttura-del-progetto)
@@ -25,15 +25,16 @@ Anibus va ben oltre un semplice port scanner: combina fingerprinting dei servizi
 
 ---
 
-## Novità in 2.0.1
+## Novità in 2.1.0
 
 | Area | Modifica |
 |------|----------|
-| **UI Catena Proxy** | Aggiunto pannello visibile della catena proxy nella scheda Proxy |
-| **Azioni Catena** | Aggiunto pulsante `Build Chain` con handler di inizializzazione |
-| **Localizzazione (i18n)** | Dialogo Proxy Chain Builder localizzato in EN/IT/RU |
-| **Stabilità** | Risolti problemi FXML/controller binding che causavano errori all'avvio |
-| **Versioning** | Incremento patch da `2.0.0` a `2.0.1` |
+| **Passive Recon Mode** | Raccolta title/header/robots/sitemap/favicon hash senza payload attivi |
+| **Secrets Validation** | Validazione formato regex per AWS, GitHub, Stripe, Telegram, Slack, Google, JWT, PEM — nessuna chiamata di rete |
+| **Contrasto grafici** | Risolte aree grafici illeggibili su tema scuro/chiaro tramite override CSS |
+| **Scroll Topology** | Mappa Topology ora scorrevole e trascinabile per grafi ampi |
+| **Compat. Wayland** | Soppressa eccezione AWT SystemTray in sessioni Wayland |
+| **Versioning** | Incremento minor da `2.0.1` a `2.1.0` |
 
 ---
 
@@ -278,7 +279,7 @@ La scansione delle porte è puramente I/O-bound. I thread virtuali di Java 21 (`
 ## Interfaccia Utente
 
 ```
-┌────────────────────────────────── Anibus 2.0.1 ─────────────────────────────────────┐
+┌────────────────────────────────── Anibus 2.1.0 ─────────────────────────────────────┐
 │ [●] Anibus  ░░░░░░░░░░░░░░░░░░░░░░░░  ● Connesso  192.168.1.1                │  ← Nav bar
 │───────────────────────────────────────────────────────────────────────────────│
 │ ┌── Scan Target ───────────────┐  ┌── [Scan Results] [JS Analysis] ──────────┐│
@@ -352,30 +353,30 @@ cd anibus
 
 ```bash
 ./mvnw clean package -DskipTests
-java -jar anibus-2.0.1.jar
+java -jar anibus-2.1.0.jar
 ```
 
-Lo shaded JAR eseguibile viene generato nella root del progetto come `anibus-2.0.1.jar`.
+Lo shaded JAR eseguibile viene generato nella root del progetto come `anibus-2.1.0.jar`.
 
 **Windows:**
 
 ```cmd
 mvnw.cmd clean package -DskipTests
-java -jar anibus-2.0.1.jar
+java -jar anibus-2.1.0.jar
 ```
 
 **Linux — Wayland / XWayland:**
 
 ```bash
 xhost +local:
-DISPLAY=:0 java -jar anibus-2.0.1.jar
+DISPLAY=:0 java -jar anibus-2.1.0.jar
 ```
 
 **Da un terminale Flatpak VS Code:**
 
 ```bash
 flatpak-spawn --host xhost +local:
-DISPLAY=:0 java -jar anibus-2.0.1.jar
+DISPLAY=:0 java -jar anibus-2.1.0.jar
 ```
 
 ---
@@ -488,6 +489,15 @@ users,POSTGRESQL,95%,"id|email|password_hash"
 ---
 
 ## Roadmap
+
+### v2.1.0 — Minor Release
+
+- ✅ Aggiunta modalità Passive Recon (title/header/robots/sitemap/favicon hash)
+- ✅ Aggiunta Secrets Validation — validazione regex AWS/GitHub/Stripe/Telegram/Slack/Google/JWT/PEM
+- ✅ Risolto contrasto grafici su tema scuro/chiaro
+- ✅ Risolto scroll/pan Topology Map per grafi ampi
+- ✅ Risolto crash AWT SystemTray in sessioni Wayland
+- ✅ Aggiornata documentazione e riferimenti artefatti a `2.1.0`
 
 ### v2.0.1 — Patch Release
 

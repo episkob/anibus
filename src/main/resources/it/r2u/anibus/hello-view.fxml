@@ -5,6 +5,11 @@
 <?import javafx.scene.control.ChoiceBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.MenuButton?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.chart.BarChart?>
+<?import javafx.scene.chart.CategoryAxis?>
+<?import javafx.scene.chart.NumberAxis?>
+<?import javafx.scene.chart.PieChart?>
 <?import javafx.scene.control.ProgressBar?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.Separator?>
@@ -15,6 +20,7 @@
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.TreeView?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Pane?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
@@ -234,6 +240,10 @@
                                                                text="No results"
                                                                styleClass="counter-label" />
                                                         <Region HBox.hgrow="ALWAYS" />
+                                                        <TextField fx:id="consoleFilterField"
+                                                                   promptText="Filter console…"
+                                                                   prefWidth="200"
+                                                                   styleClass="filter-field" />
                                                         <Button fx:id="exportButton"
                                                                 text="Export"
                                                                 onAction="#onExportClick"
@@ -374,6 +384,43 @@
                                     </content>
                                 </Tab>
 
+                                <!-- ── Tab: SQL Injection ── -->
+                                <Tab fx:id="tabSqlInjection" text="SQL Injection">
+                                    <content>
+                                        <VBox spacing="12" styleClass="tab-content">
+                                            <children>
+                                                <Label text="SQL INJECTION RESULTS" styleClass="section-title" />
+                                                <TextArea fx:id="sqlInjectionTextArea"
+                                                          editable="false"
+                                                          wrapText="true"
+                                                          styleClass="console-view"
+                                                          VBox.vgrow="ALWAYS" />
+                                            </children>
+                                        </VBox>
+                                    </content>
+                                </Tab>
+
+                                <!-- ── Tab: Topology Map ── -->
+                                <Tab fx:id="tabTopology" text="Topology Map">
+                                    <content>
+                                        <VBox spacing="12" styleClass="tab-content">
+                                            <children>
+                                                <Label text="NETWORK TOPOLOGY (TRACEROUTE HOP→HOP)" styleClass="section-title" />
+                                                <ScrollPane fitToWidth="false" fitToHeight="true"
+                                                            hbarPolicy="AS_NEEDED" vbarPolicy="AS_NEEDED"
+                                                            pannable="true" VBox.vgrow="ALWAYS">
+                                                    <content>
+                                                        <Pane fx:id="topologyGraphPane"
+                                                              prefWidth="1200"
+                                                              prefHeight="320"
+                                                              styleClass="card" />
+                                                    </content>
+                                                </ScrollPane>
+                                            </children>
+                                        </VBox>
+                                    </content>
+                                </Tab>
+
                                 <!-- ── Tab: Proxy ── -->
                                 <Tab fx:id="tabProxy" text="Proxy">
                                     <content>
@@ -429,6 +476,28 @@
                                                     </children>
                                                 </VBox>
 
+                                                <!-- ── Visual Chain Builder ── -->
+                                                <HBox spacing="12" styleClass="card" alignment="CENTER_LEFT">
+                                                    <children>
+                                                        <VBox spacing="6" HBox.hgrow="ALWAYS">
+                                                            <children>
+                                                                <Label text="AVAILABLE PROXIES (drag from here)" styleClass="subtitle-label" />
+                                                                <ListView fx:id="proxyAvailableListView"
+                                                                          prefHeight="140"
+                                                                          VBox.vgrow="ALWAYS" />
+                                                            </children>
+                                                        </VBox>
+                                                        <VBox spacing="6" HBox.hgrow="ALWAYS">
+                                                            <children>
+                                                                <Label text="CHAIN ORDER (drop/reorder here)" styleClass="subtitle-label" />
+                                                                <ListView fx:id="proxyChainListView"
+                                                                          prefHeight="140"
+                                                                          VBox.vgrow="ALWAYS" />
+                                                            </children>
+                                                        </VBox>
+                                                    </children>
+                                                </HBox>
+
                                                 <!-- ── Metrics bar ── -->
                                                 <HBox styleClass="proxy-stats-bar" spacing="0">
                                                     <children>
@@ -480,6 +549,38 @@
                                                           styleClass="console-view"
                                                           VBox.vgrow="ALWAYS" />
 
+                                            </children>
+                                        </VBox>
+                                    </content>
+                                </Tab>
+
+                                <!-- ── Tab: Statistics ── -->
+                                <Tab fx:id="tabStatistics" text="Statistics">
+                                    <content>
+                                        <VBox spacing="12" styleClass="tab-content">
+                                            <children>
+                                                <Label text="SCAN STATISTICS DASHBOARD" styleClass="section-title" />
+                                                <HBox spacing="12" VBox.vgrow="ALWAYS">
+                                                    <children>
+                                                        <PieChart fx:id="statsPortStateChart" title="Port States" HBox.hgrow="ALWAYS" />
+                                                        <BarChart fx:id="statsServiceChart" title="Top Services" HBox.hgrow="ALWAYS">
+                                                            <xAxis>
+                                                                <CategoryAxis label="Service" />
+                                                            </xAxis>
+                                                            <yAxis>
+                                                                <NumberAxis label="Count" />
+                                                            </yAxis>
+                                                        </BarChart>
+                                                        <BarChart fx:id="statsRiskChart" title="Risk Distribution" HBox.hgrow="ALWAYS">
+                                                            <xAxis>
+                                                                <CategoryAxis label="Risk" />
+                                                            </xAxis>
+                                                            <yAxis>
+                                                                <NumberAxis label="Ports" />
+                                                            </yAxis>
+                                                        </BarChart>
+                                                    </children>
+                                                </HBox>
                                             </children>
                                         </VBox>
                                     </content>

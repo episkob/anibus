@@ -1,0 +1,236 @@
+/* ═══════════════════════════════════════════════════════
+   Anibus Design System — Light Theme Override
+   Loaded AFTER anibus-style.css to override dark colors.
+   ═══════════════════════════════════════════════════════ */
+
+.root {
+    -fx-background-color: #f8f9fa;
+}
+
+/* ── Navigation Bar ──────────────────────────────────── */
+.nav-bar {
+    -fx-background-color: #ffffff;
+    -fx-border-color: transparent transparent #dee2e6 transparent;
+}
+.nav-title { -fx-text-fill: #212529; }
+.nav-link  { -fx-text-fill: #0d6efd; }
+.nav-link:hover { -fx-background-color: rgba(13,110,253,0.08); }
+
+/* ── Nav MenuButton ──────────────────────────────────── */
+.nav-menu-button { -fx-text-fill: #212529; }
+.nav-menu-button:hover   { -fx-background-color: rgba(0,0,0,0.06); }
+.nav-menu-button:showing { -fx-background-color: rgba(0,0,0,0.09); }
+.nav-menu-button .arrow  { -fx-background-color: #6c757d; }
+
+/* ── Status Bar ──────────────────────────────────────── */
+.status-bar {
+    -fx-background-color: #ffffff;
+    -fx-border-color: transparent transparent #dee2e6 transparent;
+}
+.status-label { -fx-text-fill: #6c757d; }
+
+/* ── Text Fields / Inputs ────────────────────────────── */
+.text-field {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #ced4da;
+    -fx-text-fill: #212529;
+    -fx-prompt-text-fill: #adb5bd;
+}
+.text-field:focused { -fx-border-color: #0d6efd; }
+.text-field .text   { -fx-fill: #212529; }
+.text-field .content { -fx-background-color: transparent; }
+.text-field, .text-area, .text-input { -fx-text-inner-color: #212529; caret-color: #212529; }
+
+/* ── Text Area ───────────────────────────────────────── */
+.text-area {
+    -fx-text-fill: #212529;
+    -fx-background-color: #ffffff;
+    -fx-border-color: #dee2e6;
+}
+.text-area .content { -fx-background-color: #ffffff; }
+
+/* ── Console ─────────────────────────────────────────── */
+.console-view {
+    -fx-text-fill: #0f4a2e;
+    -fx-background-color: #f0f4f1;
+}
+.console-view .content { -fx-background-color: #f0f4f1; }
+
+/* ── Buttons ─────────────────────────────────────────── */
+.secondary-button {
+    -fx-background-color: #e9ecef;
+    -fx-text-fill: #212529;
+    -fx-border-color: #ced4da;
+}
+.secondary-button:hover  { -fx-background-color: #dee2e6; -fx-text-fill: #212529; }
+.secondary-button:pressed { -fx-background-color: #ced4da; }
+.button:disabled {
+    -fx-background-color: #e9ecef;
+    -fx-text-fill: #adb5bd;
+    -fx-border-color: #dee2e6;
+}
+
+/* ── Labels ──────────────────────────────────────────── */
+.label          { -fx-text-fill: #212529; }
+.title-label    { -fx-text-fill: #212529; }
+.section-title  { -fx-text-fill: #212529; }
+.subtitle-label { -fx-text-fill: #6c757d; }
+.counter-label  { -fx-text-fill: #6c757d; -fx-background-color: #e9ecef; }
+.host-resolved-label { -fx-text-fill: #198754; }
+.info-key   { -fx-text-fill: #6c757d; }
+.info-value { -fx-text-fill: #212529; }
+.option-title { -fx-text-fill: #212529; }
+.option-desc  { -fx-text-fill: #6c757d; }
+
+/* ── Cards ───────────────────────────────────────────── */
+.card {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #dee2e6;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 4, 0, 0, 2);
+}
+
+/* ── Left Sidebar ────────────────────────────────────── */
+.left-panel {
+    -fx-background-color: #ffffff;
+    -fx-border-color: transparent #dee2e6 transparent transparent;
+}
+.left-panel > .viewport { -fx-background-color: #ffffff; }
+.sidebar-content { -fx-background-color: #ffffff; }
+
+/* ── Right Results Panel ─────────────────────────────── */
+.results-panel { -fx-background-color: #f8f9fa; }
+
+/* ── TabPane ─────────────────────────────────────────── */
+.results-tabs { -fx-background-color: #f8f9fa; }
+.results-tabs .tab-header-area {
+    -fx-background-color: #ffffff;
+    -fx-border-color: transparent transparent #dee2e6 transparent;
+}
+.results-tabs .tab-header-area .tab-header-background { -fx-background-color: transparent; }
+.results-tabs .tab .tab-label  { -fx-text-fill: #6c757d; }
+.results-tabs .tab:selected .tab-label { -fx-text-fill: #212529; }
+.results-tabs .tab:hover .tab-label    { -fx-text-fill: #212529; }
+.results-tabs .tab-content-area { -fx-background-color: #f8f9fa; }
+.tab-content { -fx-background-color: #f8f9fa; }
+
+/* ── Checkboxes ──────────────────────────────────────── */
+.check-box .box { -fx-background-color: #ffffff; -fx-border-color: #ced4da; }
+.check-box:selected .box { -fx-background-color: #0d6efd; -fx-border-color: #0d6efd; }
+.check-box .text { -fx-text-fill: #212529; }
+
+/* ── Separators ──────────────────────────────────────── */
+.separator .line { -fx-border-color: #dee2e6; }
+
+/* ── Progress Bar ────────────────────────────────────── */
+.progress-bar .track { -fx-background-color: #dee2e6; }
+
+/* ── Spinner ─────────────────────────────────────────── */
+.spinner {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #ced4da;
+}
+.spinner .text-field { -fx-text-fill: #212529; }
+.spinner .increment-arrow-button,
+.spinner .decrement-arrow-button { -fx-background-color: #e9ecef; -fx-border-color: #ced4da; }
+
+/* ── Scroll Bar ──────────────────────────────────────── */
+.scroll-bar .thumb { -fx-background-color: rgba(0,0,0,0.15); }
+.scroll-bar .thumb:hover { -fx-background-color: rgba(0,0,0,0.28); }
+
+/* ── Tooltip ─────────────────────────────────────────── */
+.tooltip {
+    -fx-background-color: #ffffff;
+    -fx-text-fill: #212529;
+    -fx-border-color: #dee2e6;
+}
+
+/* ── Dialog ──────────────────────────────────────────── */
+.dialog-pane {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #dee2e6;
+}
+.anibus-dialog { -fx-background-color: #ffffff; }
+
+/* ── Context Menu ────────────────────────────────────── */
+.context-menu { -fx-background-color: #ffffff; -fx-border-color: #dee2e6; }
+.menu-item    { -fx-text-fill: #212529; }
+.menu-item:hover, .menu-item:focused { -fx-background-color: #0d6efd; -fx-text-fill: white; }
+
+/* ── Config ChoiceBox ────────────────────────────────── */
+.config-choicebox {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #ced4da;
+    -fx-text-fill: #212529;
+    -fx-mark-color: #212529;
+}
+
+/* ── Table View ──────────────────────────────────────── */
+.table-view .column-header-background { -fx-background-color: #f8f9fa; -fx-border-color: transparent transparent #dee2e6 transparent; }
+.table-view .column-header .label { -fx-text-fill: #6c757d; }
+.table-view .table-cell { -fx-text-fill: #212529; -fx-border-color: transparent transparent #dee2e6 transparent; }
+.table-row-cell:odd { -fx-background-color: rgba(0,0,0,0.02); }
+.table-row-cell:selected { -fx-background-color: rgba(13,110,253,0.12); }
+.table-row-cell:selected .table-cell { -fx-text-fill: #0d6efd; }
+.table-row-cell:hover:filled { -fx-background-color: rgba(0,0,0,0.03); }
+.table-view .filler { -fx-background-color: #f8f9fa; }
+
+/* ── JS Analysis panel ───────────────────────────────── */
+.js-stats-bar { -fx-background-color: #ffffff; -fx-border-color: #dee2e6; }
+.js-results-pane { -fx-background-color: #f8f9fa; }
+
+/* ── Proxy Tab ───────────────────────────────────────── */
+.proxy-status-strip  { -fx-background-color: #ffffff; -fx-border-color: transparent transparent #dee2e6 transparent; }
+.proxy-status-label  { -fx-text-fill: #6c757d; }
+.proxy-rotate-button { -fx-background-color: #e9ecef; -fx-text-fill: #6c757d; -fx-border-color: #ced4da; }
+.proxy-rotate-button:hover { -fx-background-color: #dee2e6; -fx-text-fill: #212529; }
+.proxy-stats-bar     { -fx-background-color: #f8f9fa; -fx-border-color: transparent transparent #dee2e6 transparent; }
+.proxy-stat-key      { -fx-text-fill: #6c757d; }
+.proxy-stat-value    { -fx-text-fill: #212529; }
+.proxy-stat-live     { -fx-text-fill: #198754; }
+
+/* ── Placeholder ─────────────────────────────────────── */
+.placeholder-title { -fx-text-fill: #adb5bd; }
+.placeholder-desc  { -fx-text-fill: #ced4da; }
+
+/* ── Tree View ───────────────────────────────────────── */
+.structure-tree { -fx-background-color: #ffffff; -fx-border-color: #dee2e6; }
+.structure-tree .tree-cell { -fx-text-fill: #212529; }
+.structure-tree .tree-cell:selected { -fx-text-fill: #0d6efd; }
+
+/* ── Badges / state ──────────────────────────────────── */
+.state-open { -fx-text-fill: #198754; }
+.service-enhanced { -fx-text-fill: #198754; }
+.service-standard { -fx-text-fill: #212529; }
+.table-placeholder { -fx-text-fill: #6c757d; }
+
+/* ── Charts (Statistics tab readability) ────────────── */
+.chart-title {
+    -fx-text-fill: #212529;
+}
+.chart-plot-background {
+    -fx-background-color: #ffffff;
+}
+.chart-vertical-grid-lines,
+.chart-horizontal-grid-lines {
+    -fx-stroke: #dee2e6;
+}
+.axis {
+    -fx-tick-label-fill: #495057;
+}
+.axis-label {
+    -fx-text-fill: #495057;
+}
+.axis-tick-mark,
+.axis-minor-tick-mark {
+    -fx-stroke: #adb5bd;
+}
+.chart-legend {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #dee2e6;
+    -fx-border-width: 1;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+}
+.chart-legend-item {
+    -fx-text-fill: #212529;
+}

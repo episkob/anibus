@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -174,6 +175,13 @@ public class ProxyRoutingService {
     public boolean isReady()  { return initialized && pool.totalSize() > 0; }
     public int     poolSize() { return pool.totalSize(); }    public boolean hasSavedPool() { return store.exists(); }
     public java.nio.file.Path savedPoolPath() { return store.getStorePath(); }
+
+    /**
+     * Snapshot of all currently known proxies (may include not-alive entries from cache).
+     */
+    public List<ProxyNode> allProxies() {
+        return List.copyOf(pool.allProxies());
+    }
 
     /**
      * Load a previously saved proxy pool from disk (skips harvesting/validation).
