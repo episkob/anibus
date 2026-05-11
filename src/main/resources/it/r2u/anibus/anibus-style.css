@@ -108,6 +108,8 @@
     -fx-font-size: 13px;
     -fx-text-fill: #20c997;
     -fx-background-color: #0d1117;
+    -fx-padding: 8 12;
+    -fx-line-spacing: 2;
 }
 .console-view .content { -fx-background-color: #0d1117; }
 
@@ -188,6 +190,9 @@
     -fx-padding: 14;
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 4, 0, 0, 2);
 }
+.card:hover {
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 8, 0, 0, 3);
+}
 
 /* ── Left Sidebar ────────────────────────────────────── */
 .left-panel {
@@ -225,6 +230,8 @@
     -fx-border-width: 0 0 2 0;
 }
 .results-tabs .tab:selected .tab-label { -fx-text-fill: #dee2e6; -fx-font-weight: 600; }
+.results-tabs .tab:hover .tab-label { -fx-text-fill: #dee2e6; }
+.results-tabs .tab:hover { -fx-background-color: rgba(255,255,255,0.04); }
 .results-tabs .tab:hover .tab-label { -fx-text-fill: #dee2e6; }
 .results-tabs .tab-content-area { -fx-background-color: #212529; }
 
