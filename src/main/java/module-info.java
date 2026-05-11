@@ -4,6 +4,8 @@ module it.r2u.anibus {
     requires transitive javafx.controls;
     requires javafx.fxml;
     requires java.logging;
+    requires java.desktop;
+    requires java.net.http;
     requires jdk.httpserver;
 
     // Main package: FXML controller lives here

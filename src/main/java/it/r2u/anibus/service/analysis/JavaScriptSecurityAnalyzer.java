@@ -2,8 +2,11 @@ package it.r2u.anibus.service.analysis;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -34,6 +37,53 @@ import it.r2u.anibus.model.LeakInfo;
  * database schema inference, and architectural pattern detection.
  */
 public class JavaScriptSecurityAnalyzer {
+
+    /**
+     * Optional authentication/session configuration for authenticated crawling.
+     */
+    public record CrawlAuthConfig(
+        String loginUrl,
+        String username,
+        String password,
+        String usernameField,
+        String passwordField,
+        Map<String, String> defaultHeaders,
+        Map<String, String> initialCookies,
+        Map<String, String> additionalLoginFormFields
+    ) {
+        public CrawlAuthConfig {
+            defaultHeaders = defaultHeaders != null ? Map.copyOf(defaultHeaders) : Map.of();
+            initialCookies = initialCookies != null ? Map.copyOf(initialCookies) : Map.of();
+            additionalLoginFormFields = additionalLoginFormFields != null
+                ? Map.copyOf(additionalLoginFormFields) : Map.of();
+        }
+
+        public String resolvedUsernameField() {
+            return usernameField == null || usernameField.isBlank() ? "username" : usernameField;
+        }
+
+        public String resolvedPasswordField() {
+            return passwordField == null || passwordField.isBlank() ? "password" : passwordField;
+        }
+
+        public boolean hasLoginCredentials() {
+            return loginUrl != null && !loginUrl.isBlank()
+                && username != null && !username.isBlank()
+                && password != null;
+        }
+    }
+
+    private static final class CrawlSession {
+        private final Map<String, String> cookies = new ConcurrentHashMap<>();
+        private final Map<String, String> headers = new ConcurrentHashMap<>();
+
+        CrawlSession(CrawlAuthConfig authConfig) {
+            if (authConfig != null) {
+                cookies.putAll(authConfig.initialCookies());
+                headers.putAll(authConfig.defaultHeaders());
+            }
+        }
+    }
     
     /**
      * Analysis depth modes for different levels of JS security analysis.
@@ -86,18 +136,30 @@ public class JavaScriptSecurityAnalyzer {
      * @return Analysis result tailored to the specified depth
      */
     public JavaScriptAnalysisResult analyzeTarget(String targetUrl, AnalysisDepth depth) {
+        return analyzeTarget(targetUrl, depth, null);
+    }
+
+    /**
+     * Performs analysis with optional authenticated session support.
+     */
+    public JavaScriptAnalysisResult analyzeTarget(String targetUrl, AnalysisDepth depth, CrawlAuthConfig authConfig) {
         long startTime = System.currentTimeMillis();
         List<String> errors = new ArrayList<>();
+        CrawlSession session = new CrawlSession(authConfig);
         
         // Clear inline cache from previous runs
         inlineScriptContents.clear();
         
         try {
+            if (authConfig != null && authConfig.hasLoginCredentials()) {
+                performLogin(targetUrl, authConfig, session, errors);
+            }
+
             // Discover JavaScript files
-            List<String> jsFiles = discoverJavaScriptFiles(targetUrl);
+            List<String> jsFiles = discoverJavaScriptFiles(targetUrl, session);
             
             // Download and analyze all JS files concurrently
-            Map<String, String> jsContents = downloadJavaScriptFiles(jsFiles);
+            Map<String, String> jsContents = downloadJavaScriptFiles(jsFiles, session);
             
             // Combine all JavaScript content for comprehensive analysis
             String combinedJs = String.join("\n", jsContents.values());
@@ -158,11 +220,11 @@ public class JavaScriptSecurityAnalyzer {
      * Discovers JavaScript files from the target URL including common paths and HTML references.
      * Also extracts inline script content from the HTML page.
      */
-    private List<String> discoverJavaScriptFiles(String baseUrl) throws Exception {
+    private List<String> discoverJavaScriptFiles(String baseUrl, CrawlSession session) throws Exception {
         Set<String> jsFiles = new LinkedHashSet<>();
 
         // Step 1: Fetch the HTML page (with HTTPS + redirect support)
-        String htmlContent = fetchPageContent(baseUrl);
+        String htmlContent = fetchPageContent(baseUrl, session);
         if (htmlContent != null && !htmlContent.isEmpty()) {
             // Step 2: Extract external <script src="..."> references (handles hashed filenames, query strings, CDN URLs)
             Pattern srcPattern = Pattern.compile(
@@ -223,7 +285,7 @@ public class JavaScriptSecurityAnalyzer {
             };
             for (String path : commonPaths) {
                 String fullUrl = normalizeUrl(baseUrl + path);
-                if (isJavaScriptAccessible(fullUrl)) {
+                if (isJavaScriptAccessible(fullUrl, session)) {
                     jsFiles.add(fullUrl);
                 }
             }
@@ -262,7 +324,7 @@ public class JavaScriptSecurityAnalyzer {
     /**
      * Fetches page content with HTTPS support and redirect following.
      */
-    private String fetchPageContent(String url) {
+    private String fetchPageContent(String url, CrawlSession session) {
         try {
             HttpURLConnection conn = openConnection(url);
             conn.setConnectTimeout(TIMEOUT);
@@ -271,15 +333,17 @@ public class JavaScriptSecurityAnalyzer {
             conn.setRequestProperty("User-Agent",
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
             conn.setRequestProperty("Accept", "text/html,application/xhtml+xml,*/*");
+            applySession(conn, session);
 
             int code = conn.getResponseCode();
+            captureResponseCookies(conn, session);
 
             // Handle manual redirect (e.g. HTTP→HTTPS)
             if (code == 301 || code == 302 || code == 307 || code == 308) {
                 String location = conn.getHeaderField("Location");
                 if (location != null) {
                     conn.disconnect();
-                    return fetchPageContent(resolveUrl(url, location));
+                    return fetchPageContent(resolveUrl(url, location), session);
                 }
             }
 
@@ -320,7 +384,7 @@ public class JavaScriptSecurityAnalyzer {
      * Downloads JavaScript files concurrently. Inline scripts and HTML page content
      * are resolved from the in-memory cache instead of HTTP.
      */
-    private Map<String, String> downloadJavaScriptFiles(List<String> jsFiles) {
+    private Map<String, String> downloadJavaScriptFiles(List<String> jsFiles, CrawlSession session) {
         Map<String, String> contents = new ConcurrentHashMap<>();
         
         List<CompletableFuture<Void>> futures = jsFiles.stream()
@@ -335,7 +399,7 @@ public class JavaScriptSecurityAnalyzer {
                         }
                         return;
                     }
-                    String content = downloadJavaScriptFile(url);
+                    String content = downloadJavaScriptFile(url, session);
                     if (content != null && !content.trim().isEmpty()) {
                         contents.put(url, content);
                     }
@@ -352,15 +416,19 @@ public class JavaScriptSecurityAnalyzer {
     /**
      * Downloads a single JavaScript file with HTTPS support.
      */
-    private String downloadJavaScriptFile(String url) throws Exception {
+    private String downloadJavaScriptFile(String url, CrawlSession session) throws Exception {
         HttpURLConnection conn = openConnection(url);
         conn.setConnectTimeout(TIMEOUT);
         conn.setReadTimeout(TIMEOUT);
         conn.setInstanceFollowRedirects(true);
         conn.setRequestProperty("User-Agent",
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+        applySession(conn, session);
+
+        int responseCode = conn.getResponseCode();
+        captureResponseCookies(conn, session);
         
-        if (conn.getResponseCode() == 200) {
+        if (responseCode == 200) {
             StringBuilder content = new StringBuilder();
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
                 String line;
@@ -817,18 +885,124 @@ public class JavaScriptSecurityAnalyzer {
     
     // Helper methods implementation continues...
     
-    private boolean isJavaScriptAccessible(String url) {
+    private boolean isJavaScriptAccessible(String url, CrawlSession session) {
         try {
             HttpURLConnection conn = openConnection(url);
             conn.setRequestMethod("HEAD");
             conn.setConnectTimeout(3000);
             conn.setReadTimeout(3000);
             conn.setInstanceFollowRedirects(true);
+            applySession(conn, session);
             int responseCode = conn.getResponseCode();
+            captureResponseCookies(conn, session);
             return responseCode >= 200 && responseCode < 400;
         } catch (Exception e) {
             return false;
         }
+    }
+
+    private void performLogin(String baseUrl, CrawlAuthConfig authConfig,
+                              CrawlSession session, List<String> errors) {
+        String loginUrl = resolveUrl(baseUrl, authConfig.loginUrl());
+        if (loginUrl == null || loginUrl.isBlank()) {
+            errors.add("Auth login skipped: invalid login URL");
+            return;
+        }
+
+        try {
+            HttpURLConnection conn = openConnection(loginUrl);
+            conn.setRequestMethod("POST");
+            conn.setDoOutput(true);
+            conn.setConnectTimeout(TIMEOUT);
+            conn.setReadTimeout(TIMEOUT);
+            conn.setInstanceFollowRedirects(true);
+            conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+            conn.setRequestProperty("Accept", "*/*");
+            conn.setRequestProperty("User-Agent",
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+            applySession(conn, session);
+
+            String body = buildLoginFormBody(authConfig);
+            byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
+            conn.setRequestProperty("Content-Length", String.valueOf(bytes.length));
+            try (OutputStream out = conn.getOutputStream()) {
+                out.write(bytes);
+            }
+
+            conn.getResponseCode();
+            captureResponseCookies(conn, session);
+        } catch (Exception e) {
+            errors.add("Auth login failed: " + e.getMessage());
+        }
+    }
+
+    private String buildLoginFormBody(CrawlAuthConfig authConfig) {
+        Map<String, String> form = new LinkedHashMap<>();
+        form.put(authConfig.resolvedUsernameField(), authConfig.username());
+        form.put(authConfig.resolvedPasswordField(), authConfig.password());
+        form.putAll(authConfig.additionalLoginFormFields());
+        return form.entrySet().stream()
+            .map(e -> encode(e.getKey()) + "=" + encode(e.getValue()))
+            .collect(Collectors.joining("&"));
+    }
+
+    private void applySession(HttpURLConnection conn, CrawlSession session) {
+        if (session == null) {
+            return;
+        }
+
+        session.headers.forEach(conn::setRequestProperty);
+        if (!session.cookies.isEmpty()) {
+            String cookieHeader = session.cookies.entrySet().stream()
+                .map(e -> e.getKey() + "=" + e.getValue())
+                .collect(Collectors.joining("; "));
+            conn.setRequestProperty("Cookie", cookieHeader);
+        }
+    }
+
+    private void captureResponseCookies(HttpURLConnection conn, CrawlSession session) {
+        if (session == null) {
+            return;
+        }
+
+        Map<String, List<String>> headers = conn.getHeaderFields();
+        if (headers == null || headers.isEmpty()) {
+            return;
+        }
+
+        for (Map.Entry<String, List<String>> entry : headers.entrySet()) {
+            String headerName = entry.getKey();
+            if (headerName == null || !"Set-Cookie".equalsIgnoreCase(headerName)) {
+                continue;
+            }
+            for (String cookieLine : entry.getValue()) {
+                storeCookie(session, cookieLine);
+            }
+        }
+    }
+
+    private void storeCookie(CrawlSession session, String cookieLine) {
+        if (cookieLine == null || cookieLine.isBlank()) {
+            return;
+        }
+
+        String pair = cookieLine.split(";", 2)[0].trim();
+        int eq = pair.indexOf('=');
+        if (eq <= 0) {
+            return;
+        }
+        String key = pair.substring(0, eq).trim();
+        String value = pair.substring(eq + 1).trim();
+        if (!key.isEmpty()) {
+            session.cookies.put(key, value);
+        }
+    }
+
+    private static String encode(String value) {
+        if (value == null) {
+            return "";
+        }
+        return URLEncoder.encode(value, StandardCharsets.UTF_8);
     }
 
     private String normalizeUrl(String url) {

@@ -1,6 +1,6 @@
 # Anibus — Advanced Network Security Scanner
 
-> **Version:** 2.0.1 · **Author:** Iaroslav Tsymbaliuk · **Position:** Intern (2025–2026) @ r2u
+> **Version:** 2.1.0 · **Author:** Iaroslav Tsymbaliuk · **Position:** Intern (2025–2026) @ r2u
 
 A full-featured desktop network security scanner built with **Java 21 (JPMS)**, **JavaFX 21.0.5**, and a custom **Bootstrap 5 Dark** CSS theme.
 Anibus goes far beyond a simple port scanner — it combines service fingerprinting, CVE matching, JavaScript source analysis, SQL injection testing, geolocation, SSL/TLS inspection and infrastructure detection into a single self-contained desktop application.
@@ -9,7 +9,7 @@ Anibus goes far beyond a simple port scanner — it combines service fingerprint
 
 ## Table of Contents
 
-- [What's New in 2.0.1](#whats-new-in-201)
+- [What's New in 2.1.0](#whats-new-in-210)
 - [Feature Overview](#feature-overview)
 - [Architecture](#architecture)
 - [Project Structure](#project-structure)
@@ -25,15 +25,16 @@ Anibus goes far beyond a simple port scanner — it combines service fingerprint
 
 ---
 
-## What's New in 2.0.1
+## What's New in 2.1.0
 
 | Area | Change |
 |------|--------|
-| **Proxy Chain UI** | Added visible proxy chain panel in Proxy tab to show the active route |
-| **Chain Actions** | Added `Build Chain` button and controller action for chain initialization |
-| **Localization (i18n)** | Proxy Chain Builder dialog fully localized in EN/IT/RU bundles |
-| **Stability** | Fixed FXML/controller binding issues that caused startup failures |
-| **Versioning** | Patch release bump from `2.0.0` to `2.0.1` |
+| **Passive Recon Mode** | Collects page title, HTTP headers, robots.txt, sitemap.xml, favicon SHA-256 without active payloads |
+| **Secrets Validation** | Regex-based format check for AWS, GitHub, Stripe, Telegram, Slack, Google, JWT, PEM keys — no network calls |
+| **Chart Contrast** | Fixed unreadable chart areas on dark/light themes via CSS overrides |
+| **Topology Scroll** | Topology Map now scrollable and pannable when hops exceed viewport width |
+| **Wayland Compat** | Suppressed AWT SystemTray crash on Wayland sessions |
+| **Versioning** | Minor release bump from `2.0.1` to `2.1.0` |
 
 ---
 
@@ -288,7 +289,7 @@ Port scanning is purely I/O-bound. Java 21 virtual threads (`Executors.newVirtua
 ## UI Layout
 
 ```
-┌──────────────────────────────── Anibus 2.0.1 ─────────────────────────────────┐
+┌──────────────────────────────── Anibus 2.1.0 ─────────────────────────────────┐
 │ [●] Anibus  ░░░░░░░░░░░░░░░░░░░░░░░░░░  ● Connected  192.168.1.1              │  ← Nav bar
 │───────────────────────────────────────────────────────────────────────────────│
 │ ┌── Scan Target ───────────────┐  ┌── [Scan Results] [JS Analysis] ──────────┐│
@@ -362,30 +363,30 @@ cd anibus
 
 ```bash
 ./mvnw clean package -DskipTests
-java -jar anibus-2.0.1.jar
+java -jar anibus-2.1.0.jar
 ```
 
-Executable shaded JAR is generated in the project root as `anibus-2.0.1.jar`.
+Executable shaded JAR is generated in the project root as `anibus-2.1.0.jar`.
 
 **Windows:**
 
 ```cmd
 mvnw.cmd clean package -DskipTests
-java -jar anibus-2.0.1.jar
+java -jar anibus-2.1.0.jar
 ```
 
 **Linux — Wayland / XWayland:**
 
 ```bash
 xhost +local:
-DISPLAY=:0 java -jar anibus-2.0.1.jar
+DISPLAY=:0 java -jar anibus-2.1.0.jar
 ```
 
 **From a Flatpak VS Code terminal:**
 
 ```bash
 flatpak-spawn --host xhost +local:
-DISPLAY=:0 java -jar anibus-2.0.1.jar
+DISPLAY=:0 java -jar anibus-2.1.0.jar
 ```
 
 ---
@@ -498,6 +499,15 @@ users,POSTGRESQL,95%,"id|email|password_hash"
 ---
 
 ## Roadmap
+
+### v2.1.0 — Minor Release
+
+- ✅ Added Passive Recon Mode — passive HTTP recon (title/headers/robots/sitemap/favicon hash)
+- ✅ Added Secrets Validation — regex format check for AWS/GitHub/Stripe/Telegram/Slack/Google/JWT/PEM
+- ✅ Fixed chart contrast on dark/light themes (CSS overrides)
+- ✅ Fixed Topology Map scroll/pan for wide graphs
+- ✅ Fixed Wayland AWT SystemTray crash at startup
+- ✅ Updated docs and artifact references to `2.1.0`
 
 ### v2.0.1 — Patch Release
 

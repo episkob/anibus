@@ -10,6 +10,9 @@ import java.util.regex.Pattern;
  */
 public final class LeakInfo {
 
+    /** Confidence level of the detection. */
+    public enum Confidence { HIGH, MEDIUM, LOW }
+
     private static final Set<String> PLACEHOLDER_EXACT = Set.of(
             "password", "123456", "12345678", "qwerty", "test", "example",
             "placeholder", "xxx", "null", "undefined", "your_password",
@@ -31,20 +34,23 @@ public final class LeakInfo {
     private final int count;
     private final String service;
     private final boolean placeholder;
+    private final Confidence confidence;
 
     /** Full constructor — all fields explicit. */
     public LeakInfo(String type, String value, String context,
                     int priority, String service, boolean placeholder) {
-        this(type, value, context, priority, service, placeholder, 1);
+        this(type, value, context, priority, service, placeholder, 1, inferConfidence(priority));
     }
 
-    /** Convenience constructor — priority and placeholder inferred from type/value. */
+    /** Convenience constructor — priority, placeholder and confidence inferred from type/value. */
     public LeakInfo(String type, String value, String context) {
-        this(type, value, context, inferPriority(type), null, isPlaceholderValue(value), 1);
+        this(type, value, context, inferPriority(type), null, isPlaceholderValue(value), 1,
+             inferConfidence(inferPriority(type)));
     }
 
     private LeakInfo(String type, String value, String context,
-                     int priority, String service, boolean placeholder, int count) {
+                     int priority, String service, boolean placeholder, int count,
+                     Confidence confidence) {
         this.type        = type;
         this.value       = value;
         this.context     = context;
@@ -52,25 +58,53 @@ public final class LeakInfo {
         this.service     = service;
         this.placeholder = placeholder;
         this.count       = count;
+        this.confidence  = confidence;
     }
 
     /** Returns an immutable copy with updated occurrence count (deduplication). */
     public LeakInfo withCount(int newCount) {
-        return new LeakInfo(type, value, context, priority, service, placeholder, newCount);
+        return new LeakInfo(type, value, context, priority, service, placeholder, newCount, confidence);
     }
 
     /** Returns an immutable copy tagged with a microservice name. */
     public LeakInfo withService(String svc) {
-        return new LeakInfo(type, value, context, priority, svc, placeholder, count);
+        return new LeakInfo(type, value, context, priority, svc, placeholder, count, confidence);
     }
 
-    public String  getType()        { return type; }
-    public String  getValue()       { return value; }
-    public String  getContext()     { return context; }
-    public int     getPriority()    { return priority; }
-    public int     getCount()       { return count; }
-    public String  getService()     { return service; }
-    public boolean isPlaceholder()  { return placeholder; }
+    /** Returns an immutable copy with overridden confidence. */
+    public LeakInfo withConfidence(Confidence c) {
+        return new LeakInfo(type, value, context, priority, service, placeholder, count, c);
+    }
+
+    public String     getType()        { return type; }
+    public String     getValue()       { return value; }
+    public String     getContext()     { return context; }
+    public int        getPriority()    { return priority; }
+    public int        getCount()       { return count; }
+    public String     getService()     { return service; }
+    public boolean    isPlaceholder()  { return placeholder; }
+    public Confidence getConfidence()  { return confidence; }
+
+    /**
+     * Composite risk score: Severity × Exploitability × Exposure.
+     * Range 0.0–100.0 (rounded to one decimal).
+     * <ul>
+     *   <li>Severity     = priority / 10.0  (0.1 … 1.0)</li>
+     *   <li>Exploitability = confidence multiplier (HIGH=1.0 / MEDIUM=0.65 / LOW=0.3)</li>
+     *   <li>Exposure     = 0.1 if placeholder, else 1.0</li>
+     * </ul>
+     */
+    public double riskScore() {
+        double severity       = priority / 10.0;
+        double exploitability = switch (confidence) {
+            case HIGH   -> 1.0;
+            case MEDIUM -> 0.65;
+            case LOW    -> 0.3;
+        };
+        double exposure = placeholder ? 0.1 : 1.0;
+        double raw = severity * exploitability * exposure * 100.0;
+        return Math.round(raw * 10.0) / 10.0;
+    }
 
     @Override
     public String toString() {
@@ -78,6 +112,13 @@ public final class LeakInfo {
     }
 
     // ── Static helpers ─────────────────────────────────────────────────────────
+
+    /** Maps a numeric priority 1–10 to a confidence level. */
+    public static Confidence inferConfidence(int priority) {
+        if (priority >= 8) return Confidence.HIGH;
+        if (priority >= 5) return Confidence.MEDIUM;
+        return Confidence.LOW;
+    }
 
     /** Maps a finding-type label to a numeric priority 1–10. */
     public static int inferPriority(String type) {

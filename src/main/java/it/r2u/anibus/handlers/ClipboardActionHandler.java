@@ -1,12 +1,12 @@
 package it.r2u.anibus.handlers;
 
+import java.util.function.Consumer;
+
 import it.r2u.anibus.model.PortScanResult;
 import it.r2u.anibus.ui.ClipboardService;
 import javafx.collections.ObservableList;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
-
-import java.util.function.Consumer;
 
 /**
  * Handler for clipboard operations.
@@ -29,6 +29,24 @@ public class ClipboardActionHandler {
         }
         ClipboardService.copy(consoleTextArea.getText());
         statusSetter.accept("Console output copied to clipboard");
+    }
+
+    /**
+     * Copy the currently selected text to clipboard.
+     */
+    public void copySelectedText(TextArea textArea) {
+        if (textArea == null) {
+            return;
+        }
+
+        String selectedText = textArea.getSelectedText();
+        if (selectedText == null || selectedText.isBlank()) {
+            statusSetter.accept("Select text first");
+            return;
+        }
+
+        ClipboardService.copy(selectedText);
+        statusSetter.accept("Selected text copied to clipboard");
     }
     
     /**

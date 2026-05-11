@@ -160,7 +160,7 @@ public class ConsoleViewManager {
             switch (section) {
                 case "BANNER" -> renderBannerSection(sb, lines);
                 case "OS" -> renderSimpleSection(sb, "Operating System", lines);
-                case "VULNERABILITIES" -> renderSimpleSection(sb, "Vulnerabilities", lines);
+                case "VULNERABILITIES" -> renderVulnerabilitiesSection(sb, lines);
                 case "GEOLOCATION" -> renderSimpleSection(sb, "Geolocation", lines);
                 case "HTTP" -> renderSimpleSection(sb, "HTTP Analysis", lines);
                 case "SSL" -> renderSimpleSection(sb, "SSL/TLS", lines);
@@ -212,6 +212,51 @@ public class ConsoleViewManager {
         sb.append(String.format("│\n│  ── %s ──\n", title));
         for (String line : lines) {
             sb.append(wrapLine("│     ", line));
+        }
+    }
+
+    /**
+     * Vulnerabilities section — groups by severity, adds Exploit-DB PoC link for CVE IDs.
+     */
+    private static void renderVulnerabilitiesSection(StringBuilder sb, List<String> lines) {
+        java.util.Map<String, List<String>> bySeverity = new java.util.LinkedHashMap<>();
+        for (String sev : List.of("CRITICAL", "HIGH", "MEDIUM", "LOW")) {
+            bySeverity.put(sev, new java.util.ArrayList<>());
+        }
+        List<String> other = new java.util.ArrayList<>();
+
+        for (String line : lines) {
+            if      (line.startsWith("[CRITICAL]")) bySeverity.get("CRITICAL").add(line);
+            else if (line.startsWith("[HIGH]"))     bySeverity.get("HIGH").add(line);
+            else if (line.startsWith("[MEDIUM]"))   bySeverity.get("MEDIUM").add(line);
+            else if (line.startsWith("[LOW]") || line.startsWith("\uD83D\uDFE2")) bySeverity.get("LOW").add(line);
+            else other.add(line);
+        }
+
+        sb.append("│\n│  ── Vulnerabilities ────────────────────────────────────────────\n");
+
+        String[] order  = {"CRITICAL",        "HIGH",    "MEDIUM",    "LOW"};
+        String[] badges = {"▶▶▶ CRITICAL ◀◀◀", "▶▶ HIGH", "▶ MEDIUM", "· LOW ·"};
+
+        java.util.regex.Pattern cvePattern = java.util.regex.Pattern.compile("CVE-\\d{4}-\\d+");
+
+        for (int i = 0; i < order.length; i++) {
+            List<String> group = bySeverity.get(order[i]);
+            if (group.isEmpty()) continue;
+            sb.append(String.format("│\n│  %s\n", badges[i]));
+            for (String line : group) {
+                // Strip leading [SEVERITY] tag for cleaner display
+                String clean = line.replaceFirst("^\\[(?:CRITICAL|HIGH|MEDIUM|LOW)\\]\\s*", "").trim();
+                sb.append(wrapLine("│     ", clean));
+                java.util.regex.Matcher m = cvePattern.matcher(clean);
+                if (m.find()) {
+                    sb.append(String.format("│       → https://www.exploit-db.com/search?cve=%s\n", m.group()));
+                }
+            }
+        }
+        if (!other.isEmpty()) {
+            sb.append("│\n│  Info:\n");
+            for (String line : other) sb.append(wrapLine("│     ", line));
         }
     }
 

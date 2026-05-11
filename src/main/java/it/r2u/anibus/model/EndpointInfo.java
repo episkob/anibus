@@ -38,6 +38,25 @@ public class EndpointInfo {
     public String getContext() { return context; }
     public boolean isDynamic() { return isDynamic; }
 
+    /** Generates a curl command to reproduce a request to this endpoint. */
+    public String toCurlCommand() {
+        String method = httpMethod != null ? httpMethod.toUpperCase() : "GET";
+        StringBuilder sb = new StringBuilder("curl -X ").append(method);
+        if (headers != null) {
+            headers.forEach((k, v) -> sb.append(" -H '").append(k).append(": ").append(v).append("'"));
+        }
+        String target = url != null && !url.isBlank() ? url
+                : (baseUrl != null ? baseUrl + (path != null ? path : "") : (path != null ? path : ""));
+        if (!"GET".equalsIgnoreCase(method) && parameters != null && !parameters.isEmpty()) {
+            String body = String.join("&", parameters.stream().map(p -> p + "=FUZZ").toList());
+            sb.append(" -d '").append(body).append("'");
+        } else if ("GET".equalsIgnoreCase(method) && parameters != null && !parameters.isEmpty()) {
+            target += "?" + String.join("&", parameters.stream().map(p -> p + "=FUZZ").toList());
+        }
+        sb.append(" '").append(target).append("'");
+        return sb.toString();
+    }
+
     @Override
     public String toString() {
         return httpMethod + " " + url + (isDynamic ? " (dynamic)" : "");

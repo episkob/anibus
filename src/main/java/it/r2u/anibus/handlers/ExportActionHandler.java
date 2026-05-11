@@ -13,10 +13,12 @@ import it.r2u.anibus.model.JavaScriptAnalysisResult;
 import it.r2u.anibus.model.PortScanResult;
 import it.r2u.anibus.service.export.ExportService;
 import javafx.collections.ObservableList;
+import javafx.print.PrinterJob;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.DialogPane;
+import javafx.scene.control.TextArea;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
 
@@ -52,14 +54,19 @@ public class ExportActionHandler {
     public void exportJavaScriptAnalysis(JavaScriptAnalysisResult result, String renderedReport, Window owner) {
         ButtonType csvBtn = new ButtonType("CSV");
         ButtonType xmlBtn = new ButtonType("XML");
+        ButtonType pdfBtn = new ButtonType("PDF");
         ButtonType cancel = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
-        Alert fmt = new Alert(Alert.AlertType.NONE, "Choose export format:", csvBtn, xmlBtn, cancel);
+        Alert fmt = new Alert(Alert.AlertType.NONE, "Choose export format:", csvBtn, xmlBtn, pdfBtn, cancel);
         fmt.setTitle("Export JS Analysis");
         fmt.setHeaderText(null);
         styleDialog(fmt.getDialogPane());
 
         fmt.showAndWait().ifPresent(choice -> {
             if (choice == cancel) return;
+            if (choice == pdfBtn) {
+                exportJsPdf(renderedReport, owner);
+                return;
+            }
             boolean isCsv = (choice == csvBtn);
             File file = pickJsFile(isCsv, owner);
             if (file == null) return;
@@ -73,6 +80,57 @@ public class ExportActionHandler {
         });
     }
 
+    private void exportJsPdf(String renderedReport, Window owner) {
+        PrinterJob job = PrinterJob.createPrinterJob();
+        if (job == null) {
+            statusSetter.accept("PDF export unavailable: no printer job support");
+            return;
+        }
+        if (!job.showPrintDialog(owner)) {
+            return;
+        }
+        TextArea printable = new TextArea(renderedReport == null ? "" : renderedReport);
+        printable.setWrapText(true);
+        printable.setEditable(false);
+        printable.setPrefColumnCount(120);
+        printable.setPrefRowCount(60);
+
+        boolean ok = job.printPage(printable);
+        if (ok) {
+            job.endJob();
+            statusSetter.accept("JS analysis print/PDF export sent successfully");
+        } else {
+            statusSetter.accept("JS analysis print/PDF export failed");
+        }
+    }
+
+    /**
+     * Save the current text selection to a plain text file.
+     */
+    public void exportSelectedText(TextArea textArea, Window owner, String baseName) {
+        if (textArea == null) {
+            return;
+        }
+
+        String selectedText = textArea.getSelectedText();
+        if (selectedText == null || selectedText.isBlank()) {
+            statusSetter.accept("Select text first");
+            return;
+        }
+
+        File file = pickTextFile(baseName, owner);
+        if (file == null) {
+            return;
+        }
+
+        try (PrintWriter pw = new PrintWriter(new FileWriter(file))) {
+            pw.print(selectedText);
+            statusSetter.accept("Selected text saved to " + file.getName());
+        } catch (IOException e) {
+            statusSetter.accept("Save failed: " + e.getMessage());
+        }
+    }
+
     private File pickJsFile(boolean isCsv, Window owner) {
         String stamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"));
         FileChooser fc = new FileChooser();
@@ -84,6 +142,16 @@ public class ExportActionHandler {
             fc.setInitialFileName("js-analysis-" + stamp + ".xml");
             fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("XML Files", "*.xml"));
         }
+        return fc.showSaveDialog(owner);
+    }
+
+    private File pickTextFile(String baseName, Window owner) {
+        String stamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"));
+        String prefix = (baseName == null || baseName.isBlank()) ? "anibus-text" : baseName;
+        FileChooser fc = new FileChooser();
+        fc.setTitle("Save Selected Text");
+        fc.setInitialFileName(prefix + "-" + stamp + ".txt");
+        fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("Text Files", "*.txt"));
         return fc.showSaveDialog(owner);
     }
 

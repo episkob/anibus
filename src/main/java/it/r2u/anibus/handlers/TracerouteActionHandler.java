@@ -1,11 +1,11 @@
 package it.r2u.anibus.handlers;
 
+import java.util.function.Consumer;
+
 import it.r2u.anibus.service.network.TracerouteService;
 import javafx.application.Platform;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextInputDialog;
-
-import java.util.function.Consumer;
 
 /**
  * Handler for traceroute operations.
@@ -23,6 +23,11 @@ public class TracerouteActionHandler {
      * Run traceroute with user prompt for target.
      */
     public void runTraceroute(String defaultHost, TextArea consoleTextArea) {
+        runTraceroute(defaultHost, consoleTextArea, null);
+    }
+
+    public void runTraceroute(String defaultHost, TextArea consoleTextArea,
+                              Consumer<TracerouteService.TraceRoute> onResult) {
         TextInputDialog dialog = new TextInputDialog(defaultHost);
         dialog.setTitle("Traceroute");
         dialog.setHeaderText("Network Path Tracing");
@@ -33,11 +38,12 @@ public class TracerouteActionHandler {
                 return;
             }
             
-            executeTraceroute(target, consoleTextArea);
+            executeTraceroute(target, consoleTextArea, onResult);
         });
     }
     
-    private void executeTraceroute(String target, TextArea consoleTextArea) {
+    private void executeTraceroute(String target, TextArea consoleTextArea,
+                                   Consumer<TracerouteService.TraceRoute> onResult) {
         // Show progress in console
         Platform.runLater(() -> {
             consoleTextArea.appendText("\n\n" + "=".repeat(80) + "\n");
@@ -54,6 +60,9 @@ public class TracerouteActionHandler {
                 consoleTextArea.appendText(result.toString());
                 consoleTextArea.appendText("\n\n");
                 statusSetter.accept("Traceroute completed");
+                if (onResult != null) {
+                    onResult.accept(result);
+                }
             });
         });
         
