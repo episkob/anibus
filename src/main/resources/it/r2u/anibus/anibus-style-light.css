@@ -22,6 +22,19 @@
 .nav-menu-button:showing { -fx-background-color: rgba(0,0,0,0.09); }
 .nav-menu-button .arrow  { -fx-background-color: #6c757d; }
 
+.menu-item.actions-menu-item,
+.menu.actions-submenu {
+    -fx-pref-width: 640;
+    -fx-min-width: 640;
+    -fx-max-width: 640;
+}
+
+.menu-item.actions-menu-item .label,
+.menu.actions-submenu .label {
+    -fx-wrap-text: true;
+    -fx-padding: 0 10 0 0;
+}
+
 /* ── Status Bar ──────────────────────────────────────── */
 .status-bar {
     -fx-background-color: #ffffff;
@@ -181,7 +194,7 @@
 /* ── Proxy Tab ───────────────────────────────────────── */
 .proxy-status-strip  { -fx-background-color: #ffffff; -fx-border-color: transparent transparent #dee2e6 transparent; }
 .proxy-status-label  { -fx-text-fill: #6c757d; }
-.proxy-rotate-button { -fx-background-color: #e9ecef; -fx-text-fill: #6c757d; -fx-border-color: #ced4da; }
+.proxy-rotate-button { -fx-background-color: #e9ecef; -fx-text-fill: #6c757d; -fx-border-color: #ced4da; -fx-font-size: 13px; -fx-padding: 5 12; }
 .proxy-rotate-button:hover { -fx-background-color: #dee2e6; -fx-text-fill: #212529; }
 .proxy-stats-bar     { -fx-background-color: #f8f9fa; -fx-border-color: transparent transparent #dee2e6 transparent; }
 .proxy-stat-key      { -fx-text-fill: #6c757d; }

@@ -7,6 +7,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import it.r2u.anibus.util.NamedThreadFactory;
 import javafx.application.Platform;
 import javafx.scene.control.Tooltip;
 import javafx.scene.shape.Circle;
@@ -33,11 +34,8 @@ public class NetworkStatusMonitor {
      * Starts monitoring network status every 5 seconds.
      */
     public void start() {
-        executor = Executors.newSingleThreadScheduledExecutor(r -> {
-            Thread t = new Thread(r, "NetworkMonitor");
-            t.setDaemon(true);
-            return t;
-        });
+        executor = Executors.newSingleThreadScheduledExecutor(
+                NamedThreadFactory.of("network-monitor"));
         
         executor.scheduleAtFixedRate(this::checkAndUpdate, 0, 5, TimeUnit.SECONDS);
     }

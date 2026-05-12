@@ -10,3 +10,7 @@ integer-injection
 nosql
 xpath
 ldap
+extended-fuzz-core
+extended-fuzz-time-and-boolean
+extended-fuzz-union-and-error
+extended-fuzz-mixed-advanced

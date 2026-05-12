@@ -1,6 +1,6 @@
 # Anibus — Advanced Network Security Scanner
 
-> **Version:** 2.1.0 · **Author:** Iaroslav Tsymbaliuk · **Position:** Intern (2025–2026) @ r2u
+> **Version:** 2.2.0 · **Author:** Iaroslav Tsymbaliuk · **Position:** Intern (2025–2026) @ r2u
 
 A full-featured desktop network security scanner built with **Java 21 (JPMS)**, **JavaFX 21.0.5**, and a custom **Bootstrap 5 Dark** CSS theme.
 Anibus goes far beyond a simple port scanner — it combines service fingerprinting, CVE matching, JavaScript source analysis, SQL injection testing, geolocation, SSL/TLS inspection and infrastructure detection into a single self-contained desktop application.
@@ -9,7 +9,7 @@ Anibus goes far beyond a simple port scanner — it combines service fingerprint
 
 ## Table of Contents
 
-- [What's New in 2.1.0](#whats-new-in-210)
+- [What's New in 2.2.0](#whats-new-in-210)
 - [Feature Overview](#feature-overview)
 - [Architecture](#architecture)
 - [Project Structure](#project-structure)
@@ -25,16 +25,18 @@ Anibus goes far beyond a simple port scanner — it combines service fingerprint
 
 ---
 
-## What's New in 2.1.0
+## What's New in 2.2.0
 
 | Area | Change |
 |------|--------|
-| **Passive Recon Mode** | Collects page title, HTTP headers, robots.txt, sitemap.xml, favicon SHA-256 without active payloads |
-| **Secrets Validation** | Regex-based format check for AWS, GitHub, Stripe, Telegram, Slack, Google, JWT, PEM keys — no network calls |
-| **Chart Contrast** | Fixed unreadable chart areas on dark/light themes via CSS overrides |
-| **Topology Scroll** | Topology Map now scrollable and pannable when hops exceed viewport width |
-| **Wayland Compat** | Suppressed AWT SystemTray crash on Wayland sessions |
-| **Versioning** | Minor release bump from `2.0.1` to `2.1.0` |
+| **Proxy Engine Expansion** | Added advanced proxy routing controls, rotation policies, and richer proxy-chain behavior |
+| **Wordlist Selector** | Added dedicated wordlist management for subdomain, SQLi payloads, and endpoint lists |
+| **Endpoint-Driven SQLi/XSS** | SQLi and XSS workflows now consume endpoints discovered by JavaScript analysis and custom endpoint wordlists |
+| **Port Scanning UX** | Port input now supports both single-port mode (`443`) and range mode (`1-1024`) |
+| **Scheduler Controls** | Added detailed scheduler options (interval/unit/repeat behavior) with improved operator UX |
+| **Realtime Logging** | Status updates are streamed to console in realtime with timestamps |
+| **Scan Target Visibility** | Added on-screen active wordlist status block in the Scan Target area |
+| **Versioning** | Minor release bump from `2.1.0` to `2.2.0` |
 
 ---
 
@@ -248,7 +250,6 @@ src/main/java/it/r2u/anibus/
     ├── ClipboardService.java
     ├── ConsoleViewManager.java
     ├── InfoCardManager.java
-    └── TableConfigurator.java
 
 src/main/resources/it/r2u/anibus/
 ├── hello-view.fxml                            # Full UI layout (sidebar + TabPane)
@@ -289,7 +290,7 @@ Port scanning is purely I/O-bound. Java 21 virtual threads (`Executors.newVirtua
 ## UI Layout
 
 ```
-┌──────────────────────────────── Anibus 2.1.0 ─────────────────────────────────┐
+┌──────────────────────────────── Anibus 2.2.0 ─────────────────────────────────┐
 │ [●] Anibus  ░░░░░░░░░░░░░░░░░░░░░░░░░░  ● Connected  192.168.1.1              │  ← Nav bar
 │───────────────────────────────────────────────────────────────────────────────│
 │ ┌── Scan Target ───────────────┐  ┌── [Scan Results] [JS Analysis] ──────────┐│
@@ -363,30 +364,30 @@ cd anibus
 
 ```bash
 ./mvnw clean package -DskipTests
-java -jar anibus-2.1.0.jar
+java -jar anibus-2.2.0.jar
 ```
 
-Executable shaded JAR is generated in the project root as `anibus-2.1.0.jar`.
+Executable shaded JAR is generated in the project root as `anibus-2.2.0.jar`.
 
 **Windows:**
 
 ```cmd
 mvnw.cmd clean package -DskipTests
-java -jar anibus-2.1.0.jar
+java -jar anibus-2.2.0.jar
 ```
 
 **Linux — Wayland / XWayland:**
 
 ```bash
 xhost +local:
-DISPLAY=:0 java -jar anibus-2.1.0.jar
+DISPLAY=:0 java -jar anibus-2.2.0.jar
 ```
 
 **From a Flatpak VS Code terminal:**
 
 ```bash
 flatpak-spawn --host xhost +local:
-DISPLAY=:0 java -jar anibus-2.1.0.jar
+DISPLAY=:0 java -jar anibus-2.2.0.jar
 ```
 
 ---
@@ -500,14 +501,16 @@ users,POSTGRESQL,95%,"id|email|password_hash"
 
 ## Roadmap
 
-### v2.1.0 — Minor Release
+### v2.2.0 — Minor Release
 
-- ✅ Added Passive Recon Mode — passive HTTP recon (title/headers/robots/sitemap/favicon hash)
-- ✅ Added Secrets Validation — regex format check for AWS/GitHub/Stripe/Telegram/Slack/Google/JWT/PEM
-- ✅ Fixed chart contrast on dark/light themes (CSS overrides)
-- ✅ Fixed Topology Map scroll/pan for wide graphs
-- ✅ Fixed Wayland AWT SystemTray crash at startup
-- ✅ Updated docs and artifact references to `2.1.0`
+- ✅ Expanded proxy subsystem with richer routing, rotation, and chain behavior
+- ✅ Added Wordlists control flow for Subdomain, SQLi payloads, and Endpoints
+- ✅ Integrated JS-discovered endpoints and endpoint wordlists into SQLi and XSS scans
+- ✅ Added single-port mode support in port scanner input parsing
+- ✅ Added advanced scheduler configuration with clearer runtime settings
+- ✅ Added realtime timestamped status log stream in console
+- ✅ Added active wordlist status indicators in Scan Target UI
+- ✅ Updated docs and artifact references to `2.2.0`
 
 ### v2.0.1 — Patch Release
 

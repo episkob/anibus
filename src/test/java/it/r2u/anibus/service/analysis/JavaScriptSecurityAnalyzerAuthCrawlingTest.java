@@ -21,6 +21,7 @@ class JavaScriptSecurityAnalyzerAuthCrawlingTest {
         server.createContext("/login", this::handleLogin);
         server.createContext("/", this::handleHome);
         server.createContext("/js/app.js", this::handleProtectedJs);
+        server.createContext("/api/secure", this::handleSecureApi);
         server.start();
 
         try {
@@ -53,9 +54,21 @@ class JavaScriptSecurityAnalyzerAuthCrawlingTest {
 
             assertFalse(withAuth.getEndpoints().isEmpty(), "Expected protected JS to be analyzed after login");
             assertTrue(withAuth.getEndpoints().stream().anyMatch(ep -> "/api/secure".equals(ep.getUrl())));
+            assertTrue(withAuth.getEndpoints().stream().anyMatch(ep ->
+                "/api/secure".equals(ep.getUrl())
+                    && ep.getContext() != null
+                    && ep.getContext().contains("Reachability: GET 200")));
         } finally {
             server.stop(0);
         }
+    }
+
+    private void handleSecureApi(HttpExchange exchange) throws IOException {
+        if (!hasSession(exchange)) {
+            send(exchange, 401, "Unauthorized");
+            return;
+        }
+        send(exchange, 200, "{\"ok\":true}");
     }
 
     private void handleLogin(HttpExchange exchange) throws IOException {

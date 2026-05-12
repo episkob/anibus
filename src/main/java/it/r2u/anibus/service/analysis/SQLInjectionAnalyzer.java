@@ -8,13 +8,16 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -35,9 +38,16 @@ import it.r2u.anibus.model.EndpointInfo;
 public class SQLInjectionAnalyzer {
 
     private static final int TIMEOUT = 8000;
+    private static final int MAX_ENDPOINTS_PER_SCAN = 500;
 
     private final List<String> payloads = new ArrayList<>();
+    private volatile List<String> customPayloads = List.of();
     private final Map<String, List<InjectionResult>> results = new LinkedHashMap<>();
+    private volatile boolean stopRequested = false;
+    private final Map<String, List<String>> cmsPayloadProfiles = new LinkedHashMap<>();
+    private volatile int lastPayloadCountUsed = 0;
+    private volatile int lastCmsPayloadCountUsed = 0;
+    private volatile int lastGenericPayloadCountUsed = 0;
 
     // CMS profiles: CMS name → list of known injection-prone endpoints
     private final Map<String, List<CmsEndpointProfile>> cmsProfiles = new LinkedHashMap<>();
@@ -101,9 +111,15 @@ public class SQLInjectionAnalyzer {
     private static final Pattern LINK_WITH_PARAMS_PATTERN = Pattern.compile(
             "<a[^>]*href=[\"']([^\"']*\\?[^\"']*)[\"']",
             Pattern.CASE_INSENSITIVE);
+        private static final Pattern NAV_LINK_PATTERN = Pattern.compile(
+            "<a[^>]*href=[\"']([^\"']+)[\"']",
+            Pattern.CASE_INSENSITIVE);
     private static final Pattern HIDDEN_INPUT_PATTERN = Pattern.compile(
             "<input[^>]*type=[\"']hidden[\"'][^>]*name=[\"']([^\"']*)[\"'][^>]*/?>",
             Pattern.CASE_INSENSITIVE);
+
+        private static final int MAX_AUTO_CRAWL_PAGES = 12;
+        private static final int MAX_AUTO_CRAWL_DEPTH = 2;
 
     // Mapping: CMS display name → resource filename (without .txt)
     private static final Map<String, String> CMS_FILE_MAP = Map.ofEntries(
@@ -122,6 +138,7 @@ public class SQLInjectionAnalyzer {
     public SQLInjectionAnalyzer() {
         loadPayloads();
         loadCmsProfiles();
+        loadCmsPayloadProfiles();
     }
 
     /**
@@ -145,6 +162,9 @@ public class SQLInjectionAnalyzer {
             payloads.add("' UNION SELECT NULL--");
             payloads.add("' AND SLEEP(3)--");
         }
+
+        // Keep payload corpus deterministic and compact.
+        dedupeInPlace(payloads);
     }
 
     private void loadPayloadFile(String resourcePath) {
@@ -175,6 +195,95 @@ public class SQLInjectionAnalyzer {
             // Fallback: try loading legacy monolithic file
             loadLegacyCmsProfiles();
         }
+
+        normalizeCmsProfiles();
+    }
+
+    /**
+     * Load optional CMS-specific payload profiles from cms-payloads/ folder.
+     * File naming follows CMS_FILE_MAP values, e.g. wordpress.txt, joomla.txt.
+     */
+    private void loadCmsPayloadProfiles() {
+        for (Map.Entry<String, String> entry : CMS_FILE_MAP.entrySet()) {
+            String cmsName = entry.getKey();
+            String fileKey = entry.getValue();
+            String resourcePath = "/it/r2u/anibus/injections/cms-payloads/" + fileKey + ".txt";
+
+            List<String> cmsPayloads = new ArrayList<>();
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(
+                    Objects.requireNonNull(getClass().getResourceAsStream(resourcePath)),
+                    StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    line = line.trim();
+                    if (!line.isEmpty() && !line.startsWith("#")) {
+                        cmsPayloads.add(line);
+                    }
+                }
+            } catch (Exception ignored) {
+                // Optional profile, keep fallback behavior.
+            }
+
+            if (!cmsPayloads.isEmpty()) {
+                dedupeInPlace(cmsPayloads);
+                cmsPayloadProfiles.put(cmsName, cmsPayloads);
+            }
+        }
+    }
+
+    private void dedupeInPlace(List<String> values) {
+        if (values == null || values.isEmpty()) return;
+        LinkedHashSet<String> unique = values.stream()
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        values.clear();
+        values.addAll(unique);
+    }
+
+    private void normalizeCmsProfiles() {
+        for (Map.Entry<String, List<CmsEndpointProfile>> entry : cmsProfiles.entrySet()) {
+            LinkedHashMap<String, CmsEndpointProfile> unique = new LinkedHashMap<>();
+            for (CmsEndpointProfile profile : entry.getValue()) {
+                String method = profile.method() != null ? profile.method().trim().toUpperCase(Locale.ROOT) : "GET";
+                String path = profile.path() != null ? profile.path().trim() : "";
+                String params = profile.parameters() != null
+                        ? profile.parameters().stream().map(String::trim).collect(Collectors.joining(","))
+                        : "";
+                String key = method + "|" + path + "|" + params;
+                unique.putIfAbsent(key, new CmsEndpointProfile(method, path, profile.parameters(), profile.description()));
+            }
+            entry.setValue(new ArrayList<>(unique.values()));
+        }
+    }
+
+    private List<String> resolvePayloadsForCms(String cmsType) {
+        if (customPayloads != null && !customPayloads.isEmpty()) {
+            lastCmsPayloadCountUsed = 0;
+            lastGenericPayloadCountUsed = customPayloads.size();
+            return customPayloads;
+        }
+
+        lastCmsPayloadCountUsed = 0;
+        lastGenericPayloadCountUsed = payloads.size();
+
+        if (cmsType == null || cmsType.isBlank()) {
+            return payloads;
+        }
+
+        List<String> cmsPayloads = cmsPayloadProfiles.get(cmsType);
+        if (cmsPayloads != null && !cmsPayloads.isEmpty()) {
+            // For detected CMS use both: CMS-focused payloads + generic corpus.
+            LinkedHashSet<String> merged = new LinkedHashSet<>();
+            merged.addAll(cmsPayloads);
+            merged.addAll(payloads);
+
+            lastCmsPayloadCountUsed = cmsPayloads.size();
+            lastGenericPayloadCountUsed = payloads.size();
+            return new ArrayList<>(merged);
+        }
+
+        return payloads;
     }
 
     private void loadCmsProfileFile(String fileKey, String resourcePath) {
@@ -272,10 +381,42 @@ public class SQLInjectionAnalyzer {
     }
 
     /**
+     * Override SQLi payload corpus with a custom wordlist.
+     * Pass null/empty to restore built-in payloads.
+     */
+    public void setCustomPayloads(List<String> customPayloads) {
+        if (customPayloads == null || customPayloads.isEmpty()) {
+            this.customPayloads = List.of();
+            return;
+        }
+        LinkedHashSet<String> unique = customPayloads.stream()
+                .map(String::trim)
+                .filter(s -> !s.isEmpty() && !s.startsWith("#"))
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        this.customPayloads = List.copyOf(unique);
+    }
+
+    /**
      * Returns the set of CMS names that have injection profiles loaded.
      */
     public Set<String> getSupportedCmsTypes() {
         return Collections.unmodifiableSet(cmsProfiles.keySet());
+    }
+
+    public void requestStop() {
+        stopRequested = true;
+    }
+
+    public void resetStopRequest() {
+        stopRequested = false;
+    }
+
+    public boolean isStopRequested() {
+        return stopRequested;
+    }
+
+    private boolean shouldStop() {
+        return stopRequested || Thread.currentThread().isInterrupted();
     }
 
     /**
@@ -365,6 +506,61 @@ public class SQLInjectionAnalyzer {
         return discovered;
     }
 
+    /**
+     * Discover injection targets from the target site without requiring JS-discovered endpoints.
+     * Crawls same-origin HTML pages for a small number of hops and collects forms and query links.
+     */
+    public List<EndpointInfo> discoverInjectionTargets(String baseUrl, Consumer<String> progressCallback) {
+        String htmlSource = fetchHtmlSource(baseUrl);
+        return discoverInjectionTargets(baseUrl, htmlSource, progressCallback);
+    }
+
+    private List<EndpointInfo> discoverInjectionTargets(
+            String baseUrl, String rootHtml, Consumer<String> progressCallback) {
+        Map<String, EndpointInfo> discovered = new LinkedHashMap<>();
+        Set<String> visitedPages = new HashSet<>();
+        Deque<PageToVisit> queue = new ArrayDeque<>();
+
+        queue.addLast(new PageToVisit(baseUrl, rootHtml, 0));
+
+        while (!queue.isEmpty() && visitedPages.size() < MAX_AUTO_CRAWL_PAGES) {
+            PageToVisit current = queue.removeFirst();
+            if (!visitedPages.add(current.url())) {
+                continue;
+            }
+
+            String html = current.html();
+            if ((html == null || html.isEmpty()) && current.depth() > 0) {
+                html = fetchHtmlSource(current.url());
+            }
+
+            if (html == null || html.isEmpty()) {
+                continue;
+            }
+
+            for (EndpointInfo endpoint : discoverEndpointsFromHtml(html, current.url())) {
+                String key = endpoint.getHttpMethod() + "|" + endpoint.getUrl() + "|" + String.join(",", endpoint.getParameters());
+                discovered.putIfAbsent(key, endpoint);
+            }
+
+            if (current.depth() >= MAX_AUTO_CRAWL_DEPTH) {
+                continue;
+            }
+
+            for (String link : extractSameOriginNavigationLinks(html, current.url(), baseUrl)) {
+                if (!visitedPages.contains(link)) {
+                    queue.addLast(new PageToVisit(link, null, current.depth() + 1));
+                }
+            }
+        }
+
+        if (progressCallback != null && !discovered.isEmpty()) {
+            progressCallback.accept("Auto-discovered " + discovered.size() + " injection targets from site pages");
+        }
+
+        return new ArrayList<>(discovered.values());
+    }
+
     private void extractFieldNames(String html, Pattern pattern, List<String> target) {
         Matcher m = pattern.matcher(html);
         while (m.find()) {
@@ -427,6 +623,12 @@ public class SQLInjectionAnalyzer {
         results.clear();
 
         // Phase 1: Collect all endpoints to test
+        if (shouldStop()) {
+            if (progressCallback != null) {
+                progressCallback.accept("Injection testing stopped by user.");
+            }
+            return results;
+        }
         List<EndpointInfo> allEndpoints = new ArrayList<>();
         Set<String> dedup = new HashSet<>();
 
@@ -458,19 +660,19 @@ public class SQLInjectionAnalyzer {
         }
 
         // 1c. HTML form/link discovery
-        if (htmlSource != null && !htmlSource.isEmpty()) {
+        List<EndpointInfo> siteEndpoints = discoverInjectionTargets(baseUrl, htmlSource, progressCallback);
+        if (!siteEndpoints.isEmpty()) {
             if (progressCallback != null) {
                 progressCallback.accept("Discovering forms and links from HTML...");
             }
-            List<EndpointInfo> htmlEndpoints = discoverEndpointsFromHtml(htmlSource, baseUrl);
-            for (EndpointInfo ep : htmlEndpoints) {
+            for (EndpointInfo ep : siteEndpoints) {
                 String key = ep.getHttpMethod() + "|" + ep.getUrl();
                 if (dedup.add(key)) {
                     allEndpoints.add(ep);
                 }
             }
-            if (progressCallback != null && !htmlEndpoints.isEmpty()) {
-                progressCallback.accept("Discovered " + htmlEndpoints.size() + " endpoints from HTML forms/links");
+            if (progressCallback != null) {
+                progressCallback.accept("Discovered " + siteEndpoints.size() + " endpoints from HTML forms/links");
             }
         }
 
@@ -479,6 +681,23 @@ public class SQLInjectionAnalyzer {
                 progressCallback.accept("No endpoints to test for injections");
             }
             return results;
+        }
+
+        List<String> activePayloads = resolvePayloadsForCms(cmsType);
+        lastPayloadCountUsed = activePayloads.size();
+        if (progressCallback != null) {
+            if (cmsType != null && !cmsType.isBlank()) {
+                if (cmsPayloadProfiles.containsKey(cmsType)) {
+                    progressCallback.accept("Using payloads for " + cmsType + ": "
+                            + lastCmsPayloadCountUsed + " CMS-specific + "
+                            + lastGenericPayloadCountUsed + " generic => "
+                            + activePayloads.size() + " unique");
+                } else {
+                    progressCallback.accept("No CMS-specific payload profile for " + cmsType + "; using generic payload set");
+                }
+            } else {
+                progressCallback.accept("CMS not detected; using generic payload set (" + activePayloads.size() + " payloads)");
+            }
         }
 
         // Phase 2: Filter testable endpoints
@@ -493,23 +712,31 @@ public class SQLInjectionAnalyzer {
                     .collect(Collectors.toList());
         }
 
+        if (testable.size() > MAX_ENDPOINTS_PER_SCAN) {
+            if (progressCallback != null) {
+                progressCallback.accept("Too many endpoints (" + testable.size() + ") — limiting to " +
+                        MAX_ENDPOINTS_PER_SCAN + " highest-priority targets for stability");
+            }
+            testable = new ArrayList<>(testable.subList(0, MAX_ENDPOINTS_PER_SCAN));
+        }
+
         if (progressCallback != null) {
             progressCallback.accept("Testing " + testable.size() + " endpoints with " +
-                    payloads.size() + " injection payloads (" + (testable.size() * payloads.size()) + " total tests)...");
+                    activePayloads.size() + " injection payloads (" + (testable.size() * activePayloads.size()) + " total tests)...");
         }
 
         // Phase 3: Run injection tests
-        int totalTests = testable.size() * payloads.size();
+        int totalTests = testable.size() * activePayloads.size();
         int completed = 0;
 
         for (EndpointInfo endpoint : testable) {
-            if (Thread.currentThread().isInterrupted()) break;
+            if (shouldStop()) break;
 
             List<InjectionResult> endpointResults = new ArrayList<>();
             String endpointUrl = resolveEndpointUrl(endpoint, baseUrl);
 
-            for (String payload : payloads) {
-                if (Thread.currentThread().isInterrupted()) break;
+            for (String payload : activePayloads) {
+                if (shouldStop()) break;
 
                 completed++;
                 if (progressCallback != null && completed % 10 == 0) {
@@ -529,8 +756,13 @@ public class SQLInjectionAnalyzer {
         }
 
         if (progressCallback != null) {
-            progressCallback.accept("Injection testing completed. " +
-                    results.size() + " vulnerable endpoints found out of " + testable.size() + " tested.");
+            if (shouldStop()) {
+                progressCallback.accept("Injection testing stopped by user. Partial results: " +
+                        results.size() + " vulnerable endpoints found so far.");
+            } else {
+                progressCallback.accept("Injection testing completed. " +
+                        results.size() + " vulnerable endpoints found out of " + testable.size() + " tested.");
+            }
         }
 
         return results;
@@ -569,6 +801,13 @@ public class SQLInjectionAnalyzer {
 
         if (progressCallback != null) {
             progressCallback.accept("Fetching target page for CMS detection and form discovery...");
+        }
+
+        if (shouldStop()) {
+            if (progressCallback != null) {
+                progressCallback.accept("Injection testing stopped by user.");
+            }
+            return results;
         }
 
         String htmlSource = fetchHtmlSource(baseUrl);
@@ -627,7 +866,7 @@ public class SQLInjectionAnalyzer {
     private InjectionResult testPayload(String endpointUrl, EndpointInfo endpoint, String payload) {
         try {
             boolean isTimeBased = TIME_BASED_KEYWORDS.stream()
-                    .anyMatch(k -> payload.toUpperCase().contains(k));
+                    .anyMatch(k -> payload.toUpperCase(Locale.ROOT).contains(k.toUpperCase(Locale.ROOT)));
 
             String method = endpoint.getHttpMethod() != null ? endpoint.getHttpMethod() : "GET";
 
@@ -698,6 +937,13 @@ public class SQLInjectionAnalyzer {
                 vulnerable = true;
             }
 
+            // 6. Boolean-based blind check: compare true-condition payload vs false-condition payload.
+            BooleanBlindOutcome blindOutcome = runBooleanBlindCheck(endpointUrl, endpoint, method, payload, response);
+            if (blindOutcome.significantDifference()) {
+                evidence.add("Boolean-based blind difference detected: " + blindOutcome.reason());
+                vulnerable = true;
+            }
+
             if (vulnerable) {
                 return new InjectionResult(
                         payload, endpointUrl, method,
@@ -711,6 +957,73 @@ public class SQLInjectionAnalyzer {
             // Connection errors are expected for many payloads
         }
         return null;
+    }
+
+    private BooleanBlindOutcome runBooleanBlindCheck(
+            String endpointUrl,
+            EndpointInfo endpoint,
+            String method,
+            String trueResponsePayload,
+            HttpResponse trueResponse
+    ) {
+        String falsePayload = toBooleanFalseVariant(trueResponsePayload);
+        if (falsePayload == null) {
+            return BooleanBlindOutcome.none();
+        }
+
+        String falseUrl;
+        String falseBody = null;
+        if ("GET".equalsIgnoreCase(method) || "DELETE".equalsIgnoreCase(method)) {
+            falseUrl = injectIntoUrl(endpointUrl, falsePayload);
+        } else {
+            falseUrl = endpointUrl;
+            falseBody = buildInjectionBody(endpoint, falsePayload);
+        }
+
+        HttpResponse falseResponse = sendRequest(falseUrl, method, falseBody);
+        if (falseResponse == null) {
+            return BooleanBlindOutcome.none();
+        }
+
+        if (trueResponse.statusCode != falseResponse.statusCode) {
+            return new BooleanBlindOutcome(true,
+                    "status changed " + trueResponse.statusCode + " -> " + falseResponse.statusCode);
+        }
+
+        int trueLen = trueResponse.body != null ? trueResponse.body.length() : 0;
+        int falseLen = falseResponse.body != null ? falseResponse.body.length() : 0;
+        int delta = Math.abs(trueLen - falseLen);
+        int max = Math.max(1, Math.max(trueLen, falseLen));
+        double ratio = (double) delta / max;
+
+        if (delta >= 40 && ratio >= 0.20d) {
+            return new BooleanBlindOutcome(true,
+                    "response length changed " + trueLen + " -> " + falseLen + " (delta=" + delta + ")");
+        }
+
+        return BooleanBlindOutcome.none();
+    }
+
+    private String toBooleanFalseVariant(String payload) {
+        if (payload == null || payload.isBlank()) {
+            return null;
+        }
+        String replaced = payload;
+
+        if (replaced.contains("1'='1")) {
+            replaced = replaced.replace("1'='1", "1'='2");
+        }
+        if (replaced.contains("1\"=\"1")) {
+            replaced = replaced.replace("1\"=\"1", "1\"=\"2");
+        }
+        if (replaced.matches(".*\\b1=1\\b.*")) {
+            replaced = replaced.replaceFirst("\\b1=1\\b", "1=2");
+        }
+        if (replaced.matches(".*\\btrue\\b.*")) {
+            replaced = replaced.replaceFirst("(?i)\\btrue\\b", "false");
+        }
+
+        return replaced.equals(payload) ? null : replaced;
     }
 
     /**
@@ -787,6 +1100,7 @@ public class SQLInjectionAnalyzer {
      * Send HTTP request using default JVM TLS/hostname verification.
      */
     private HttpResponse sendRequest(String url, String method, String body) {
+        if (shouldStop()) return null;
         if (method == null) method = "GET";
         try {
             HttpURLConnection conn = (HttpURLConnection) URI.create(url).toURL().openConnection();
@@ -795,14 +1109,18 @@ public class SQLInjectionAnalyzer {
                 // Keep default HTTPS behavior.
             }
 
-            conn.setRequestMethod("GET".equalsIgnoreCase(method) || "DELETE".equalsIgnoreCase(method) ? method.toUpperCase() : "POST");
+            String normalizedMethod = method.toUpperCase(Locale.ROOT);
+            if (!Set.of("GET", "POST", "PUT", "PATCH", "DELETE").contains(normalizedMethod)) {
+                normalizedMethod = "POST";
+            }
+            conn.setRequestMethod(normalizedMethod);
             conn.setConnectTimeout(TIMEOUT);
             conn.setReadTimeout(TIMEOUT);
             conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
             conn.setRequestProperty("Accept", "*/*");
             conn.setInstanceFollowRedirects(true);
 
-            if (body != null && ("POST".equalsIgnoreCase(method) || "PUT".equalsIgnoreCase(method) || "PATCH".equalsIgnoreCase(method))) {
+            if (body != null && ("POST".equals(normalizedMethod) || "PUT".equals(normalizedMethod) || "PATCH".equals(normalizedMethod))) {
                 conn.setDoOutput(true);
                 conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
                 try (OutputStream os = conn.getOutputStream()) {
@@ -896,7 +1214,8 @@ public class SQLInjectionAnalyzer {
         if (!detectedDatabases.isEmpty()) {
             sb.append("Detected databases: ").append(String.join(", ", detectedDatabases)).append("\n");
         }
-        sb.append("Payloads tested: ").append(payloads.size()).append("\n");
+        int payloadCount = lastPayloadCountUsed > 0 ? lastPayloadCountUsed : payloads.size();
+        sb.append("Payloads tested: ").append(payloadCount).append("\n");
 
         return sb.toString();
     }
@@ -927,6 +1246,62 @@ public class SQLInjectionAnalyzer {
         }
     }
 
+    private List<String> extractSameOriginNavigationLinks(String html, String currentUrl, String baseUrl) {
+        List<String> links = new ArrayList<>();
+        if (html == null || html.isEmpty()) return links;
+
+        URI base = safeUri(baseUrl);
+        URI current = safeUri(currentUrl);
+        Matcher matcher = NAV_LINK_PATTERN.matcher(html);
+
+        while (matcher.find()) {
+            String href = matcher.group(1).trim();
+            if (href.isEmpty() || href.startsWith("#") || href.startsWith("javascript:") || href.startsWith("mailto:")) {
+                continue;
+            }
+
+            String resolved = resolveUrl(href, currentUrl);
+            if (!isSameOrigin(base, safeUri(resolved))) {
+                continue;
+            }
+            if (looksLikeStaticAsset(resolved)) {
+                continue;
+            }
+            if (current != null && resolved.equals(current.toString())) {
+                continue;
+            }
+            links.add(resolved);
+        }
+
+        return links;
+    }
+
+    private boolean isSameOrigin(URI left, URI right) {
+        if (left == null || right == null) return false;
+        int leftPort = left.getPort() >= 0 ? left.getPort() : defaultPort(left.getScheme());
+        int rightPort = right.getPort() >= 0 ? right.getPort() : defaultPort(right.getScheme());
+        return Objects.equals(left.getScheme(), right.getScheme())
+                && Objects.equals(left.getHost(), right.getHost())
+                && leftPort == rightPort;
+    }
+
+    private int defaultPort(String scheme) {
+        return "https".equalsIgnoreCase(scheme) ? 443 : 80;
+    }
+
+    private URI safeUri(String value) {
+        try {
+            return value != null ? URI.create(value) : null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private boolean looksLikeStaticAsset(String url) {
+        String lower = url.toLowerCase(Locale.ROOT);
+        return lower.matches(".*\\.(css|js|png|jpg|jpeg|gif|webp|svg|ico|woff2?|ttf)(\\?.*)?$");
+    }
+
     /**
      * Shutdown the executor service.
      */
@@ -937,11 +1312,21 @@ public class SQLInjectionAnalyzer {
     // --- Inner classes ---
 
     private record HttpResponse(int statusCode, String body) {}
+    private record BooleanBlindOutcome(boolean significantDifference, String reason) {
+        static BooleanBlindOutcome none() {
+            return new BooleanBlindOutcome(false, "");
+        }
+    }
 
     /**
      * CMS-specific endpoint profile loaded from cms-profiles.txt.
      */
     private record CmsEndpointProfile(String method, String path, List<String> parameters, String description) {}
+
+    /**
+     * Crawl queue entry for same-origin HTML discovery.
+     */
+    private record PageToVisit(String url, String html, int depth) {}
 
     /**
      * Represents a single injection test result.

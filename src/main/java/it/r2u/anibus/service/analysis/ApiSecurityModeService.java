@@ -22,6 +22,7 @@ import java.util.regex.Pattern;
 public class ApiSecurityModeService {
 
     private static final int TIMEOUT_MS = 7000;
+    private static final String TEST_AUTH_HEADER = "Bearer ANIBUS_TEST_TOKEN";
 
     private static final List<String> SPEC_PATHS = List.of(
         "/openapi.json",
@@ -86,13 +87,49 @@ public class ApiSecurityModeService {
         for (Map.Entry<String, Set<String>> e : declared.entrySet()) {
             String path = e.getKey();
             for (String method : e.getValue()) {
-                int status = probe(normalizedBase, path, method);
+                int status = probe(normalizedBase, path, method, null);
                 String note = classify(status);
                 probes.add(new EndpointProbe(method, path, status, note));
+
+                if ("GET".equals(method)) {
+                    EndpointProbe rateLimitProbe = runRateLimitProbe(normalizedBase, path, method);
+                    probes.add(rateLimitProbe);
+                }
+
+                int authStatus = probe(normalizedBase, path, method, TEST_AUTH_HEADER);
+                probes.add(new EndpointProbe(method + "+AUTH", path, authStatus,
+                        classifyAuthDiff(status, authStatus)));
+
+                if ("GET".equals(method) && path.contains("{")) {
+                    for (String fuzzedPath : fuzzIdPathVariants(path)) {
+                        int fuzzStatus = probe(normalizedBase, fuzzedPath, method, null);
+                        probes.add(new EndpointProbe(method + "+FUZZ", fuzzedPath, fuzzStatus,
+                                "ID fuzz probe: " + classify(fuzzStatus)));
+                    }
+                }
             }
         }
 
         return new ScanResult(normalizedBase, specUrl, probes, errors);
+    }
+
+    private EndpointProbe runRateLimitProbe(String baseUrl, String path, String method) {
+        int first429At = -1;
+        int lastStatus = 0;
+        for (int i = 1; i <= 20; i++) {
+            lastStatus = probe(baseUrl, path, method, null);
+            if (lastStatus == 429) {
+                first429At = i;
+                break;
+            }
+        }
+
+        if (first429At > 0) {
+            return new EndpointProbe(method + "+RATELIMIT", path, 429,
+                    "Rate-limit triggered after " + first429At + " request(s)");
+        }
+        return new EndpointProbe(method + "+RATELIMIT", path, lastStatus,
+                "Rate-limit check: no 429 within 20 request(s)");
     }
 
     private Map<String, Set<String>> extractDeclaredEndpoints(String specJson) {
@@ -113,7 +150,7 @@ public class ApiSecurityModeService {
         return result;
     }
 
-    private int probe(String baseUrl, String path, String method) {
+    private int probe(String baseUrl, String path, String method, String authHeader) {
         try {
             String url = path.startsWith("http://") || path.startsWith("https://")
                 ? path
@@ -126,6 +163,9 @@ public class ApiSecurityModeService {
             conn.setRequestProperty("User-Agent", "Anibus-API-Security-Mode/1.0");
             conn.setRequestProperty("Accept", "application/json,*/*");
             conn.setInstanceFollowRedirects(false);
+            if (authHeader != null && !authHeader.isBlank()) {
+                conn.setRequestProperty("Authorization", authHeader);
+            }
 
             if (requiresBody(method)) {
                 conn.setDoOutput(true);
@@ -138,6 +178,30 @@ public class ApiSecurityModeService {
         } catch (IOException | IllegalArgumentException e) {
             return 0;
         }
+    }
+
+    private String classifyAuthDiff(int anonymousStatus, int authStatus) {
+        if (anonymousStatus == 0 || authStatus == 0) {
+            return "Auth diff check incomplete";
+        }
+        if (anonymousStatus == authStatus) {
+            return "Auth diff: no change";
+        }
+        if (anonymousStatus == 200 && (authStatus == 401 || authStatus == 403)) {
+            return "Auth diff: anonymous access looks broader than authenticated";
+        }
+        if ((anonymousStatus == 401 || anonymousStatus == 403) && authStatus == 200) {
+            return "Auth diff: token changes access (expected for protected endpoints)";
+        }
+        return "Auth diff: status changed " + anonymousStatus + " -> " + authStatus;
+    }
+
+    private List<String> fuzzIdPathVariants(String path) {
+        String normalized = path.replaceAll("\\{[^/}]+}", "1");
+        List<String> variants = new ArrayList<>();
+        variants.add(normalized);
+        variants.add(normalized.replace("/1", "/999999"));
+        return variants.stream().distinct().toList();
     }
 
     private boolean requiresBody(String method) {

@@ -59,6 +59,20 @@
 .nav-menu-button .arrow-button { -fx-background-color: transparent; -fx-padding: 0 0 0 4; }
 .nav-menu-button .arrow { -fx-background-color: #6c757d; -fx-padding: 3 3; }
 
+/* ── Actions Menu Popup ─────────────────────────────── */
+.menu-item.actions-menu-item,
+.menu.actions-submenu {
+    -fx-pref-width: 640;
+    -fx-min-width: 640;
+    -fx-max-width: 640;
+}
+
+.menu-item.actions-menu-item .label,
+.menu.actions-submenu .label {
+    -fx-wrap-text: true;
+    -fx-padding: 0 10 0 0;
+}
+
 /* ── Status Bar ──────────────────────────────────────── */
 .status-bar {
     -fx-background-color: #1a1d20;
@@ -357,22 +371,55 @@
     -fx-background-color: #1a1d20;
     -fx-border-color: transparent transparent #343a40 transparent;
     -fx-border-width: 0 0 1 0;
-    -fx-padding: 8 16;
+    -fx-padding: 10 16;
 }
 .proxy-status-label {
-    -fx-font-size: 13px;
-    -fx-font-weight: 500;
-    -fx-text-fill: #6c757d;
+    -fx-font-size: 14px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #c8d0d9;
+}
+.proxy-transport-cluster {
+    -fx-background-color: #242a31;
+    -fx-border-color: #3a424d;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 4 10;
+}
+.proxy-transport-title {
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #c8d4e6;
+}
+.proxy-transport-check {
+    -fx-padding: 0;
+    -fx-opacity: 1;
+}
+.proxy-transport-check .text {
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+    -fx-fill: #f3f7ff;
+    -fx-text-fill: #f3f7ff;
+}
+.proxy-transport-check:selected .text {
+    -fx-fill: #ffffff;
+    -fx-text-fill: #ffffff;
+}
+.proxy-transport-check:disabled {
+    -fx-opacity: 1;
+}
+.proxy-transport-check:disabled .text {
+    -fx-fill: #e5ecf8;
+    -fx-text-fill: #e5ecf8;
 }
 .proxy-rotate-button {
     -fx-background-color: #2c3038;
     -fx-text-fill: #6c757d;
-    -fx-font-size: 14px;
+    -fx-font-size: 13px;
     -fx-background-radius: 4;
     -fx-border-color: #3a3f47;
     -fx-border-radius: 4;
     -fx-cursor: hand;
-    -fx-padding: 0;
+    -fx-padding: 5 12;
 }
 .proxy-rotate-button:hover {
     -fx-background-color: #343a40;
@@ -388,9 +435,9 @@
     -fx-padding: 10 24;
 }
 .proxy-stat-key {
-    -fx-font-size: 10px;
+    -fx-font-size: 11px;
     -fx-font-weight: 700;
-    -fx-text-fill: #6c757d;
+    -fx-text-fill: #9aa6b5;
 }
 .proxy-stat-value {
     -fx-font-size: 22px;
@@ -410,6 +457,42 @@
 .proxy-progress .bar {
     -fx-background-radius: 3;
     -fx-background-insets: 0;
+}
+.proxy-list-title {
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #9fb2c7;
+    -fx-padding: 0 0 2 0;
+}
+.proxy-list-view {
+    -fx-background-color: #161b22;
+    -fx-background-insets: 0;
+    -fx-border-color: #3a424d;
+    -fx-border-width: 1;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+}
+.proxy-list-view .viewport {
+    -fx-background-color: #161b22;
+}
+.proxy-list-view .list-cell {
+    -fx-background-color: #161b22;
+    -fx-text-fill: #d5dde7;
+    -fx-font-size: 14px;
+    -fx-padding: 8 10;
+    -fx-border-color: transparent transparent #27303a transparent;
+    -fx-border-width: 0 0 1 0;
+}
+.proxy-list-view .list-cell:filled:selected {
+    -fx-background-color: rgba(13,110,253,0.22);
+    -fx-text-fill: #eef4ff;
+}
+.proxy-list-view .list-cell:filled:hover {
+    -fx-background-color: rgba(255,255,255,0.06);
+}
+.proxy-list-view .placeholder .label {
+    -fx-text-fill: #8f9aaa;
+    -fx-font-size: 13px;
 }
 /* ── Placeholder ─────────────────────────────────────── */
 .placeholder-pane { -fx-background-color: transparent; -fx-padding: 40; }

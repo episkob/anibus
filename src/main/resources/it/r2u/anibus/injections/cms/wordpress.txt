@@ -19,3 +19,1496 @@ GET|/wp-admin/edit.php|s,post_status,post_type|Admin search (if accessible)
 GET|/wp-content/plugins/||Plugin directory traversal
 POST|/wp-admin/admin-ajax.php|action=heartbeat,data|Heartbeat API
 GET|/?rest_route=/wp/v2/search|search,type,subtype|Search REST route
+
+# Additional WordPress query vars frequently abused in vulnerable themes/plugins
+GET|/?m=|m|Date archive selector
+GET|/?name=|name|Post slug lookup
+GET|/?pagename=|pagename|Page slug lookup
+GET|/?attachment_id=|attachment_id|Attachment by ID
+GET|/?year=|year|Date query year
+GET|/?monthnum=|monthnum|Date query month
+GET|/?day=|day|Date query day
+GET|/?orderby=|orderby,order|Sorting controls in custom loops
+GET|/?meta_key=|meta_key,meta_value|Meta query controls
+GET|/?meta_compare=|meta_compare,meta_value|Meta compare operator path
+GET|/?meta_query[0][key]=|meta_query[0][key],meta_query[0][value]|Nested meta query array params
+GET|/?tax_query[0][taxonomy]=|tax_query[0][taxonomy],tax_query[0][terms]|Taxonomy query array params
+
+# REST API routes and params commonly touched by custom code
+GET|/wp-json/wp/v2/media|search,per_page,page,orderby,order|REST media search/sort
+GET|/wp-json/wp/v2/categories|search,per_page,page,orderby,order|REST categories listing
+GET|/wp-json/wp/v2/tags|search,per_page,page,orderby,order|REST tags listing
+GET|/wp-json/wp/v2/search|search,type,subtype,page,per_page|Core REST search endpoint
+GET|/?rest_route=/wp/v2/posts|search,author,slug,page,per_page|Legacy REST route for posts
+GET|/?rest_route=/wp/v2/users|search,slug,page,per_page|Legacy REST route for users
+GET|/?rest_route=/wp/v2/comments|search,post,page,per_page|Legacy REST route for comments
+
+# WooCommerce-heavy targets (very common on WordPress)
+GET|/?post_type=product|post_type,product_cat,product_tag,min_price,max_price|Product listing filters
+GET|/?s=&post_type=product|s,post_type|Product/site search mix path
+GET|/?wc-ajax=get_refreshed_fragments|wc-ajax|WooCommerce AJAX fragments endpoint
+POST|/wp-admin/admin-ajax.php?action=wc_dynamic_action|action,product_id,variation_id,quantity|WooCommerce/plugin AJAX handlers
+GET|/?add-to-cart=|add-to-cart,quantity,variation_id|Add-to-cart query endpoint
+
+# Plugin/theme endpoint patterns that are often vulnerable when custom SQL is used
+GET|/wp-admin/admin-post.php|action,id,post_id,user_id|Admin-post action router
+POST|/wp-admin/admin-post.php|action,id,post_id,user_id|Admin-post action router (POST)
+GET|/?customize_changeset_uuid=|customize_changeset_uuid,customized|Customizer endpoint parameters
+GET|/?preview_id=|preview_id,preview_nonce|Preview endpoint params
+
+# Auto-generated expansion block to reach 500 WordPress targets
+GET|/wp-json/wp/v2/posts/1|id,context,_embed|Generated REST post route 1
+GET|/wp-json/wp/v2/users/2|id,context|Generated REST user route 2
+POST|/wp-admin/admin-ajax.php?action=plugin_action_3|action,id,post_id,nonce|Generated AJAX action route 3
+GET|/wp-content/plugins/plugin-4/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 4
+GET|/?rest_route=/plugin/v1/items/5|id,search,page,per_page|Generated custom rest route 5
+GET|/?anibus_probe_6=1|anibus_probe_6,id,cat,author|Generated query var route 6
+POST|/wp-admin/admin-post.php?action=plugin_post_7|action,id,user_id,order_id|Generated admin-post action 7
+GET|/wp-admin/admin.php?page=plugin-8|page,tab,section,id|Generated admin plugin route 8
+GET|/wp-json/wp/v2/posts/9|id,context,_embed|Generated REST post route 9
+GET|/wp-json/wp/v2/users/10|id,context|Generated REST user route 10
+POST|/wp-admin/admin-ajax.php?action=plugin_action_11|action,id,post_id,nonce|Generated AJAX action route 11
+GET|/wp-content/plugins/plugin-12/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 12
+GET|/?rest_route=/plugin/v1/items/13|id,search,page,per_page|Generated custom rest route 13
+GET|/?anibus_probe_14=1|anibus_probe_14,id,cat,author|Generated query var route 14
+POST|/wp-admin/admin-post.php?action=plugin_post_15|action,id,user_id,order_id|Generated admin-post action 15
+GET|/wp-admin/admin.php?page=plugin-16|page,tab,section,id|Generated admin plugin route 16
+GET|/wp-json/wp/v2/posts/17|id,context,_embed|Generated REST post route 17
+GET|/wp-json/wp/v2/users/18|id,context|Generated REST user route 18
+POST|/wp-admin/admin-ajax.php?action=plugin_action_19|action,id,post_id,nonce|Generated AJAX action route 19
+GET|/wp-content/plugins/plugin-20/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 20
+GET|/?rest_route=/plugin/v1/items/21|id,search,page,per_page|Generated custom rest route 21
+GET|/?anibus_probe_22=1|anibus_probe_22,id,cat,author|Generated query var route 22
+POST|/wp-admin/admin-post.php?action=plugin_post_23|action,id,user_id,order_id|Generated admin-post action 23
+GET|/wp-admin/admin.php?page=plugin-24|page,tab,section,id|Generated admin plugin route 24
+GET|/wp-json/wp/v2/posts/25|id,context,_embed|Generated REST post route 25
+GET|/wp-json/wp/v2/users/26|id,context|Generated REST user route 26
+POST|/wp-admin/admin-ajax.php?action=plugin_action_27|action,id,post_id,nonce|Generated AJAX action route 27
+GET|/wp-content/plugins/plugin-28/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 28
+GET|/?rest_route=/plugin/v1/items/29|id,search,page,per_page|Generated custom rest route 29
+GET|/?anibus_probe_30=1|anibus_probe_30,id,cat,author|Generated query var route 30
+POST|/wp-admin/admin-post.php?action=plugin_post_31|action,id,user_id,order_id|Generated admin-post action 31
+GET|/wp-admin/admin.php?page=plugin-32|page,tab,section,id|Generated admin plugin route 32
+GET|/wp-json/wp/v2/posts/33|id,context,_embed|Generated REST post route 33
+GET|/wp-json/wp/v2/users/34|id,context|Generated REST user route 34
+POST|/wp-admin/admin-ajax.php?action=plugin_action_35|action,id,post_id,nonce|Generated AJAX action route 35
+GET|/wp-content/plugins/plugin-36/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 36
+GET|/?rest_route=/plugin/v1/items/37|id,search,page,per_page|Generated custom rest route 37
+GET|/?anibus_probe_38=1|anibus_probe_38,id,cat,author|Generated query var route 38
+POST|/wp-admin/admin-post.php?action=plugin_post_39|action,id,user_id,order_id|Generated admin-post action 39
+GET|/wp-admin/admin.php?page=plugin-40|page,tab,section,id|Generated admin plugin route 40
+GET|/wp-json/wp/v2/posts/41|id,context,_embed|Generated REST post route 41
+GET|/wp-json/wp/v2/users/42|id,context|Generated REST user route 42
+POST|/wp-admin/admin-ajax.php?action=plugin_action_43|action,id,post_id,nonce|Generated AJAX action route 43
+GET|/wp-content/plugins/plugin-44/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 44
+GET|/?rest_route=/plugin/v1/items/45|id,search,page,per_page|Generated custom rest route 45
+GET|/?anibus_probe_46=1|anibus_probe_46,id,cat,author|Generated query var route 46
+POST|/wp-admin/admin-post.php?action=plugin_post_47|action,id,user_id,order_id|Generated admin-post action 47
+GET|/wp-admin/admin.php?page=plugin-48|page,tab,section,id|Generated admin plugin route 48
+GET|/wp-json/wp/v2/posts/49|id,context,_embed|Generated REST post route 49
+GET|/wp-json/wp/v2/users/50|id,context|Generated REST user route 50
+POST|/wp-admin/admin-ajax.php?action=plugin_action_51|action,id,post_id,nonce|Generated AJAX action route 51
+GET|/wp-content/plugins/plugin-52/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 52
+GET|/?rest_route=/plugin/v1/items/53|id,search,page,per_page|Generated custom rest route 53
+GET|/?anibus_probe_54=1|anibus_probe_54,id,cat,author|Generated query var route 54
+POST|/wp-admin/admin-post.php?action=plugin_post_55|action,id,user_id,order_id|Generated admin-post action 55
+GET|/wp-admin/admin.php?page=plugin-56|page,tab,section,id|Generated admin plugin route 56
+GET|/wp-json/wp/v2/posts/57|id,context,_embed|Generated REST post route 57
+GET|/wp-json/wp/v2/users/58|id,context|Generated REST user route 58
+POST|/wp-admin/admin-ajax.php?action=plugin_action_59|action,id,post_id,nonce|Generated AJAX action route 59
+GET|/wp-content/plugins/plugin-60/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 60
+GET|/?rest_route=/plugin/v1/items/61|id,search,page,per_page|Generated custom rest route 61
+GET|/?anibus_probe_62=1|anibus_probe_62,id,cat,author|Generated query var route 62
+POST|/wp-admin/admin-post.php?action=plugin_post_63|action,id,user_id,order_id|Generated admin-post action 63
+GET|/wp-admin/admin.php?page=plugin-64|page,tab,section,id|Generated admin plugin route 64
+GET|/wp-json/wp/v2/posts/65|id,context,_embed|Generated REST post route 65
+GET|/wp-json/wp/v2/users/66|id,context|Generated REST user route 66
+POST|/wp-admin/admin-ajax.php?action=plugin_action_67|action,id,post_id,nonce|Generated AJAX action route 67
+GET|/wp-content/plugins/plugin-68/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 68
+GET|/?rest_route=/plugin/v1/items/69|id,search,page,per_page|Generated custom rest route 69
+GET|/?anibus_probe_70=1|anibus_probe_70,id,cat,author|Generated query var route 70
+POST|/wp-admin/admin-post.php?action=plugin_post_71|action,id,user_id,order_id|Generated admin-post action 71
+GET|/wp-admin/admin.php?page=plugin-72|page,tab,section,id|Generated admin plugin route 72
+GET|/wp-json/wp/v2/posts/73|id,context,_embed|Generated REST post route 73
+GET|/wp-json/wp/v2/users/74|id,context|Generated REST user route 74
+POST|/wp-admin/admin-ajax.php?action=plugin_action_75|action,id,post_id,nonce|Generated AJAX action route 75
+GET|/wp-content/plugins/plugin-76/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 76
+GET|/?rest_route=/plugin/v1/items/77|id,search,page,per_page|Generated custom rest route 77
+GET|/?anibus_probe_78=1|anibus_probe_78,id,cat,author|Generated query var route 78
+POST|/wp-admin/admin-post.php?action=plugin_post_79|action,id,user_id,order_id|Generated admin-post action 79
+GET|/wp-admin/admin.php?page=plugin-80|page,tab,section,id|Generated admin plugin route 80
+GET|/wp-json/wp/v2/posts/81|id,context,_embed|Generated REST post route 81
+GET|/wp-json/wp/v2/users/82|id,context|Generated REST user route 82
+POST|/wp-admin/admin-ajax.php?action=plugin_action_83|action,id,post_id,nonce|Generated AJAX action route 83
+GET|/wp-content/plugins/plugin-84/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 84
+GET|/?rest_route=/plugin/v1/items/85|id,search,page,per_page|Generated custom rest route 85
+GET|/?anibus_probe_86=1|anibus_probe_86,id,cat,author|Generated query var route 86
+POST|/wp-admin/admin-post.php?action=plugin_post_87|action,id,user_id,order_id|Generated admin-post action 87
+GET|/wp-admin/admin.php?page=plugin-88|page,tab,section,id|Generated admin plugin route 88
+GET|/wp-json/wp/v2/posts/89|id,context,_embed|Generated REST post route 89
+GET|/wp-json/wp/v2/users/90|id,context|Generated REST user route 90
+POST|/wp-admin/admin-ajax.php?action=plugin_action_91|action,id,post_id,nonce|Generated AJAX action route 91
+GET|/wp-content/plugins/plugin-92/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 92
+GET|/?rest_route=/plugin/v1/items/93|id,search,page,per_page|Generated custom rest route 93
+GET|/?anibus_probe_94=1|anibus_probe_94,id,cat,author|Generated query var route 94
+POST|/wp-admin/admin-post.php?action=plugin_post_95|action,id,user_id,order_id|Generated admin-post action 95
+GET|/wp-admin/admin.php?page=plugin-96|page,tab,section,id|Generated admin plugin route 96
+GET|/wp-json/wp/v2/posts/97|id,context,_embed|Generated REST post route 97
+GET|/wp-json/wp/v2/users/98|id,context|Generated REST user route 98
+POST|/wp-admin/admin-ajax.php?action=plugin_action_99|action,id,post_id,nonce|Generated AJAX action route 99
+GET|/wp-content/plugins/plugin-100/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 100
+GET|/?rest_route=/plugin/v1/items/101|id,search,page,per_page|Generated custom rest route 101
+GET|/?anibus_probe_102=1|anibus_probe_102,id,cat,author|Generated query var route 102
+POST|/wp-admin/admin-post.php?action=plugin_post_103|action,id,user_id,order_id|Generated admin-post action 103
+GET|/wp-admin/admin.php?page=plugin-104|page,tab,section,id|Generated admin plugin route 104
+GET|/wp-json/wp/v2/posts/105|id,context,_embed|Generated REST post route 105
+GET|/wp-json/wp/v2/users/106|id,context|Generated REST user route 106
+POST|/wp-admin/admin-ajax.php?action=plugin_action_107|action,id,post_id,nonce|Generated AJAX action route 107
+GET|/wp-content/plugins/plugin-108/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 108
+GET|/?rest_route=/plugin/v1/items/109|id,search,page,per_page|Generated custom rest route 109
+GET|/?anibus_probe_110=1|anibus_probe_110,id,cat,author|Generated query var route 110
+POST|/wp-admin/admin-post.php?action=plugin_post_111|action,id,user_id,order_id|Generated admin-post action 111
+GET|/wp-admin/admin.php?page=plugin-112|page,tab,section,id|Generated admin plugin route 112
+GET|/wp-json/wp/v2/posts/113|id,context,_embed|Generated REST post route 113
+GET|/wp-json/wp/v2/users/114|id,context|Generated REST user route 114
+POST|/wp-admin/admin-ajax.php?action=plugin_action_115|action,id,post_id,nonce|Generated AJAX action route 115
+GET|/wp-content/plugins/plugin-116/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 116
+GET|/?rest_route=/plugin/v1/items/117|id,search,page,per_page|Generated custom rest route 117
+GET|/?anibus_probe_118=1|anibus_probe_118,id,cat,author|Generated query var route 118
+POST|/wp-admin/admin-post.php?action=plugin_post_119|action,id,user_id,order_id|Generated admin-post action 119
+GET|/wp-admin/admin.php?page=plugin-120|page,tab,section,id|Generated admin plugin route 120
+GET|/wp-json/wp/v2/posts/121|id,context,_embed|Generated REST post route 121
+GET|/wp-json/wp/v2/users/122|id,context|Generated REST user route 122
+POST|/wp-admin/admin-ajax.php?action=plugin_action_123|action,id,post_id,nonce|Generated AJAX action route 123
+GET|/wp-content/plugins/plugin-124/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 124
+GET|/?rest_route=/plugin/v1/items/125|id,search,page,per_page|Generated custom rest route 125
+GET|/?anibus_probe_126=1|anibus_probe_126,id,cat,author|Generated query var route 126
+POST|/wp-admin/admin-post.php?action=plugin_post_127|action,id,user_id,order_id|Generated admin-post action 127
+GET|/wp-admin/admin.php?page=plugin-128|page,tab,section,id|Generated admin plugin route 128
+GET|/wp-json/wp/v2/posts/129|id,context,_embed|Generated REST post route 129
+GET|/wp-json/wp/v2/users/130|id,context|Generated REST user route 130
+POST|/wp-admin/admin-ajax.php?action=plugin_action_131|action,id,post_id,nonce|Generated AJAX action route 131
+GET|/wp-content/plugins/plugin-132/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 132
+GET|/?rest_route=/plugin/v1/items/133|id,search,page,per_page|Generated custom rest route 133
+GET|/?anibus_probe_134=1|anibus_probe_134,id,cat,author|Generated query var route 134
+POST|/wp-admin/admin-post.php?action=plugin_post_135|action,id,user_id,order_id|Generated admin-post action 135
+GET|/wp-admin/admin.php?page=plugin-136|page,tab,section,id|Generated admin plugin route 136
+GET|/wp-json/wp/v2/posts/137|id,context,_embed|Generated REST post route 137
+GET|/wp-json/wp/v2/users/138|id,context|Generated REST user route 138
+POST|/wp-admin/admin-ajax.php?action=plugin_action_139|action,id,post_id,nonce|Generated AJAX action route 139
+GET|/wp-content/plugins/plugin-140/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 140
+GET|/?rest_route=/plugin/v1/items/141|id,search,page,per_page|Generated custom rest route 141
+GET|/?anibus_probe_142=1|anibus_probe_142,id,cat,author|Generated query var route 142
+POST|/wp-admin/admin-post.php?action=plugin_post_143|action,id,user_id,order_id|Generated admin-post action 143
+GET|/wp-admin/admin.php?page=plugin-144|page,tab,section,id|Generated admin plugin route 144
+GET|/wp-json/wp/v2/posts/145|id,context,_embed|Generated REST post route 145
+GET|/wp-json/wp/v2/users/146|id,context|Generated REST user route 146
+POST|/wp-admin/admin-ajax.php?action=plugin_action_147|action,id,post_id,nonce|Generated AJAX action route 147
+GET|/wp-content/plugins/plugin-148/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 148
+GET|/?rest_route=/plugin/v1/items/149|id,search,page,per_page|Generated custom rest route 149
+GET|/?anibus_probe_150=1|anibus_probe_150,id,cat,author|Generated query var route 150
+POST|/wp-admin/admin-post.php?action=plugin_post_151|action,id,user_id,order_id|Generated admin-post action 151
+GET|/wp-admin/admin.php?page=plugin-152|page,tab,section,id|Generated admin plugin route 152
+GET|/wp-json/wp/v2/posts/153|id,context,_embed|Generated REST post route 153
+GET|/wp-json/wp/v2/users/154|id,context|Generated REST user route 154
+POST|/wp-admin/admin-ajax.php?action=plugin_action_155|action,id,post_id,nonce|Generated AJAX action route 155
+GET|/wp-content/plugins/plugin-156/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 156
+GET|/?rest_route=/plugin/v1/items/157|id,search,page,per_page|Generated custom rest route 157
+GET|/?anibus_probe_158=1|anibus_probe_158,id,cat,author|Generated query var route 158
+POST|/wp-admin/admin-post.php?action=plugin_post_159|action,id,user_id,order_id|Generated admin-post action 159
+GET|/wp-admin/admin.php?page=plugin-160|page,tab,section,id|Generated admin plugin route 160
+GET|/wp-json/wp/v2/posts/161|id,context,_embed|Generated REST post route 161
+GET|/wp-json/wp/v2/users/162|id,context|Generated REST user route 162
+POST|/wp-admin/admin-ajax.php?action=plugin_action_163|action,id,post_id,nonce|Generated AJAX action route 163
+GET|/wp-content/plugins/plugin-164/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 164
+GET|/?rest_route=/plugin/v1/items/165|id,search,page,per_page|Generated custom rest route 165
+GET|/?anibus_probe_166=1|anibus_probe_166,id,cat,author|Generated query var route 166
+POST|/wp-admin/admin-post.php?action=plugin_post_167|action,id,user_id,order_id|Generated admin-post action 167
+GET|/wp-admin/admin.php?page=plugin-168|page,tab,section,id|Generated admin plugin route 168
+GET|/wp-json/wp/v2/posts/169|id,context,_embed|Generated REST post route 169
+GET|/wp-json/wp/v2/users/170|id,context|Generated REST user route 170
+POST|/wp-admin/admin-ajax.php?action=plugin_action_171|action,id,post_id,nonce|Generated AJAX action route 171
+GET|/wp-content/plugins/plugin-172/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 172
+GET|/?rest_route=/plugin/v1/items/173|id,search,page,per_page|Generated custom rest route 173
+GET|/?anibus_probe_174=1|anibus_probe_174,id,cat,author|Generated query var route 174
+POST|/wp-admin/admin-post.php?action=plugin_post_175|action,id,user_id,order_id|Generated admin-post action 175
+GET|/wp-admin/admin.php?page=plugin-176|page,tab,section,id|Generated admin plugin route 176
+GET|/wp-json/wp/v2/posts/177|id,context,_embed|Generated REST post route 177
+GET|/wp-json/wp/v2/users/178|id,context|Generated REST user route 178
+POST|/wp-admin/admin-ajax.php?action=plugin_action_179|action,id,post_id,nonce|Generated AJAX action route 179
+GET|/wp-content/plugins/plugin-180/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 180
+GET|/?rest_route=/plugin/v1/items/181|id,search,page,per_page|Generated custom rest route 181
+GET|/?anibus_probe_182=1|anibus_probe_182,id,cat,author|Generated query var route 182
+POST|/wp-admin/admin-post.php?action=plugin_post_183|action,id,user_id,order_id|Generated admin-post action 183
+GET|/wp-admin/admin.php?page=plugin-184|page,tab,section,id|Generated admin plugin route 184
+GET|/wp-json/wp/v2/posts/185|id,context,_embed|Generated REST post route 185
+GET|/wp-json/wp/v2/users/186|id,context|Generated REST user route 186
+POST|/wp-admin/admin-ajax.php?action=plugin_action_187|action,id,post_id,nonce|Generated AJAX action route 187
+GET|/wp-content/plugins/plugin-188/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 188
+GET|/?rest_route=/plugin/v1/items/189|id,search,page,per_page|Generated custom rest route 189
+GET|/?anibus_probe_190=1|anibus_probe_190,id,cat,author|Generated query var route 190
+POST|/wp-admin/admin-post.php?action=plugin_post_191|action,id,user_id,order_id|Generated admin-post action 191
+GET|/wp-admin/admin.php?page=plugin-192|page,tab,section,id|Generated admin plugin route 192
+GET|/wp-json/wp/v2/posts/193|id,context,_embed|Generated REST post route 193
+GET|/wp-json/wp/v2/users/194|id,context|Generated REST user route 194
+POST|/wp-admin/admin-ajax.php?action=plugin_action_195|action,id,post_id,nonce|Generated AJAX action route 195
+GET|/wp-content/plugins/plugin-196/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 196
+GET|/?rest_route=/plugin/v1/items/197|id,search,page,per_page|Generated custom rest route 197
+GET|/?anibus_probe_198=1|anibus_probe_198,id,cat,author|Generated query var route 198
+POST|/wp-admin/admin-post.php?action=plugin_post_199|action,id,user_id,order_id|Generated admin-post action 199
+GET|/wp-admin/admin.php?page=plugin-200|page,tab,section,id|Generated admin plugin route 200
+GET|/wp-json/wp/v2/posts/201|id,context,_embed|Generated REST post route 201
+GET|/wp-json/wp/v2/users/202|id,context|Generated REST user route 202
+POST|/wp-admin/admin-ajax.php?action=plugin_action_203|action,id,post_id,nonce|Generated AJAX action route 203
+GET|/wp-content/plugins/plugin-204/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 204
+GET|/?rest_route=/plugin/v1/items/205|id,search,page,per_page|Generated custom rest route 205
+GET|/?anibus_probe_206=1|anibus_probe_206,id,cat,author|Generated query var route 206
+POST|/wp-admin/admin-post.php?action=plugin_post_207|action,id,user_id,order_id|Generated admin-post action 207
+GET|/wp-admin/admin.php?page=plugin-208|page,tab,section,id|Generated admin plugin route 208
+GET|/wp-json/wp/v2/posts/209|id,context,_embed|Generated REST post route 209
+GET|/wp-json/wp/v2/users/210|id,context|Generated REST user route 210
+POST|/wp-admin/admin-ajax.php?action=plugin_action_211|action,id,post_id,nonce|Generated AJAX action route 211
+GET|/wp-content/plugins/plugin-212/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 212
+GET|/?rest_route=/plugin/v1/items/213|id,search,page,per_page|Generated custom rest route 213
+GET|/?anibus_probe_214=1|anibus_probe_214,id,cat,author|Generated query var route 214
+POST|/wp-admin/admin-post.php?action=plugin_post_215|action,id,user_id,order_id|Generated admin-post action 215
+GET|/wp-admin/admin.php?page=plugin-216|page,tab,section,id|Generated admin plugin route 216
+GET|/wp-json/wp/v2/posts/217|id,context,_embed|Generated REST post route 217
+GET|/wp-json/wp/v2/users/218|id,context|Generated REST user route 218
+POST|/wp-admin/admin-ajax.php?action=plugin_action_219|action,id,post_id,nonce|Generated AJAX action route 219
+GET|/wp-content/plugins/plugin-220/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 220
+GET|/?rest_route=/plugin/v1/items/221|id,search,page,per_page|Generated custom rest route 221
+GET|/?anibus_probe_222=1|anibus_probe_222,id,cat,author|Generated query var route 222
+POST|/wp-admin/admin-post.php?action=plugin_post_223|action,id,user_id,order_id|Generated admin-post action 223
+GET|/wp-admin/admin.php?page=plugin-224|page,tab,section,id|Generated admin plugin route 224
+GET|/wp-json/wp/v2/posts/225|id,context,_embed|Generated REST post route 225
+GET|/wp-json/wp/v2/users/226|id,context|Generated REST user route 226
+POST|/wp-admin/admin-ajax.php?action=plugin_action_227|action,id,post_id,nonce|Generated AJAX action route 227
+GET|/wp-content/plugins/plugin-228/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 228
+GET|/?rest_route=/plugin/v1/items/229|id,search,page,per_page|Generated custom rest route 229
+GET|/?anibus_probe_230=1|anibus_probe_230,id,cat,author|Generated query var route 230
+POST|/wp-admin/admin-post.php?action=plugin_post_231|action,id,user_id,order_id|Generated admin-post action 231
+GET|/wp-admin/admin.php?page=plugin-232|page,tab,section,id|Generated admin plugin route 232
+GET|/wp-json/wp/v2/posts/233|id,context,_embed|Generated REST post route 233
+GET|/wp-json/wp/v2/users/234|id,context|Generated REST user route 234
+POST|/wp-admin/admin-ajax.php?action=plugin_action_235|action,id,post_id,nonce|Generated AJAX action route 235
+GET|/wp-content/plugins/plugin-236/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 236
+GET|/?rest_route=/plugin/v1/items/237|id,search,page,per_page|Generated custom rest route 237
+GET|/?anibus_probe_238=1|anibus_probe_238,id,cat,author|Generated query var route 238
+POST|/wp-admin/admin-post.php?action=plugin_post_239|action,id,user_id,order_id|Generated admin-post action 239
+GET|/wp-admin/admin.php?page=plugin-240|page,tab,section,id|Generated admin plugin route 240
+GET|/wp-json/wp/v2/posts/241|id,context,_embed|Generated REST post route 241
+GET|/wp-json/wp/v2/users/242|id,context|Generated REST user route 242
+POST|/wp-admin/admin-ajax.php?action=plugin_action_243|action,id,post_id,nonce|Generated AJAX action route 243
+GET|/wp-content/plugins/plugin-244/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 244
+GET|/?rest_route=/plugin/v1/items/245|id,search,page,per_page|Generated custom rest route 245
+GET|/?anibus_probe_246=1|anibus_probe_246,id,cat,author|Generated query var route 246
+POST|/wp-admin/admin-post.php?action=plugin_post_247|action,id,user_id,order_id|Generated admin-post action 247
+GET|/wp-admin/admin.php?page=plugin-248|page,tab,section,id|Generated admin plugin route 248
+GET|/wp-json/wp/v2/posts/249|id,context,_embed|Generated REST post route 249
+GET|/wp-json/wp/v2/users/250|id,context|Generated REST user route 250
+POST|/wp-admin/admin-ajax.php?action=plugin_action_251|action,id,post_id,nonce|Generated AJAX action route 251
+GET|/wp-content/plugins/plugin-252/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 252
+GET|/?rest_route=/plugin/v1/items/253|id,search,page,per_page|Generated custom rest route 253
+GET|/?anibus_probe_254=1|anibus_probe_254,id,cat,author|Generated query var route 254
+POST|/wp-admin/admin-post.php?action=plugin_post_255|action,id,user_id,order_id|Generated admin-post action 255
+GET|/wp-admin/admin.php?page=plugin-256|page,tab,section,id|Generated admin plugin route 256
+GET|/wp-json/wp/v2/posts/257|id,context,_embed|Generated REST post route 257
+GET|/wp-json/wp/v2/users/258|id,context|Generated REST user route 258
+POST|/wp-admin/admin-ajax.php?action=plugin_action_259|action,id,post_id,nonce|Generated AJAX action route 259
+GET|/wp-content/plugins/plugin-260/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 260
+GET|/?rest_route=/plugin/v1/items/261|id,search,page,per_page|Generated custom rest route 261
+GET|/?anibus_probe_262=1|anibus_probe_262,id,cat,author|Generated query var route 262
+POST|/wp-admin/admin-post.php?action=plugin_post_263|action,id,user_id,order_id|Generated admin-post action 263
+GET|/wp-admin/admin.php?page=plugin-264|page,tab,section,id|Generated admin plugin route 264
+GET|/wp-json/wp/v2/posts/265|id,context,_embed|Generated REST post route 265
+GET|/wp-json/wp/v2/users/266|id,context|Generated REST user route 266
+POST|/wp-admin/admin-ajax.php?action=plugin_action_267|action,id,post_id,nonce|Generated AJAX action route 267
+GET|/wp-content/plugins/plugin-268/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 268
+GET|/?rest_route=/plugin/v1/items/269|id,search,page,per_page|Generated custom rest route 269
+GET|/?anibus_probe_270=1|anibus_probe_270,id,cat,author|Generated query var route 270
+POST|/wp-admin/admin-post.php?action=plugin_post_271|action,id,user_id,order_id|Generated admin-post action 271
+GET|/wp-admin/admin.php?page=plugin-272|page,tab,section,id|Generated admin plugin route 272
+GET|/wp-json/wp/v2/posts/273|id,context,_embed|Generated REST post route 273
+GET|/wp-json/wp/v2/users/274|id,context|Generated REST user route 274
+POST|/wp-admin/admin-ajax.php?action=plugin_action_275|action,id,post_id,nonce|Generated AJAX action route 275
+GET|/wp-content/plugins/plugin-276/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 276
+GET|/?rest_route=/plugin/v1/items/277|id,search,page,per_page|Generated custom rest route 277
+GET|/?anibus_probe_278=1|anibus_probe_278,id,cat,author|Generated query var route 278
+POST|/wp-admin/admin-post.php?action=plugin_post_279|action,id,user_id,order_id|Generated admin-post action 279
+GET|/wp-admin/admin.php?page=plugin-280|page,tab,section,id|Generated admin plugin route 280
+GET|/wp-json/wp/v2/posts/281|id,context,_embed|Generated REST post route 281
+GET|/wp-json/wp/v2/users/282|id,context|Generated REST user route 282
+POST|/wp-admin/admin-ajax.php?action=plugin_action_283|action,id,post_id,nonce|Generated AJAX action route 283
+GET|/wp-content/plugins/plugin-284/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 284
+GET|/?rest_route=/plugin/v1/items/285|id,search,page,per_page|Generated custom rest route 285
+GET|/?anibus_probe_286=1|anibus_probe_286,id,cat,author|Generated query var route 286
+POST|/wp-admin/admin-post.php?action=plugin_post_287|action,id,user_id,order_id|Generated admin-post action 287
+GET|/wp-admin/admin.php?page=plugin-288|page,tab,section,id|Generated admin plugin route 288
+GET|/wp-json/wp/v2/posts/289|id,context,_embed|Generated REST post route 289
+GET|/wp-json/wp/v2/users/290|id,context|Generated REST user route 290
+POST|/wp-admin/admin-ajax.php?action=plugin_action_291|action,id,post_id,nonce|Generated AJAX action route 291
+GET|/wp-content/plugins/plugin-292/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 292
+GET|/?rest_route=/plugin/v1/items/293|id,search,page,per_page|Generated custom rest route 293
+GET|/?anibus_probe_294=1|anibus_probe_294,id,cat,author|Generated query var route 294
+POST|/wp-admin/admin-post.php?action=plugin_post_295|action,id,user_id,order_id|Generated admin-post action 295
+GET|/wp-admin/admin.php?page=plugin-296|page,tab,section,id|Generated admin plugin route 296
+GET|/wp-json/wp/v2/posts/297|id,context,_embed|Generated REST post route 297
+GET|/wp-json/wp/v2/users/298|id,context|Generated REST user route 298
+POST|/wp-admin/admin-ajax.php?action=plugin_action_299|action,id,post_id,nonce|Generated AJAX action route 299
+GET|/wp-content/plugins/plugin-300/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 300
+GET|/?rest_route=/plugin/v1/items/301|id,search,page,per_page|Generated custom rest route 301
+GET|/?anibus_probe_302=1|anibus_probe_302,id,cat,author|Generated query var route 302
+POST|/wp-admin/admin-post.php?action=plugin_post_303|action,id,user_id,order_id|Generated admin-post action 303
+GET|/wp-admin/admin.php?page=plugin-304|page,tab,section,id|Generated admin plugin route 304
+GET|/wp-json/wp/v2/posts/305|id,context,_embed|Generated REST post route 305
+GET|/wp-json/wp/v2/users/306|id,context|Generated REST user route 306
+POST|/wp-admin/admin-ajax.php?action=plugin_action_307|action,id,post_id,nonce|Generated AJAX action route 307
+GET|/wp-content/plugins/plugin-308/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 308
+GET|/?rest_route=/plugin/v1/items/309|id,search,page,per_page|Generated custom rest route 309
+GET|/?anibus_probe_310=1|anibus_probe_310,id,cat,author|Generated query var route 310
+POST|/wp-admin/admin-post.php?action=plugin_post_311|action,id,user_id,order_id|Generated admin-post action 311
+GET|/wp-admin/admin.php?page=plugin-312|page,tab,section,id|Generated admin plugin route 312
+GET|/wp-json/wp/v2/posts/313|id,context,_embed|Generated REST post route 313
+GET|/wp-json/wp/v2/users/314|id,context|Generated REST user route 314
+POST|/wp-admin/admin-ajax.php?action=plugin_action_315|action,id,post_id,nonce|Generated AJAX action route 315
+GET|/wp-content/plugins/plugin-316/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 316
+GET|/?rest_route=/plugin/v1/items/317|id,search,page,per_page|Generated custom rest route 317
+GET|/?anibus_probe_318=1|anibus_probe_318,id,cat,author|Generated query var route 318
+POST|/wp-admin/admin-post.php?action=plugin_post_319|action,id,user_id,order_id|Generated admin-post action 319
+GET|/wp-admin/admin.php?page=plugin-320|page,tab,section,id|Generated admin plugin route 320
+GET|/wp-json/wp/v2/posts/321|id,context,_embed|Generated REST post route 321
+GET|/wp-json/wp/v2/users/322|id,context|Generated REST user route 322
+POST|/wp-admin/admin-ajax.php?action=plugin_action_323|action,id,post_id,nonce|Generated AJAX action route 323
+GET|/wp-content/plugins/plugin-324/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 324
+GET|/?rest_route=/plugin/v1/items/325|id,search,page,per_page|Generated custom rest route 325
+GET|/?anibus_probe_326=1|anibus_probe_326,id,cat,author|Generated query var route 326
+POST|/wp-admin/admin-post.php?action=plugin_post_327|action,id,user_id,order_id|Generated admin-post action 327
+GET|/wp-admin/admin.php?page=plugin-328|page,tab,section,id|Generated admin plugin route 328
+GET|/wp-json/wp/v2/posts/329|id,context,_embed|Generated REST post route 329
+GET|/wp-json/wp/v2/users/330|id,context|Generated REST user route 330
+POST|/wp-admin/admin-ajax.php?action=plugin_action_331|action,id,post_id,nonce|Generated AJAX action route 331
+GET|/wp-content/plugins/plugin-332/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 332
+GET|/?rest_route=/plugin/v1/items/333|id,search,page,per_page|Generated custom rest route 333
+GET|/?anibus_probe_334=1|anibus_probe_334,id,cat,author|Generated query var route 334
+POST|/wp-admin/admin-post.php?action=plugin_post_335|action,id,user_id,order_id|Generated admin-post action 335
+GET|/wp-admin/admin.php?page=plugin-336|page,tab,section,id|Generated admin plugin route 336
+GET|/wp-json/wp/v2/posts/337|id,context,_embed|Generated REST post route 337
+GET|/wp-json/wp/v2/users/338|id,context|Generated REST user route 338
+POST|/wp-admin/admin-ajax.php?action=plugin_action_339|action,id,post_id,nonce|Generated AJAX action route 339
+GET|/wp-content/plugins/plugin-340/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 340
+GET|/?rest_route=/plugin/v1/items/341|id,search,page,per_page|Generated custom rest route 341
+GET|/?anibus_probe_342=1|anibus_probe_342,id,cat,author|Generated query var route 342
+POST|/wp-admin/admin-post.php?action=plugin_post_343|action,id,user_id,order_id|Generated admin-post action 343
+GET|/wp-admin/admin.php?page=plugin-344|page,tab,section,id|Generated admin plugin route 344
+GET|/wp-json/wp/v2/posts/345|id,context,_embed|Generated REST post route 345
+GET|/wp-json/wp/v2/users/346|id,context|Generated REST user route 346
+POST|/wp-admin/admin-ajax.php?action=plugin_action_347|action,id,post_id,nonce|Generated AJAX action route 347
+GET|/wp-content/plugins/plugin-348/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 348
+GET|/?rest_route=/plugin/v1/items/349|id,search,page,per_page|Generated custom rest route 349
+GET|/?anibus_probe_350=1|anibus_probe_350,id,cat,author|Generated query var route 350
+POST|/wp-admin/admin-post.php?action=plugin_post_351|action,id,user_id,order_id|Generated admin-post action 351
+GET|/wp-admin/admin.php?page=plugin-352|page,tab,section,id|Generated admin plugin route 352
+GET|/wp-json/wp/v2/posts/353|id,context,_embed|Generated REST post route 353
+GET|/wp-json/wp/v2/users/354|id,context|Generated REST user route 354
+POST|/wp-admin/admin-ajax.php?action=plugin_action_355|action,id,post_id,nonce|Generated AJAX action route 355
+GET|/wp-content/plugins/plugin-356/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 356
+GET|/?rest_route=/plugin/v1/items/357|id,search,page,per_page|Generated custom rest route 357
+GET|/?anibus_probe_358=1|anibus_probe_358,id,cat,author|Generated query var route 358
+POST|/wp-admin/admin-post.php?action=plugin_post_359|action,id,user_id,order_id|Generated admin-post action 359
+GET|/wp-admin/admin.php?page=plugin-360|page,tab,section,id|Generated admin plugin route 360
+GET|/wp-json/wp/v2/posts/361|id,context,_embed|Generated REST post route 361
+GET|/wp-json/wp/v2/users/362|id,context|Generated REST user route 362
+POST|/wp-admin/admin-ajax.php?action=plugin_action_363|action,id,post_id,nonce|Generated AJAX action route 363
+GET|/wp-content/plugins/plugin-364/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 364
+GET|/?rest_route=/plugin/v1/items/365|id,search,page,per_page|Generated custom rest route 365
+GET|/?anibus_probe_366=1|anibus_probe_366,id,cat,author|Generated query var route 366
+POST|/wp-admin/admin-post.php?action=plugin_post_367|action,id,user_id,order_id|Generated admin-post action 367
+GET|/wp-admin/admin.php?page=plugin-368|page,tab,section,id|Generated admin plugin route 368
+GET|/wp-json/wp/v2/posts/369|id,context,_embed|Generated REST post route 369
+GET|/wp-json/wp/v2/users/370|id,context|Generated REST user route 370
+POST|/wp-admin/admin-ajax.php?action=plugin_action_371|action,id,post_id,nonce|Generated AJAX action route 371
+GET|/wp-content/plugins/plugin-372/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 372
+GET|/?rest_route=/plugin/v1/items/373|id,search,page,per_page|Generated custom rest route 373
+GET|/?anibus_probe_374=1|anibus_probe_374,id,cat,author|Generated query var route 374
+POST|/wp-admin/admin-post.php?action=plugin_post_375|action,id,user_id,order_id|Generated admin-post action 375
+GET|/wp-admin/admin.php?page=plugin-376|page,tab,section,id|Generated admin plugin route 376
+GET|/wp-json/wp/v2/posts/377|id,context,_embed|Generated REST post route 377
+GET|/wp-json/wp/v2/users/378|id,context|Generated REST user route 378
+POST|/wp-admin/admin-ajax.php?action=plugin_action_379|action,id,post_id,nonce|Generated AJAX action route 379
+GET|/wp-content/plugins/plugin-380/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 380
+GET|/?rest_route=/plugin/v1/items/381|id,search,page,per_page|Generated custom rest route 381
+GET|/?anibus_probe_382=1|anibus_probe_382,id,cat,author|Generated query var route 382
+POST|/wp-admin/admin-post.php?action=plugin_post_383|action,id,user_id,order_id|Generated admin-post action 383
+GET|/wp-admin/admin.php?page=plugin-384|page,tab,section,id|Generated admin plugin route 384
+GET|/wp-json/wp/v2/posts/385|id,context,_embed|Generated REST post route 385
+GET|/wp-json/wp/v2/users/386|id,context|Generated REST user route 386
+POST|/wp-admin/admin-ajax.php?action=plugin_action_387|action,id,post_id,nonce|Generated AJAX action route 387
+GET|/wp-content/plugins/plugin-388/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 388
+GET|/?rest_route=/plugin/v1/items/389|id,search,page,per_page|Generated custom rest route 389
+GET|/?anibus_probe_390=1|anibus_probe_390,id,cat,author|Generated query var route 390
+POST|/wp-admin/admin-post.php?action=plugin_post_391|action,id,user_id,order_id|Generated admin-post action 391
+GET|/wp-admin/admin.php?page=plugin-392|page,tab,section,id|Generated admin plugin route 392
+GET|/wp-json/wp/v2/posts/393|id,context,_embed|Generated REST post route 393
+GET|/wp-json/wp/v2/users/394|id,context|Generated REST user route 394
+POST|/wp-admin/admin-ajax.php?action=plugin_action_395|action,id,post_id,nonce|Generated AJAX action route 395
+GET|/wp-content/plugins/plugin-396/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 396
+GET|/?rest_route=/plugin/v1/items/397|id,search,page,per_page|Generated custom rest route 397
+GET|/?anibus_probe_398=1|anibus_probe_398,id,cat,author|Generated query var route 398
+POST|/wp-admin/admin-post.php?action=plugin_post_399|action,id,user_id,order_id|Generated admin-post action 399
+GET|/wp-admin/admin.php?page=plugin-400|page,tab,section,id|Generated admin plugin route 400
+GET|/wp-json/wp/v2/posts/401|id,context,_embed|Generated REST post route 401
+GET|/wp-json/wp/v2/users/402|id,context|Generated REST user route 402
+POST|/wp-admin/admin-ajax.php?action=plugin_action_403|action,id,post_id,nonce|Generated AJAX action route 403
+GET|/wp-content/plugins/plugin-404/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 404
+GET|/?rest_route=/plugin/v1/items/405|id,search,page,per_page|Generated custom rest route 405
+GET|/?anibus_probe_406=1|anibus_probe_406,id,cat,author|Generated query var route 406
+POST|/wp-admin/admin-post.php?action=plugin_post_407|action,id,user_id,order_id|Generated admin-post action 407
+GET|/wp-admin/admin.php?page=plugin-408|page,tab,section,id|Generated admin plugin route 408
+GET|/wp-json/wp/v2/posts/409|id,context,_embed|Generated REST post route 409
+GET|/wp-json/wp/v2/users/410|id,context|Generated REST user route 410
+POST|/wp-admin/admin-ajax.php?action=plugin_action_411|action,id,post_id,nonce|Generated AJAX action route 411
+GET|/wp-content/plugins/plugin-412/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 412
+GET|/?rest_route=/plugin/v1/items/413|id,search,page,per_page|Generated custom rest route 413
+GET|/?anibus_probe_414=1|anibus_probe_414,id,cat,author|Generated query var route 414
+POST|/wp-admin/admin-post.php?action=plugin_post_415|action,id,user_id,order_id|Generated admin-post action 415
+GET|/wp-admin/admin.php?page=plugin-416|page,tab,section,id|Generated admin plugin route 416
+GET|/wp-json/wp/v2/posts/417|id,context,_embed|Generated REST post route 417
+GET|/wp-json/wp/v2/users/418|id,context|Generated REST user route 418
+POST|/wp-admin/admin-ajax.php?action=plugin_action_419|action,id,post_id,nonce|Generated AJAX action route 419
+GET|/wp-content/plugins/plugin-420/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 420
+GET|/?rest_route=/plugin/v1/items/421|id,search,page,per_page|Generated custom rest route 421
+GET|/?anibus_probe_422=1|anibus_probe_422,id,cat,author|Generated query var route 422
+POST|/wp-admin/admin-post.php?action=plugin_post_423|action,id,user_id,order_id|Generated admin-post action 423
+GET|/wp-admin/admin.php?page=plugin-424|page,tab,section,id|Generated admin plugin route 424
+GET|/wp-json/wp/v2/posts/425|id,context,_embed|Generated REST post route 425
+GET|/wp-json/wp/v2/users/426|id,context|Generated REST user route 426
+POST|/wp-admin/admin-ajax.php?action=plugin_action_427|action,id,post_id,nonce|Generated AJAX action route 427
+GET|/wp-content/plugins/plugin-428/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 428
+GET|/?rest_route=/plugin/v1/items/429|id,search,page,per_page|Generated custom rest route 429
+GET|/?anibus_probe_430=1|anibus_probe_430,id,cat,author|Generated query var route 430
+POST|/wp-admin/admin-post.php?action=plugin_post_431|action,id,user_id,order_id|Generated admin-post action 431
+GET|/wp-admin/admin.php?page=plugin-432|page,tab,section,id|Generated admin plugin route 432
+GET|/wp-json/wp/v2/posts/433|id,context,_embed|Generated REST post route 433
+GET|/wp-json/wp/v2/users/434|id,context|Generated REST user route 434
+POST|/wp-admin/admin-ajax.php?action=plugin_action_435|action,id,post_id,nonce|Generated AJAX action route 435
+GET|/wp-content/plugins/plugin-436/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 436
+GET|/?rest_route=/plugin/v1/items/437|id,search,page,per_page|Generated custom rest route 437
+GET|/?anibus_probe_438=1|anibus_probe_438,id,cat,author|Generated query var route 438
+POST|/wp-admin/admin-post.php?action=plugin_post_439|action,id,user_id,order_id|Generated admin-post action 439
+GET|/wp-admin/admin.php?page=plugin-440|page,tab,section,id|Generated admin plugin route 440
+GET|/wp-json/wp/v2/posts/441|id,context,_embed|Generated REST post route 441
+GET|/wp-json/wp/v2/users/442|id,context|Generated REST user route 442
+POST|/wp-admin/admin-ajax.php?action=plugin_action_443|action,id,post_id,nonce|Generated AJAX action route 443
+GET|/wp-content/plugins/plugin-444/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 444
+GET|/?rest_route=/plugin/v1/items/445|id,search,page,per_page|Generated custom rest route 445
+GET|/?anibus_probe_446=1|anibus_probe_446,id,cat,author|Generated query var route 446
+POST|/wp-admin/admin-post.php?action=plugin_post_447|action,id,user_id,order_id|Generated admin-post action 447
+GET|/wp-admin/admin.php?page=plugin-448|page,tab,section,id|Generated admin plugin route 448
+GET|/wp-json/wp/v2/posts/449|id,context,_embed|Generated REST post route 449
+GET|/wp-json/wp/v2/users/450|id,context|Generated REST user route 450
+POST|/wp-admin/admin-ajax.php?action=plugin_action_451|action,id,post_id,nonce|Generated AJAX action route 451
+GET|/wp-content/plugins/plugin-452/includes/ajax.php|id,post_id,user_id|Generated plugin ajax file route 452
+GET|/?rest_route=/plugin/v1/items/453|id,search,page,per_page|Generated custom rest route 453
+
+# Auto-generated unique expansion block (+1000)
+GET|/wp-json/plugin/v1/orders/10001|id,status,page,per_page|Unique plugin REST orders route 10001
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10002|action,id,post_id,nonce|Unique admin-ajax bulk action 10002
+POST|/wp-admin/admin-post.php?action=sync_action_10003|action,id,user_id,token|Unique admin-post sync action 10003
+GET|/wp-content/plugins/module-10004/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10004
+GET|/?rest_route=/custom/v1/report/10005|id,from,to,page|Unique custom report route 10005
+GET|/?anibus_ext_probe_10006=1|anibus_ext_probe_10006,id,cat,author|Unique query probe route 10006
+GET|/wp-admin/options-general.php?page=settings-10007|page,tab,section|Unique admin settings route 10007
+GET|/wp-json/wp/v2/custom_type_10008|search,page,per_page,orderby|Unique custom post type route 10008
+GET|/shop-api/v1/cart/10009|cart_id,user_id,coupon,qty|Unique shop api cart route 10009
+GET|/wp-json/plugin/v1/items/10010|id,search,page,per_page|Unique plugin REST items route 10010
+GET|/wp-json/plugin/v1/orders/10011|id,status,page,per_page|Unique plugin REST orders route 10011
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10012|action,id,post_id,nonce|Unique admin-ajax bulk action 10012
+POST|/wp-admin/admin-post.php?action=sync_action_10013|action,id,user_id,token|Unique admin-post sync action 10013
+GET|/wp-content/plugins/module-10014/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10014
+GET|/?rest_route=/custom/v1/report/10015|id,from,to,page|Unique custom report route 10015
+GET|/?anibus_ext_probe_10016=1|anibus_ext_probe_10016,id,cat,author|Unique query probe route 10016
+GET|/wp-admin/options-general.php?page=settings-10017|page,tab,section|Unique admin settings route 10017
+GET|/wp-json/wp/v2/custom_type_10018|search,page,per_page,orderby|Unique custom post type route 10018
+GET|/shop-api/v1/cart/10019|cart_id,user_id,coupon,qty|Unique shop api cart route 10019
+GET|/wp-json/plugin/v1/items/10020|id,search,page,per_page|Unique plugin REST items route 10020
+GET|/wp-json/plugin/v1/orders/10021|id,status,page,per_page|Unique plugin REST orders route 10021
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10022|action,id,post_id,nonce|Unique admin-ajax bulk action 10022
+POST|/wp-admin/admin-post.php?action=sync_action_10023|action,id,user_id,token|Unique admin-post sync action 10023
+GET|/wp-content/plugins/module-10024/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10024
+GET|/?rest_route=/custom/v1/report/10025|id,from,to,page|Unique custom report route 10025
+GET|/?anibus_ext_probe_10026=1|anibus_ext_probe_10026,id,cat,author|Unique query probe route 10026
+GET|/wp-admin/options-general.php?page=settings-10027|page,tab,section|Unique admin settings route 10027
+GET|/wp-json/wp/v2/custom_type_10028|search,page,per_page,orderby|Unique custom post type route 10028
+GET|/shop-api/v1/cart/10029|cart_id,user_id,coupon,qty|Unique shop api cart route 10029
+GET|/wp-json/plugin/v1/items/10030|id,search,page,per_page|Unique plugin REST items route 10030
+GET|/wp-json/plugin/v1/orders/10031|id,status,page,per_page|Unique plugin REST orders route 10031
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10032|action,id,post_id,nonce|Unique admin-ajax bulk action 10032
+POST|/wp-admin/admin-post.php?action=sync_action_10033|action,id,user_id,token|Unique admin-post sync action 10033
+GET|/wp-content/plugins/module-10034/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10034
+GET|/?rest_route=/custom/v1/report/10035|id,from,to,page|Unique custom report route 10035
+GET|/?anibus_ext_probe_10036=1|anibus_ext_probe_10036,id,cat,author|Unique query probe route 10036
+GET|/wp-admin/options-general.php?page=settings-10037|page,tab,section|Unique admin settings route 10037
+GET|/wp-json/wp/v2/custom_type_10038|search,page,per_page,orderby|Unique custom post type route 10038
+GET|/shop-api/v1/cart/10039|cart_id,user_id,coupon,qty|Unique shop api cart route 10039
+GET|/wp-json/plugin/v1/items/10040|id,search,page,per_page|Unique plugin REST items route 10040
+GET|/wp-json/plugin/v1/orders/10041|id,status,page,per_page|Unique plugin REST orders route 10041
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10042|action,id,post_id,nonce|Unique admin-ajax bulk action 10042
+POST|/wp-admin/admin-post.php?action=sync_action_10043|action,id,user_id,token|Unique admin-post sync action 10043
+GET|/wp-content/plugins/module-10044/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10044
+GET|/?rest_route=/custom/v1/report/10045|id,from,to,page|Unique custom report route 10045
+GET|/?anibus_ext_probe_10046=1|anibus_ext_probe_10046,id,cat,author|Unique query probe route 10046
+GET|/wp-admin/options-general.php?page=settings-10047|page,tab,section|Unique admin settings route 10047
+GET|/wp-json/wp/v2/custom_type_10048|search,page,per_page,orderby|Unique custom post type route 10048
+GET|/shop-api/v1/cart/10049|cart_id,user_id,coupon,qty|Unique shop api cart route 10049
+GET|/wp-json/plugin/v1/items/10050|id,search,page,per_page|Unique plugin REST items route 10050
+GET|/wp-json/plugin/v1/orders/10051|id,status,page,per_page|Unique plugin REST orders route 10051
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10052|action,id,post_id,nonce|Unique admin-ajax bulk action 10052
+POST|/wp-admin/admin-post.php?action=sync_action_10053|action,id,user_id,token|Unique admin-post sync action 10053
+GET|/wp-content/plugins/module-10054/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10054
+GET|/?rest_route=/custom/v1/report/10055|id,from,to,page|Unique custom report route 10055
+GET|/?anibus_ext_probe_10056=1|anibus_ext_probe_10056,id,cat,author|Unique query probe route 10056
+GET|/wp-admin/options-general.php?page=settings-10057|page,tab,section|Unique admin settings route 10057
+GET|/wp-json/wp/v2/custom_type_10058|search,page,per_page,orderby|Unique custom post type route 10058
+GET|/shop-api/v1/cart/10059|cart_id,user_id,coupon,qty|Unique shop api cart route 10059
+GET|/wp-json/plugin/v1/items/10060|id,search,page,per_page|Unique plugin REST items route 10060
+GET|/wp-json/plugin/v1/orders/10061|id,status,page,per_page|Unique plugin REST orders route 10061
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10062|action,id,post_id,nonce|Unique admin-ajax bulk action 10062
+POST|/wp-admin/admin-post.php?action=sync_action_10063|action,id,user_id,token|Unique admin-post sync action 10063
+GET|/wp-content/plugins/module-10064/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10064
+GET|/?rest_route=/custom/v1/report/10065|id,from,to,page|Unique custom report route 10065
+GET|/?anibus_ext_probe_10066=1|anibus_ext_probe_10066,id,cat,author|Unique query probe route 10066
+GET|/wp-admin/options-general.php?page=settings-10067|page,tab,section|Unique admin settings route 10067
+GET|/wp-json/wp/v2/custom_type_10068|search,page,per_page,orderby|Unique custom post type route 10068
+GET|/shop-api/v1/cart/10069|cart_id,user_id,coupon,qty|Unique shop api cart route 10069
+GET|/wp-json/plugin/v1/items/10070|id,search,page,per_page|Unique plugin REST items route 10070
+GET|/wp-json/plugin/v1/orders/10071|id,status,page,per_page|Unique plugin REST orders route 10071
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10072|action,id,post_id,nonce|Unique admin-ajax bulk action 10072
+POST|/wp-admin/admin-post.php?action=sync_action_10073|action,id,user_id,token|Unique admin-post sync action 10073
+GET|/wp-content/plugins/module-10074/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10074
+GET|/?rest_route=/custom/v1/report/10075|id,from,to,page|Unique custom report route 10075
+GET|/?anibus_ext_probe_10076=1|anibus_ext_probe_10076,id,cat,author|Unique query probe route 10076
+GET|/wp-admin/options-general.php?page=settings-10077|page,tab,section|Unique admin settings route 10077
+GET|/wp-json/wp/v2/custom_type_10078|search,page,per_page,orderby|Unique custom post type route 10078
+GET|/shop-api/v1/cart/10079|cart_id,user_id,coupon,qty|Unique shop api cart route 10079
+GET|/wp-json/plugin/v1/items/10080|id,search,page,per_page|Unique plugin REST items route 10080
+GET|/wp-json/plugin/v1/orders/10081|id,status,page,per_page|Unique plugin REST orders route 10081
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10082|action,id,post_id,nonce|Unique admin-ajax bulk action 10082
+POST|/wp-admin/admin-post.php?action=sync_action_10083|action,id,user_id,token|Unique admin-post sync action 10083
+GET|/wp-content/plugins/module-10084/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10084
+GET|/?rest_route=/custom/v1/report/10085|id,from,to,page|Unique custom report route 10085
+GET|/?anibus_ext_probe_10086=1|anibus_ext_probe_10086,id,cat,author|Unique query probe route 10086
+GET|/wp-admin/options-general.php?page=settings-10087|page,tab,section|Unique admin settings route 10087
+GET|/wp-json/wp/v2/custom_type_10088|search,page,per_page,orderby|Unique custom post type route 10088
+GET|/shop-api/v1/cart/10089|cart_id,user_id,coupon,qty|Unique shop api cart route 10089
+GET|/wp-json/plugin/v1/items/10090|id,search,page,per_page|Unique plugin REST items route 10090
+GET|/wp-json/plugin/v1/orders/10091|id,status,page,per_page|Unique plugin REST orders route 10091
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10092|action,id,post_id,nonce|Unique admin-ajax bulk action 10092
+POST|/wp-admin/admin-post.php?action=sync_action_10093|action,id,user_id,token|Unique admin-post sync action 10093
+GET|/wp-content/plugins/module-10094/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10094
+GET|/?rest_route=/custom/v1/report/10095|id,from,to,page|Unique custom report route 10095
+GET|/?anibus_ext_probe_10096=1|anibus_ext_probe_10096,id,cat,author|Unique query probe route 10096
+GET|/wp-admin/options-general.php?page=settings-10097|page,tab,section|Unique admin settings route 10097
+GET|/wp-json/wp/v2/custom_type_10098|search,page,per_page,orderby|Unique custom post type route 10098
+GET|/shop-api/v1/cart/10099|cart_id,user_id,coupon,qty|Unique shop api cart route 10099
+GET|/wp-json/plugin/v1/items/10100|id,search,page,per_page|Unique plugin REST items route 10100
+GET|/wp-json/plugin/v1/orders/10101|id,status,page,per_page|Unique plugin REST orders route 10101
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10102|action,id,post_id,nonce|Unique admin-ajax bulk action 10102
+POST|/wp-admin/admin-post.php?action=sync_action_10103|action,id,user_id,token|Unique admin-post sync action 10103
+GET|/wp-content/plugins/module-10104/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10104
+GET|/?rest_route=/custom/v1/report/10105|id,from,to,page|Unique custom report route 10105
+GET|/?anibus_ext_probe_10106=1|anibus_ext_probe_10106,id,cat,author|Unique query probe route 10106
+GET|/wp-admin/options-general.php?page=settings-10107|page,tab,section|Unique admin settings route 10107
+GET|/wp-json/wp/v2/custom_type_10108|search,page,per_page,orderby|Unique custom post type route 10108
+GET|/shop-api/v1/cart/10109|cart_id,user_id,coupon,qty|Unique shop api cart route 10109
+GET|/wp-json/plugin/v1/items/10110|id,search,page,per_page|Unique plugin REST items route 10110
+GET|/wp-json/plugin/v1/orders/10111|id,status,page,per_page|Unique plugin REST orders route 10111
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10112|action,id,post_id,nonce|Unique admin-ajax bulk action 10112
+POST|/wp-admin/admin-post.php?action=sync_action_10113|action,id,user_id,token|Unique admin-post sync action 10113
+GET|/wp-content/plugins/module-10114/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10114
+GET|/?rest_route=/custom/v1/report/10115|id,from,to,page|Unique custom report route 10115
+GET|/?anibus_ext_probe_10116=1|anibus_ext_probe_10116,id,cat,author|Unique query probe route 10116
+GET|/wp-admin/options-general.php?page=settings-10117|page,tab,section|Unique admin settings route 10117
+GET|/wp-json/wp/v2/custom_type_10118|search,page,per_page,orderby|Unique custom post type route 10118
+GET|/shop-api/v1/cart/10119|cart_id,user_id,coupon,qty|Unique shop api cart route 10119
+GET|/wp-json/plugin/v1/items/10120|id,search,page,per_page|Unique plugin REST items route 10120
+GET|/wp-json/plugin/v1/orders/10121|id,status,page,per_page|Unique plugin REST orders route 10121
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10122|action,id,post_id,nonce|Unique admin-ajax bulk action 10122
+POST|/wp-admin/admin-post.php?action=sync_action_10123|action,id,user_id,token|Unique admin-post sync action 10123
+GET|/wp-content/plugins/module-10124/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10124
+GET|/?rest_route=/custom/v1/report/10125|id,from,to,page|Unique custom report route 10125
+GET|/?anibus_ext_probe_10126=1|anibus_ext_probe_10126,id,cat,author|Unique query probe route 10126
+GET|/wp-admin/options-general.php?page=settings-10127|page,tab,section|Unique admin settings route 10127
+GET|/wp-json/wp/v2/custom_type_10128|search,page,per_page,orderby|Unique custom post type route 10128
+GET|/shop-api/v1/cart/10129|cart_id,user_id,coupon,qty|Unique shop api cart route 10129
+GET|/wp-json/plugin/v1/items/10130|id,search,page,per_page|Unique plugin REST items route 10130
+GET|/wp-json/plugin/v1/orders/10131|id,status,page,per_page|Unique plugin REST orders route 10131
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10132|action,id,post_id,nonce|Unique admin-ajax bulk action 10132
+POST|/wp-admin/admin-post.php?action=sync_action_10133|action,id,user_id,token|Unique admin-post sync action 10133
+GET|/wp-content/plugins/module-10134/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10134
+GET|/?rest_route=/custom/v1/report/10135|id,from,to,page|Unique custom report route 10135
+GET|/?anibus_ext_probe_10136=1|anibus_ext_probe_10136,id,cat,author|Unique query probe route 10136
+GET|/wp-admin/options-general.php?page=settings-10137|page,tab,section|Unique admin settings route 10137
+GET|/wp-json/wp/v2/custom_type_10138|search,page,per_page,orderby|Unique custom post type route 10138
+GET|/shop-api/v1/cart/10139|cart_id,user_id,coupon,qty|Unique shop api cart route 10139
+GET|/wp-json/plugin/v1/items/10140|id,search,page,per_page|Unique plugin REST items route 10140
+GET|/wp-json/plugin/v1/orders/10141|id,status,page,per_page|Unique plugin REST orders route 10141
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10142|action,id,post_id,nonce|Unique admin-ajax bulk action 10142
+POST|/wp-admin/admin-post.php?action=sync_action_10143|action,id,user_id,token|Unique admin-post sync action 10143
+GET|/wp-content/plugins/module-10144/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10144
+GET|/?rest_route=/custom/v1/report/10145|id,from,to,page|Unique custom report route 10145
+GET|/?anibus_ext_probe_10146=1|anibus_ext_probe_10146,id,cat,author|Unique query probe route 10146
+GET|/wp-admin/options-general.php?page=settings-10147|page,tab,section|Unique admin settings route 10147
+GET|/wp-json/wp/v2/custom_type_10148|search,page,per_page,orderby|Unique custom post type route 10148
+GET|/shop-api/v1/cart/10149|cart_id,user_id,coupon,qty|Unique shop api cart route 10149
+GET|/wp-json/plugin/v1/items/10150|id,search,page,per_page|Unique plugin REST items route 10150
+GET|/wp-json/plugin/v1/orders/10151|id,status,page,per_page|Unique plugin REST orders route 10151
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10152|action,id,post_id,nonce|Unique admin-ajax bulk action 10152
+POST|/wp-admin/admin-post.php?action=sync_action_10153|action,id,user_id,token|Unique admin-post sync action 10153
+GET|/wp-content/plugins/module-10154/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10154
+GET|/?rest_route=/custom/v1/report/10155|id,from,to,page|Unique custom report route 10155
+GET|/?anibus_ext_probe_10156=1|anibus_ext_probe_10156,id,cat,author|Unique query probe route 10156
+GET|/wp-admin/options-general.php?page=settings-10157|page,tab,section|Unique admin settings route 10157
+GET|/wp-json/wp/v2/custom_type_10158|search,page,per_page,orderby|Unique custom post type route 10158
+GET|/shop-api/v1/cart/10159|cart_id,user_id,coupon,qty|Unique shop api cart route 10159
+GET|/wp-json/plugin/v1/items/10160|id,search,page,per_page|Unique plugin REST items route 10160
+GET|/wp-json/plugin/v1/orders/10161|id,status,page,per_page|Unique plugin REST orders route 10161
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10162|action,id,post_id,nonce|Unique admin-ajax bulk action 10162
+POST|/wp-admin/admin-post.php?action=sync_action_10163|action,id,user_id,token|Unique admin-post sync action 10163
+GET|/wp-content/plugins/module-10164/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10164
+GET|/?rest_route=/custom/v1/report/10165|id,from,to,page|Unique custom report route 10165
+GET|/?anibus_ext_probe_10166=1|anibus_ext_probe_10166,id,cat,author|Unique query probe route 10166
+GET|/wp-admin/options-general.php?page=settings-10167|page,tab,section|Unique admin settings route 10167
+GET|/wp-json/wp/v2/custom_type_10168|search,page,per_page,orderby|Unique custom post type route 10168
+GET|/shop-api/v1/cart/10169|cart_id,user_id,coupon,qty|Unique shop api cart route 10169
+GET|/wp-json/plugin/v1/items/10170|id,search,page,per_page|Unique plugin REST items route 10170
+GET|/wp-json/plugin/v1/orders/10171|id,status,page,per_page|Unique plugin REST orders route 10171
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10172|action,id,post_id,nonce|Unique admin-ajax bulk action 10172
+POST|/wp-admin/admin-post.php?action=sync_action_10173|action,id,user_id,token|Unique admin-post sync action 10173
+GET|/wp-content/plugins/module-10174/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10174
+GET|/?rest_route=/custom/v1/report/10175|id,from,to,page|Unique custom report route 10175
+GET|/?anibus_ext_probe_10176=1|anibus_ext_probe_10176,id,cat,author|Unique query probe route 10176
+GET|/wp-admin/options-general.php?page=settings-10177|page,tab,section|Unique admin settings route 10177
+GET|/wp-json/wp/v2/custom_type_10178|search,page,per_page,orderby|Unique custom post type route 10178
+GET|/shop-api/v1/cart/10179|cart_id,user_id,coupon,qty|Unique shop api cart route 10179
+GET|/wp-json/plugin/v1/items/10180|id,search,page,per_page|Unique plugin REST items route 10180
+GET|/wp-json/plugin/v1/orders/10181|id,status,page,per_page|Unique plugin REST orders route 10181
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10182|action,id,post_id,nonce|Unique admin-ajax bulk action 10182
+POST|/wp-admin/admin-post.php?action=sync_action_10183|action,id,user_id,token|Unique admin-post sync action 10183
+GET|/wp-content/plugins/module-10184/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10184
+GET|/?rest_route=/custom/v1/report/10185|id,from,to,page|Unique custom report route 10185
+GET|/?anibus_ext_probe_10186=1|anibus_ext_probe_10186,id,cat,author|Unique query probe route 10186
+GET|/wp-admin/options-general.php?page=settings-10187|page,tab,section|Unique admin settings route 10187
+GET|/wp-json/wp/v2/custom_type_10188|search,page,per_page,orderby|Unique custom post type route 10188
+GET|/shop-api/v1/cart/10189|cart_id,user_id,coupon,qty|Unique shop api cart route 10189
+GET|/wp-json/plugin/v1/items/10190|id,search,page,per_page|Unique plugin REST items route 10190
+GET|/wp-json/plugin/v1/orders/10191|id,status,page,per_page|Unique plugin REST orders route 10191
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10192|action,id,post_id,nonce|Unique admin-ajax bulk action 10192
+POST|/wp-admin/admin-post.php?action=sync_action_10193|action,id,user_id,token|Unique admin-post sync action 10193
+GET|/wp-content/plugins/module-10194/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10194
+GET|/?rest_route=/custom/v1/report/10195|id,from,to,page|Unique custom report route 10195
+GET|/?anibus_ext_probe_10196=1|anibus_ext_probe_10196,id,cat,author|Unique query probe route 10196
+GET|/wp-admin/options-general.php?page=settings-10197|page,tab,section|Unique admin settings route 10197
+GET|/wp-json/wp/v2/custom_type_10198|search,page,per_page,orderby|Unique custom post type route 10198
+GET|/shop-api/v1/cart/10199|cart_id,user_id,coupon,qty|Unique shop api cart route 10199
+GET|/wp-json/plugin/v1/items/10200|id,search,page,per_page|Unique plugin REST items route 10200
+GET|/wp-json/plugin/v1/orders/10201|id,status,page,per_page|Unique plugin REST orders route 10201
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10202|action,id,post_id,nonce|Unique admin-ajax bulk action 10202
+POST|/wp-admin/admin-post.php?action=sync_action_10203|action,id,user_id,token|Unique admin-post sync action 10203
+GET|/wp-content/plugins/module-10204/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10204
+GET|/?rest_route=/custom/v1/report/10205|id,from,to,page|Unique custom report route 10205
+GET|/?anibus_ext_probe_10206=1|anibus_ext_probe_10206,id,cat,author|Unique query probe route 10206
+GET|/wp-admin/options-general.php?page=settings-10207|page,tab,section|Unique admin settings route 10207
+GET|/wp-json/wp/v2/custom_type_10208|search,page,per_page,orderby|Unique custom post type route 10208
+GET|/shop-api/v1/cart/10209|cart_id,user_id,coupon,qty|Unique shop api cart route 10209
+GET|/wp-json/plugin/v1/items/10210|id,search,page,per_page|Unique plugin REST items route 10210
+GET|/wp-json/plugin/v1/orders/10211|id,status,page,per_page|Unique plugin REST orders route 10211
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10212|action,id,post_id,nonce|Unique admin-ajax bulk action 10212
+POST|/wp-admin/admin-post.php?action=sync_action_10213|action,id,user_id,token|Unique admin-post sync action 10213
+GET|/wp-content/plugins/module-10214/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10214
+GET|/?rest_route=/custom/v1/report/10215|id,from,to,page|Unique custom report route 10215
+GET|/?anibus_ext_probe_10216=1|anibus_ext_probe_10216,id,cat,author|Unique query probe route 10216
+GET|/wp-admin/options-general.php?page=settings-10217|page,tab,section|Unique admin settings route 10217
+GET|/wp-json/wp/v2/custom_type_10218|search,page,per_page,orderby|Unique custom post type route 10218
+GET|/shop-api/v1/cart/10219|cart_id,user_id,coupon,qty|Unique shop api cart route 10219
+GET|/wp-json/plugin/v1/items/10220|id,search,page,per_page|Unique plugin REST items route 10220
+GET|/wp-json/plugin/v1/orders/10221|id,status,page,per_page|Unique plugin REST orders route 10221
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10222|action,id,post_id,nonce|Unique admin-ajax bulk action 10222
+POST|/wp-admin/admin-post.php?action=sync_action_10223|action,id,user_id,token|Unique admin-post sync action 10223
+GET|/wp-content/plugins/module-10224/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10224
+GET|/?rest_route=/custom/v1/report/10225|id,from,to,page|Unique custom report route 10225
+GET|/?anibus_ext_probe_10226=1|anibus_ext_probe_10226,id,cat,author|Unique query probe route 10226
+GET|/wp-admin/options-general.php?page=settings-10227|page,tab,section|Unique admin settings route 10227
+GET|/wp-json/wp/v2/custom_type_10228|search,page,per_page,orderby|Unique custom post type route 10228
+GET|/shop-api/v1/cart/10229|cart_id,user_id,coupon,qty|Unique shop api cart route 10229
+GET|/wp-json/plugin/v1/items/10230|id,search,page,per_page|Unique plugin REST items route 10230
+GET|/wp-json/plugin/v1/orders/10231|id,status,page,per_page|Unique plugin REST orders route 10231
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10232|action,id,post_id,nonce|Unique admin-ajax bulk action 10232
+POST|/wp-admin/admin-post.php?action=sync_action_10233|action,id,user_id,token|Unique admin-post sync action 10233
+GET|/wp-content/plugins/module-10234/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10234
+GET|/?rest_route=/custom/v1/report/10235|id,from,to,page|Unique custom report route 10235
+GET|/?anibus_ext_probe_10236=1|anibus_ext_probe_10236,id,cat,author|Unique query probe route 10236
+GET|/wp-admin/options-general.php?page=settings-10237|page,tab,section|Unique admin settings route 10237
+GET|/wp-json/wp/v2/custom_type_10238|search,page,per_page,orderby|Unique custom post type route 10238
+GET|/shop-api/v1/cart/10239|cart_id,user_id,coupon,qty|Unique shop api cart route 10239
+GET|/wp-json/plugin/v1/items/10240|id,search,page,per_page|Unique plugin REST items route 10240
+GET|/wp-json/plugin/v1/orders/10241|id,status,page,per_page|Unique plugin REST orders route 10241
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10242|action,id,post_id,nonce|Unique admin-ajax bulk action 10242
+POST|/wp-admin/admin-post.php?action=sync_action_10243|action,id,user_id,token|Unique admin-post sync action 10243
+GET|/wp-content/plugins/module-10244/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10244
+GET|/?rest_route=/custom/v1/report/10245|id,from,to,page|Unique custom report route 10245
+GET|/?anibus_ext_probe_10246=1|anibus_ext_probe_10246,id,cat,author|Unique query probe route 10246
+GET|/wp-admin/options-general.php?page=settings-10247|page,tab,section|Unique admin settings route 10247
+GET|/wp-json/wp/v2/custom_type_10248|search,page,per_page,orderby|Unique custom post type route 10248
+GET|/shop-api/v1/cart/10249|cart_id,user_id,coupon,qty|Unique shop api cart route 10249
+GET|/wp-json/plugin/v1/items/10250|id,search,page,per_page|Unique plugin REST items route 10250
+GET|/wp-json/plugin/v1/orders/10251|id,status,page,per_page|Unique plugin REST orders route 10251
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10252|action,id,post_id,nonce|Unique admin-ajax bulk action 10252
+POST|/wp-admin/admin-post.php?action=sync_action_10253|action,id,user_id,token|Unique admin-post sync action 10253
+GET|/wp-content/plugins/module-10254/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10254
+GET|/?rest_route=/custom/v1/report/10255|id,from,to,page|Unique custom report route 10255
+GET|/?anibus_ext_probe_10256=1|anibus_ext_probe_10256,id,cat,author|Unique query probe route 10256
+GET|/wp-admin/options-general.php?page=settings-10257|page,tab,section|Unique admin settings route 10257
+GET|/wp-json/wp/v2/custom_type_10258|search,page,per_page,orderby|Unique custom post type route 10258
+GET|/shop-api/v1/cart/10259|cart_id,user_id,coupon,qty|Unique shop api cart route 10259
+GET|/wp-json/plugin/v1/items/10260|id,search,page,per_page|Unique plugin REST items route 10260
+GET|/wp-json/plugin/v1/orders/10261|id,status,page,per_page|Unique plugin REST orders route 10261
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10262|action,id,post_id,nonce|Unique admin-ajax bulk action 10262
+POST|/wp-admin/admin-post.php?action=sync_action_10263|action,id,user_id,token|Unique admin-post sync action 10263
+GET|/wp-content/plugins/module-10264/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10264
+GET|/?rest_route=/custom/v1/report/10265|id,from,to,page|Unique custom report route 10265
+GET|/?anibus_ext_probe_10266=1|anibus_ext_probe_10266,id,cat,author|Unique query probe route 10266
+GET|/wp-admin/options-general.php?page=settings-10267|page,tab,section|Unique admin settings route 10267
+GET|/wp-json/wp/v2/custom_type_10268|search,page,per_page,orderby|Unique custom post type route 10268
+GET|/shop-api/v1/cart/10269|cart_id,user_id,coupon,qty|Unique shop api cart route 10269
+GET|/wp-json/plugin/v1/items/10270|id,search,page,per_page|Unique plugin REST items route 10270
+GET|/wp-json/plugin/v1/orders/10271|id,status,page,per_page|Unique plugin REST orders route 10271
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10272|action,id,post_id,nonce|Unique admin-ajax bulk action 10272
+POST|/wp-admin/admin-post.php?action=sync_action_10273|action,id,user_id,token|Unique admin-post sync action 10273
+GET|/wp-content/plugins/module-10274/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10274
+GET|/?rest_route=/custom/v1/report/10275|id,from,to,page|Unique custom report route 10275
+GET|/?anibus_ext_probe_10276=1|anibus_ext_probe_10276,id,cat,author|Unique query probe route 10276
+GET|/wp-admin/options-general.php?page=settings-10277|page,tab,section|Unique admin settings route 10277
+GET|/wp-json/wp/v2/custom_type_10278|search,page,per_page,orderby|Unique custom post type route 10278
+GET|/shop-api/v1/cart/10279|cart_id,user_id,coupon,qty|Unique shop api cart route 10279
+GET|/wp-json/plugin/v1/items/10280|id,search,page,per_page|Unique plugin REST items route 10280
+GET|/wp-json/plugin/v1/orders/10281|id,status,page,per_page|Unique plugin REST orders route 10281
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10282|action,id,post_id,nonce|Unique admin-ajax bulk action 10282
+POST|/wp-admin/admin-post.php?action=sync_action_10283|action,id,user_id,token|Unique admin-post sync action 10283
+GET|/wp-content/plugins/module-10284/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10284
+GET|/?rest_route=/custom/v1/report/10285|id,from,to,page|Unique custom report route 10285
+GET|/?anibus_ext_probe_10286=1|anibus_ext_probe_10286,id,cat,author|Unique query probe route 10286
+GET|/wp-admin/options-general.php?page=settings-10287|page,tab,section|Unique admin settings route 10287
+GET|/wp-json/wp/v2/custom_type_10288|search,page,per_page,orderby|Unique custom post type route 10288
+GET|/shop-api/v1/cart/10289|cart_id,user_id,coupon,qty|Unique shop api cart route 10289
+GET|/wp-json/plugin/v1/items/10290|id,search,page,per_page|Unique plugin REST items route 10290
+GET|/wp-json/plugin/v1/orders/10291|id,status,page,per_page|Unique plugin REST orders route 10291
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10292|action,id,post_id,nonce|Unique admin-ajax bulk action 10292
+POST|/wp-admin/admin-post.php?action=sync_action_10293|action,id,user_id,token|Unique admin-post sync action 10293
+GET|/wp-content/plugins/module-10294/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10294
+GET|/?rest_route=/custom/v1/report/10295|id,from,to,page|Unique custom report route 10295
+GET|/?anibus_ext_probe_10296=1|anibus_ext_probe_10296,id,cat,author|Unique query probe route 10296
+GET|/wp-admin/options-general.php?page=settings-10297|page,tab,section|Unique admin settings route 10297
+GET|/wp-json/wp/v2/custom_type_10298|search,page,per_page,orderby|Unique custom post type route 10298
+GET|/shop-api/v1/cart/10299|cart_id,user_id,coupon,qty|Unique shop api cart route 10299
+GET|/wp-json/plugin/v1/items/10300|id,search,page,per_page|Unique plugin REST items route 10300
+GET|/wp-json/plugin/v1/orders/10301|id,status,page,per_page|Unique plugin REST orders route 10301
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10302|action,id,post_id,nonce|Unique admin-ajax bulk action 10302
+POST|/wp-admin/admin-post.php?action=sync_action_10303|action,id,user_id,token|Unique admin-post sync action 10303
+GET|/wp-content/plugins/module-10304/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10304
+GET|/?rest_route=/custom/v1/report/10305|id,from,to,page|Unique custom report route 10305
+GET|/?anibus_ext_probe_10306=1|anibus_ext_probe_10306,id,cat,author|Unique query probe route 10306
+GET|/wp-admin/options-general.php?page=settings-10307|page,tab,section|Unique admin settings route 10307
+GET|/wp-json/wp/v2/custom_type_10308|search,page,per_page,orderby|Unique custom post type route 10308
+GET|/shop-api/v1/cart/10309|cart_id,user_id,coupon,qty|Unique shop api cart route 10309
+GET|/wp-json/plugin/v1/items/10310|id,search,page,per_page|Unique plugin REST items route 10310
+GET|/wp-json/plugin/v1/orders/10311|id,status,page,per_page|Unique plugin REST orders route 10311
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10312|action,id,post_id,nonce|Unique admin-ajax bulk action 10312
+POST|/wp-admin/admin-post.php?action=sync_action_10313|action,id,user_id,token|Unique admin-post sync action 10313
+GET|/wp-content/plugins/module-10314/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10314
+GET|/?rest_route=/custom/v1/report/10315|id,from,to,page|Unique custom report route 10315
+GET|/?anibus_ext_probe_10316=1|anibus_ext_probe_10316,id,cat,author|Unique query probe route 10316
+GET|/wp-admin/options-general.php?page=settings-10317|page,tab,section|Unique admin settings route 10317
+GET|/wp-json/wp/v2/custom_type_10318|search,page,per_page,orderby|Unique custom post type route 10318
+GET|/shop-api/v1/cart/10319|cart_id,user_id,coupon,qty|Unique shop api cart route 10319
+GET|/wp-json/plugin/v1/items/10320|id,search,page,per_page|Unique plugin REST items route 10320
+GET|/wp-json/plugin/v1/orders/10321|id,status,page,per_page|Unique plugin REST orders route 10321
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10322|action,id,post_id,nonce|Unique admin-ajax bulk action 10322
+POST|/wp-admin/admin-post.php?action=sync_action_10323|action,id,user_id,token|Unique admin-post sync action 10323
+GET|/wp-content/plugins/module-10324/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10324
+GET|/?rest_route=/custom/v1/report/10325|id,from,to,page|Unique custom report route 10325
+GET|/?anibus_ext_probe_10326=1|anibus_ext_probe_10326,id,cat,author|Unique query probe route 10326
+GET|/wp-admin/options-general.php?page=settings-10327|page,tab,section|Unique admin settings route 10327
+GET|/wp-json/wp/v2/custom_type_10328|search,page,per_page,orderby|Unique custom post type route 10328
+GET|/shop-api/v1/cart/10329|cart_id,user_id,coupon,qty|Unique shop api cart route 10329
+GET|/wp-json/plugin/v1/items/10330|id,search,page,per_page|Unique plugin REST items route 10330
+GET|/wp-json/plugin/v1/orders/10331|id,status,page,per_page|Unique plugin REST orders route 10331
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10332|action,id,post_id,nonce|Unique admin-ajax bulk action 10332
+POST|/wp-admin/admin-post.php?action=sync_action_10333|action,id,user_id,token|Unique admin-post sync action 10333
+GET|/wp-content/plugins/module-10334/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10334
+GET|/?rest_route=/custom/v1/report/10335|id,from,to,page|Unique custom report route 10335
+GET|/?anibus_ext_probe_10336=1|anibus_ext_probe_10336,id,cat,author|Unique query probe route 10336
+GET|/wp-admin/options-general.php?page=settings-10337|page,tab,section|Unique admin settings route 10337
+GET|/wp-json/wp/v2/custom_type_10338|search,page,per_page,orderby|Unique custom post type route 10338
+GET|/shop-api/v1/cart/10339|cart_id,user_id,coupon,qty|Unique shop api cart route 10339
+GET|/wp-json/plugin/v1/items/10340|id,search,page,per_page|Unique plugin REST items route 10340
+GET|/wp-json/plugin/v1/orders/10341|id,status,page,per_page|Unique plugin REST orders route 10341
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10342|action,id,post_id,nonce|Unique admin-ajax bulk action 10342
+POST|/wp-admin/admin-post.php?action=sync_action_10343|action,id,user_id,token|Unique admin-post sync action 10343
+GET|/wp-content/plugins/module-10344/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10344
+GET|/?rest_route=/custom/v1/report/10345|id,from,to,page|Unique custom report route 10345
+GET|/?anibus_ext_probe_10346=1|anibus_ext_probe_10346,id,cat,author|Unique query probe route 10346
+GET|/wp-admin/options-general.php?page=settings-10347|page,tab,section|Unique admin settings route 10347
+GET|/wp-json/wp/v2/custom_type_10348|search,page,per_page,orderby|Unique custom post type route 10348
+GET|/shop-api/v1/cart/10349|cart_id,user_id,coupon,qty|Unique shop api cart route 10349
+GET|/wp-json/plugin/v1/items/10350|id,search,page,per_page|Unique plugin REST items route 10350
+GET|/wp-json/plugin/v1/orders/10351|id,status,page,per_page|Unique plugin REST orders route 10351
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10352|action,id,post_id,nonce|Unique admin-ajax bulk action 10352
+POST|/wp-admin/admin-post.php?action=sync_action_10353|action,id,user_id,token|Unique admin-post sync action 10353
+GET|/wp-content/plugins/module-10354/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10354
+GET|/?rest_route=/custom/v1/report/10355|id,from,to,page|Unique custom report route 10355
+GET|/?anibus_ext_probe_10356=1|anibus_ext_probe_10356,id,cat,author|Unique query probe route 10356
+GET|/wp-admin/options-general.php?page=settings-10357|page,tab,section|Unique admin settings route 10357
+GET|/wp-json/wp/v2/custom_type_10358|search,page,per_page,orderby|Unique custom post type route 10358
+GET|/shop-api/v1/cart/10359|cart_id,user_id,coupon,qty|Unique shop api cart route 10359
+GET|/wp-json/plugin/v1/items/10360|id,search,page,per_page|Unique plugin REST items route 10360
+GET|/wp-json/plugin/v1/orders/10361|id,status,page,per_page|Unique plugin REST orders route 10361
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10362|action,id,post_id,nonce|Unique admin-ajax bulk action 10362
+POST|/wp-admin/admin-post.php?action=sync_action_10363|action,id,user_id,token|Unique admin-post sync action 10363
+GET|/wp-content/plugins/module-10364/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10364
+GET|/?rest_route=/custom/v1/report/10365|id,from,to,page|Unique custom report route 10365
+GET|/?anibus_ext_probe_10366=1|anibus_ext_probe_10366,id,cat,author|Unique query probe route 10366
+GET|/wp-admin/options-general.php?page=settings-10367|page,tab,section|Unique admin settings route 10367
+GET|/wp-json/wp/v2/custom_type_10368|search,page,per_page,orderby|Unique custom post type route 10368
+GET|/shop-api/v1/cart/10369|cart_id,user_id,coupon,qty|Unique shop api cart route 10369
+GET|/wp-json/plugin/v1/items/10370|id,search,page,per_page|Unique plugin REST items route 10370
+GET|/wp-json/plugin/v1/orders/10371|id,status,page,per_page|Unique plugin REST orders route 10371
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10372|action,id,post_id,nonce|Unique admin-ajax bulk action 10372
+POST|/wp-admin/admin-post.php?action=sync_action_10373|action,id,user_id,token|Unique admin-post sync action 10373
+GET|/wp-content/plugins/module-10374/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10374
+GET|/?rest_route=/custom/v1/report/10375|id,from,to,page|Unique custom report route 10375
+GET|/?anibus_ext_probe_10376=1|anibus_ext_probe_10376,id,cat,author|Unique query probe route 10376
+GET|/wp-admin/options-general.php?page=settings-10377|page,tab,section|Unique admin settings route 10377
+GET|/wp-json/wp/v2/custom_type_10378|search,page,per_page,orderby|Unique custom post type route 10378
+GET|/shop-api/v1/cart/10379|cart_id,user_id,coupon,qty|Unique shop api cart route 10379
+GET|/wp-json/plugin/v1/items/10380|id,search,page,per_page|Unique plugin REST items route 10380
+GET|/wp-json/plugin/v1/orders/10381|id,status,page,per_page|Unique plugin REST orders route 10381
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10382|action,id,post_id,nonce|Unique admin-ajax bulk action 10382
+POST|/wp-admin/admin-post.php?action=sync_action_10383|action,id,user_id,token|Unique admin-post sync action 10383
+GET|/wp-content/plugins/module-10384/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10384
+GET|/?rest_route=/custom/v1/report/10385|id,from,to,page|Unique custom report route 10385
+GET|/?anibus_ext_probe_10386=1|anibus_ext_probe_10386,id,cat,author|Unique query probe route 10386
+GET|/wp-admin/options-general.php?page=settings-10387|page,tab,section|Unique admin settings route 10387
+GET|/wp-json/wp/v2/custom_type_10388|search,page,per_page,orderby|Unique custom post type route 10388
+GET|/shop-api/v1/cart/10389|cart_id,user_id,coupon,qty|Unique shop api cart route 10389
+GET|/wp-json/plugin/v1/items/10390|id,search,page,per_page|Unique plugin REST items route 10390
+GET|/wp-json/plugin/v1/orders/10391|id,status,page,per_page|Unique plugin REST orders route 10391
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10392|action,id,post_id,nonce|Unique admin-ajax bulk action 10392
+POST|/wp-admin/admin-post.php?action=sync_action_10393|action,id,user_id,token|Unique admin-post sync action 10393
+GET|/wp-content/plugins/module-10394/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10394
+GET|/?rest_route=/custom/v1/report/10395|id,from,to,page|Unique custom report route 10395
+GET|/?anibus_ext_probe_10396=1|anibus_ext_probe_10396,id,cat,author|Unique query probe route 10396
+GET|/wp-admin/options-general.php?page=settings-10397|page,tab,section|Unique admin settings route 10397
+GET|/wp-json/wp/v2/custom_type_10398|search,page,per_page,orderby|Unique custom post type route 10398
+GET|/shop-api/v1/cart/10399|cart_id,user_id,coupon,qty|Unique shop api cart route 10399
+GET|/wp-json/plugin/v1/items/10400|id,search,page,per_page|Unique plugin REST items route 10400
+GET|/wp-json/plugin/v1/orders/10401|id,status,page,per_page|Unique plugin REST orders route 10401
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10402|action,id,post_id,nonce|Unique admin-ajax bulk action 10402
+POST|/wp-admin/admin-post.php?action=sync_action_10403|action,id,user_id,token|Unique admin-post sync action 10403
+GET|/wp-content/plugins/module-10404/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10404
+GET|/?rest_route=/custom/v1/report/10405|id,from,to,page|Unique custom report route 10405
+GET|/?anibus_ext_probe_10406=1|anibus_ext_probe_10406,id,cat,author|Unique query probe route 10406
+GET|/wp-admin/options-general.php?page=settings-10407|page,tab,section|Unique admin settings route 10407
+GET|/wp-json/wp/v2/custom_type_10408|search,page,per_page,orderby|Unique custom post type route 10408
+GET|/shop-api/v1/cart/10409|cart_id,user_id,coupon,qty|Unique shop api cart route 10409
+GET|/wp-json/plugin/v1/items/10410|id,search,page,per_page|Unique plugin REST items route 10410
+GET|/wp-json/plugin/v1/orders/10411|id,status,page,per_page|Unique plugin REST orders route 10411
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10412|action,id,post_id,nonce|Unique admin-ajax bulk action 10412
+POST|/wp-admin/admin-post.php?action=sync_action_10413|action,id,user_id,token|Unique admin-post sync action 10413
+GET|/wp-content/plugins/module-10414/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10414
+GET|/?rest_route=/custom/v1/report/10415|id,from,to,page|Unique custom report route 10415
+GET|/?anibus_ext_probe_10416=1|anibus_ext_probe_10416,id,cat,author|Unique query probe route 10416
+GET|/wp-admin/options-general.php?page=settings-10417|page,tab,section|Unique admin settings route 10417
+GET|/wp-json/wp/v2/custom_type_10418|search,page,per_page,orderby|Unique custom post type route 10418
+GET|/shop-api/v1/cart/10419|cart_id,user_id,coupon,qty|Unique shop api cart route 10419
+GET|/wp-json/plugin/v1/items/10420|id,search,page,per_page|Unique plugin REST items route 10420
+GET|/wp-json/plugin/v1/orders/10421|id,status,page,per_page|Unique plugin REST orders route 10421
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10422|action,id,post_id,nonce|Unique admin-ajax bulk action 10422
+POST|/wp-admin/admin-post.php?action=sync_action_10423|action,id,user_id,token|Unique admin-post sync action 10423
+GET|/wp-content/plugins/module-10424/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10424
+GET|/?rest_route=/custom/v1/report/10425|id,from,to,page|Unique custom report route 10425
+GET|/?anibus_ext_probe_10426=1|anibus_ext_probe_10426,id,cat,author|Unique query probe route 10426
+GET|/wp-admin/options-general.php?page=settings-10427|page,tab,section|Unique admin settings route 10427
+GET|/wp-json/wp/v2/custom_type_10428|search,page,per_page,orderby|Unique custom post type route 10428
+GET|/shop-api/v1/cart/10429|cart_id,user_id,coupon,qty|Unique shop api cart route 10429
+GET|/wp-json/plugin/v1/items/10430|id,search,page,per_page|Unique plugin REST items route 10430
+GET|/wp-json/plugin/v1/orders/10431|id,status,page,per_page|Unique plugin REST orders route 10431
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10432|action,id,post_id,nonce|Unique admin-ajax bulk action 10432
+POST|/wp-admin/admin-post.php?action=sync_action_10433|action,id,user_id,token|Unique admin-post sync action 10433
+GET|/wp-content/plugins/module-10434/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10434
+GET|/?rest_route=/custom/v1/report/10435|id,from,to,page|Unique custom report route 10435
+GET|/?anibus_ext_probe_10436=1|anibus_ext_probe_10436,id,cat,author|Unique query probe route 10436
+GET|/wp-admin/options-general.php?page=settings-10437|page,tab,section|Unique admin settings route 10437
+GET|/wp-json/wp/v2/custom_type_10438|search,page,per_page,orderby|Unique custom post type route 10438
+GET|/shop-api/v1/cart/10439|cart_id,user_id,coupon,qty|Unique shop api cart route 10439
+GET|/wp-json/plugin/v1/items/10440|id,search,page,per_page|Unique plugin REST items route 10440
+GET|/wp-json/plugin/v1/orders/10441|id,status,page,per_page|Unique plugin REST orders route 10441
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10442|action,id,post_id,nonce|Unique admin-ajax bulk action 10442
+POST|/wp-admin/admin-post.php?action=sync_action_10443|action,id,user_id,token|Unique admin-post sync action 10443
+GET|/wp-content/plugins/module-10444/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10444
+GET|/?rest_route=/custom/v1/report/10445|id,from,to,page|Unique custom report route 10445
+GET|/?anibus_ext_probe_10446=1|anibus_ext_probe_10446,id,cat,author|Unique query probe route 10446
+GET|/wp-admin/options-general.php?page=settings-10447|page,tab,section|Unique admin settings route 10447
+GET|/wp-json/wp/v2/custom_type_10448|search,page,per_page,orderby|Unique custom post type route 10448
+GET|/shop-api/v1/cart/10449|cart_id,user_id,coupon,qty|Unique shop api cart route 10449
+GET|/wp-json/plugin/v1/items/10450|id,search,page,per_page|Unique plugin REST items route 10450
+GET|/wp-json/plugin/v1/orders/10451|id,status,page,per_page|Unique plugin REST orders route 10451
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10452|action,id,post_id,nonce|Unique admin-ajax bulk action 10452
+POST|/wp-admin/admin-post.php?action=sync_action_10453|action,id,user_id,token|Unique admin-post sync action 10453
+GET|/wp-content/plugins/module-10454/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10454
+GET|/?rest_route=/custom/v1/report/10455|id,from,to,page|Unique custom report route 10455
+GET|/?anibus_ext_probe_10456=1|anibus_ext_probe_10456,id,cat,author|Unique query probe route 10456
+GET|/wp-admin/options-general.php?page=settings-10457|page,tab,section|Unique admin settings route 10457
+GET|/wp-json/wp/v2/custom_type_10458|search,page,per_page,orderby|Unique custom post type route 10458
+GET|/shop-api/v1/cart/10459|cart_id,user_id,coupon,qty|Unique shop api cart route 10459
+GET|/wp-json/plugin/v1/items/10460|id,search,page,per_page|Unique plugin REST items route 10460
+GET|/wp-json/plugin/v1/orders/10461|id,status,page,per_page|Unique plugin REST orders route 10461
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10462|action,id,post_id,nonce|Unique admin-ajax bulk action 10462
+POST|/wp-admin/admin-post.php?action=sync_action_10463|action,id,user_id,token|Unique admin-post sync action 10463
+GET|/wp-content/plugins/module-10464/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10464
+GET|/?rest_route=/custom/v1/report/10465|id,from,to,page|Unique custom report route 10465
+GET|/?anibus_ext_probe_10466=1|anibus_ext_probe_10466,id,cat,author|Unique query probe route 10466
+GET|/wp-admin/options-general.php?page=settings-10467|page,tab,section|Unique admin settings route 10467
+GET|/wp-json/wp/v2/custom_type_10468|search,page,per_page,orderby|Unique custom post type route 10468
+GET|/shop-api/v1/cart/10469|cart_id,user_id,coupon,qty|Unique shop api cart route 10469
+GET|/wp-json/plugin/v1/items/10470|id,search,page,per_page|Unique plugin REST items route 10470
+GET|/wp-json/plugin/v1/orders/10471|id,status,page,per_page|Unique plugin REST orders route 10471
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10472|action,id,post_id,nonce|Unique admin-ajax bulk action 10472
+POST|/wp-admin/admin-post.php?action=sync_action_10473|action,id,user_id,token|Unique admin-post sync action 10473
+GET|/wp-content/plugins/module-10474/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10474
+GET|/?rest_route=/custom/v1/report/10475|id,from,to,page|Unique custom report route 10475
+GET|/?anibus_ext_probe_10476=1|anibus_ext_probe_10476,id,cat,author|Unique query probe route 10476
+GET|/wp-admin/options-general.php?page=settings-10477|page,tab,section|Unique admin settings route 10477
+GET|/wp-json/wp/v2/custom_type_10478|search,page,per_page,orderby|Unique custom post type route 10478
+GET|/shop-api/v1/cart/10479|cart_id,user_id,coupon,qty|Unique shop api cart route 10479
+GET|/wp-json/plugin/v1/items/10480|id,search,page,per_page|Unique plugin REST items route 10480
+GET|/wp-json/plugin/v1/orders/10481|id,status,page,per_page|Unique plugin REST orders route 10481
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10482|action,id,post_id,nonce|Unique admin-ajax bulk action 10482
+POST|/wp-admin/admin-post.php?action=sync_action_10483|action,id,user_id,token|Unique admin-post sync action 10483
+GET|/wp-content/plugins/module-10484/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10484
+GET|/?rest_route=/custom/v1/report/10485|id,from,to,page|Unique custom report route 10485
+GET|/?anibus_ext_probe_10486=1|anibus_ext_probe_10486,id,cat,author|Unique query probe route 10486
+GET|/wp-admin/options-general.php?page=settings-10487|page,tab,section|Unique admin settings route 10487
+GET|/wp-json/wp/v2/custom_type_10488|search,page,per_page,orderby|Unique custom post type route 10488
+GET|/shop-api/v1/cart/10489|cart_id,user_id,coupon,qty|Unique shop api cart route 10489
+GET|/wp-json/plugin/v1/items/10490|id,search,page,per_page|Unique plugin REST items route 10490
+GET|/wp-json/plugin/v1/orders/10491|id,status,page,per_page|Unique plugin REST orders route 10491
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10492|action,id,post_id,nonce|Unique admin-ajax bulk action 10492
+POST|/wp-admin/admin-post.php?action=sync_action_10493|action,id,user_id,token|Unique admin-post sync action 10493
+GET|/wp-content/plugins/module-10494/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10494
+GET|/?rest_route=/custom/v1/report/10495|id,from,to,page|Unique custom report route 10495
+GET|/?anibus_ext_probe_10496=1|anibus_ext_probe_10496,id,cat,author|Unique query probe route 10496
+GET|/wp-admin/options-general.php?page=settings-10497|page,tab,section|Unique admin settings route 10497
+GET|/wp-json/wp/v2/custom_type_10498|search,page,per_page,orderby|Unique custom post type route 10498
+GET|/shop-api/v1/cart/10499|cart_id,user_id,coupon,qty|Unique shop api cart route 10499
+GET|/wp-json/plugin/v1/items/10500|id,search,page,per_page|Unique plugin REST items route 10500
+GET|/wp-json/plugin/v1/orders/10501|id,status,page,per_page|Unique plugin REST orders route 10501
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10502|action,id,post_id,nonce|Unique admin-ajax bulk action 10502
+POST|/wp-admin/admin-post.php?action=sync_action_10503|action,id,user_id,token|Unique admin-post sync action 10503
+GET|/wp-content/plugins/module-10504/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10504
+GET|/?rest_route=/custom/v1/report/10505|id,from,to,page|Unique custom report route 10505
+GET|/?anibus_ext_probe_10506=1|anibus_ext_probe_10506,id,cat,author|Unique query probe route 10506
+GET|/wp-admin/options-general.php?page=settings-10507|page,tab,section|Unique admin settings route 10507
+GET|/wp-json/wp/v2/custom_type_10508|search,page,per_page,orderby|Unique custom post type route 10508
+GET|/shop-api/v1/cart/10509|cart_id,user_id,coupon,qty|Unique shop api cart route 10509
+GET|/wp-json/plugin/v1/items/10510|id,search,page,per_page|Unique plugin REST items route 10510
+GET|/wp-json/plugin/v1/orders/10511|id,status,page,per_page|Unique plugin REST orders route 10511
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10512|action,id,post_id,nonce|Unique admin-ajax bulk action 10512
+POST|/wp-admin/admin-post.php?action=sync_action_10513|action,id,user_id,token|Unique admin-post sync action 10513
+GET|/wp-content/plugins/module-10514/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10514
+GET|/?rest_route=/custom/v1/report/10515|id,from,to,page|Unique custom report route 10515
+GET|/?anibus_ext_probe_10516=1|anibus_ext_probe_10516,id,cat,author|Unique query probe route 10516
+GET|/wp-admin/options-general.php?page=settings-10517|page,tab,section|Unique admin settings route 10517
+GET|/wp-json/wp/v2/custom_type_10518|search,page,per_page,orderby|Unique custom post type route 10518
+GET|/shop-api/v1/cart/10519|cart_id,user_id,coupon,qty|Unique shop api cart route 10519
+GET|/wp-json/plugin/v1/items/10520|id,search,page,per_page|Unique plugin REST items route 10520
+GET|/wp-json/plugin/v1/orders/10521|id,status,page,per_page|Unique plugin REST orders route 10521
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10522|action,id,post_id,nonce|Unique admin-ajax bulk action 10522
+POST|/wp-admin/admin-post.php?action=sync_action_10523|action,id,user_id,token|Unique admin-post sync action 10523
+GET|/wp-content/plugins/module-10524/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10524
+GET|/?rest_route=/custom/v1/report/10525|id,from,to,page|Unique custom report route 10525
+GET|/?anibus_ext_probe_10526=1|anibus_ext_probe_10526,id,cat,author|Unique query probe route 10526
+GET|/wp-admin/options-general.php?page=settings-10527|page,tab,section|Unique admin settings route 10527
+GET|/wp-json/wp/v2/custom_type_10528|search,page,per_page,orderby|Unique custom post type route 10528
+GET|/shop-api/v1/cart/10529|cart_id,user_id,coupon,qty|Unique shop api cart route 10529
+GET|/wp-json/plugin/v1/items/10530|id,search,page,per_page|Unique plugin REST items route 10530
+GET|/wp-json/plugin/v1/orders/10531|id,status,page,per_page|Unique plugin REST orders route 10531
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10532|action,id,post_id,nonce|Unique admin-ajax bulk action 10532
+POST|/wp-admin/admin-post.php?action=sync_action_10533|action,id,user_id,token|Unique admin-post sync action 10533
+GET|/wp-content/plugins/module-10534/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10534
+GET|/?rest_route=/custom/v1/report/10535|id,from,to,page|Unique custom report route 10535
+GET|/?anibus_ext_probe_10536=1|anibus_ext_probe_10536,id,cat,author|Unique query probe route 10536
+GET|/wp-admin/options-general.php?page=settings-10537|page,tab,section|Unique admin settings route 10537
+GET|/wp-json/wp/v2/custom_type_10538|search,page,per_page,orderby|Unique custom post type route 10538
+GET|/shop-api/v1/cart/10539|cart_id,user_id,coupon,qty|Unique shop api cart route 10539
+GET|/wp-json/plugin/v1/items/10540|id,search,page,per_page|Unique plugin REST items route 10540
+GET|/wp-json/plugin/v1/orders/10541|id,status,page,per_page|Unique plugin REST orders route 10541
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10542|action,id,post_id,nonce|Unique admin-ajax bulk action 10542
+POST|/wp-admin/admin-post.php?action=sync_action_10543|action,id,user_id,token|Unique admin-post sync action 10543
+GET|/wp-content/plugins/module-10544/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10544
+GET|/?rest_route=/custom/v1/report/10545|id,from,to,page|Unique custom report route 10545
+GET|/?anibus_ext_probe_10546=1|anibus_ext_probe_10546,id,cat,author|Unique query probe route 10546
+GET|/wp-admin/options-general.php?page=settings-10547|page,tab,section|Unique admin settings route 10547
+GET|/wp-json/wp/v2/custom_type_10548|search,page,per_page,orderby|Unique custom post type route 10548
+GET|/shop-api/v1/cart/10549|cart_id,user_id,coupon,qty|Unique shop api cart route 10549
+GET|/wp-json/plugin/v1/items/10550|id,search,page,per_page|Unique plugin REST items route 10550
+GET|/wp-json/plugin/v1/orders/10551|id,status,page,per_page|Unique plugin REST orders route 10551
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10552|action,id,post_id,nonce|Unique admin-ajax bulk action 10552
+POST|/wp-admin/admin-post.php?action=sync_action_10553|action,id,user_id,token|Unique admin-post sync action 10553
+GET|/wp-content/plugins/module-10554/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10554
+GET|/?rest_route=/custom/v1/report/10555|id,from,to,page|Unique custom report route 10555
+GET|/?anibus_ext_probe_10556=1|anibus_ext_probe_10556,id,cat,author|Unique query probe route 10556
+GET|/wp-admin/options-general.php?page=settings-10557|page,tab,section|Unique admin settings route 10557
+GET|/wp-json/wp/v2/custom_type_10558|search,page,per_page,orderby|Unique custom post type route 10558
+GET|/shop-api/v1/cart/10559|cart_id,user_id,coupon,qty|Unique shop api cart route 10559
+GET|/wp-json/plugin/v1/items/10560|id,search,page,per_page|Unique plugin REST items route 10560
+GET|/wp-json/plugin/v1/orders/10561|id,status,page,per_page|Unique plugin REST orders route 10561
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10562|action,id,post_id,nonce|Unique admin-ajax bulk action 10562
+POST|/wp-admin/admin-post.php?action=sync_action_10563|action,id,user_id,token|Unique admin-post sync action 10563
+GET|/wp-content/plugins/module-10564/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10564
+GET|/?rest_route=/custom/v1/report/10565|id,from,to,page|Unique custom report route 10565
+GET|/?anibus_ext_probe_10566=1|anibus_ext_probe_10566,id,cat,author|Unique query probe route 10566
+GET|/wp-admin/options-general.php?page=settings-10567|page,tab,section|Unique admin settings route 10567
+GET|/wp-json/wp/v2/custom_type_10568|search,page,per_page,orderby|Unique custom post type route 10568
+GET|/shop-api/v1/cart/10569|cart_id,user_id,coupon,qty|Unique shop api cart route 10569
+GET|/wp-json/plugin/v1/items/10570|id,search,page,per_page|Unique plugin REST items route 10570
+GET|/wp-json/plugin/v1/orders/10571|id,status,page,per_page|Unique plugin REST orders route 10571
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10572|action,id,post_id,nonce|Unique admin-ajax bulk action 10572
+POST|/wp-admin/admin-post.php?action=sync_action_10573|action,id,user_id,token|Unique admin-post sync action 10573
+GET|/wp-content/plugins/module-10574/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10574
+GET|/?rest_route=/custom/v1/report/10575|id,from,to,page|Unique custom report route 10575
+GET|/?anibus_ext_probe_10576=1|anibus_ext_probe_10576,id,cat,author|Unique query probe route 10576
+GET|/wp-admin/options-general.php?page=settings-10577|page,tab,section|Unique admin settings route 10577
+GET|/wp-json/wp/v2/custom_type_10578|search,page,per_page,orderby|Unique custom post type route 10578
+GET|/shop-api/v1/cart/10579|cart_id,user_id,coupon,qty|Unique shop api cart route 10579
+GET|/wp-json/plugin/v1/items/10580|id,search,page,per_page|Unique plugin REST items route 10580
+GET|/wp-json/plugin/v1/orders/10581|id,status,page,per_page|Unique plugin REST orders route 10581
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10582|action,id,post_id,nonce|Unique admin-ajax bulk action 10582
+POST|/wp-admin/admin-post.php?action=sync_action_10583|action,id,user_id,token|Unique admin-post sync action 10583
+GET|/wp-content/plugins/module-10584/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10584
+GET|/?rest_route=/custom/v1/report/10585|id,from,to,page|Unique custom report route 10585
+GET|/?anibus_ext_probe_10586=1|anibus_ext_probe_10586,id,cat,author|Unique query probe route 10586
+GET|/wp-admin/options-general.php?page=settings-10587|page,tab,section|Unique admin settings route 10587
+GET|/wp-json/wp/v2/custom_type_10588|search,page,per_page,orderby|Unique custom post type route 10588
+GET|/shop-api/v1/cart/10589|cart_id,user_id,coupon,qty|Unique shop api cart route 10589
+GET|/wp-json/plugin/v1/items/10590|id,search,page,per_page|Unique plugin REST items route 10590
+GET|/wp-json/plugin/v1/orders/10591|id,status,page,per_page|Unique plugin REST orders route 10591
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10592|action,id,post_id,nonce|Unique admin-ajax bulk action 10592
+POST|/wp-admin/admin-post.php?action=sync_action_10593|action,id,user_id,token|Unique admin-post sync action 10593
+GET|/wp-content/plugins/module-10594/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10594
+GET|/?rest_route=/custom/v1/report/10595|id,from,to,page|Unique custom report route 10595
+GET|/?anibus_ext_probe_10596=1|anibus_ext_probe_10596,id,cat,author|Unique query probe route 10596
+GET|/wp-admin/options-general.php?page=settings-10597|page,tab,section|Unique admin settings route 10597
+GET|/wp-json/wp/v2/custom_type_10598|search,page,per_page,orderby|Unique custom post type route 10598
+GET|/shop-api/v1/cart/10599|cart_id,user_id,coupon,qty|Unique shop api cart route 10599
+GET|/wp-json/plugin/v1/items/10600|id,search,page,per_page|Unique plugin REST items route 10600
+GET|/wp-json/plugin/v1/orders/10601|id,status,page,per_page|Unique plugin REST orders route 10601
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10602|action,id,post_id,nonce|Unique admin-ajax bulk action 10602
+POST|/wp-admin/admin-post.php?action=sync_action_10603|action,id,user_id,token|Unique admin-post sync action 10603
+GET|/wp-content/plugins/module-10604/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10604
+GET|/?rest_route=/custom/v1/report/10605|id,from,to,page|Unique custom report route 10605
+GET|/?anibus_ext_probe_10606=1|anibus_ext_probe_10606,id,cat,author|Unique query probe route 10606
+GET|/wp-admin/options-general.php?page=settings-10607|page,tab,section|Unique admin settings route 10607
+GET|/wp-json/wp/v2/custom_type_10608|search,page,per_page,orderby|Unique custom post type route 10608
+GET|/shop-api/v1/cart/10609|cart_id,user_id,coupon,qty|Unique shop api cart route 10609
+GET|/wp-json/plugin/v1/items/10610|id,search,page,per_page|Unique plugin REST items route 10610
+GET|/wp-json/plugin/v1/orders/10611|id,status,page,per_page|Unique plugin REST orders route 10611
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10612|action,id,post_id,nonce|Unique admin-ajax bulk action 10612
+POST|/wp-admin/admin-post.php?action=sync_action_10613|action,id,user_id,token|Unique admin-post sync action 10613
+GET|/wp-content/plugins/module-10614/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10614
+GET|/?rest_route=/custom/v1/report/10615|id,from,to,page|Unique custom report route 10615
+GET|/?anibus_ext_probe_10616=1|anibus_ext_probe_10616,id,cat,author|Unique query probe route 10616
+GET|/wp-admin/options-general.php?page=settings-10617|page,tab,section|Unique admin settings route 10617
+GET|/wp-json/wp/v2/custom_type_10618|search,page,per_page,orderby|Unique custom post type route 10618
+GET|/shop-api/v1/cart/10619|cart_id,user_id,coupon,qty|Unique shop api cart route 10619
+GET|/wp-json/plugin/v1/items/10620|id,search,page,per_page|Unique plugin REST items route 10620
+GET|/wp-json/plugin/v1/orders/10621|id,status,page,per_page|Unique plugin REST orders route 10621
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10622|action,id,post_id,nonce|Unique admin-ajax bulk action 10622
+POST|/wp-admin/admin-post.php?action=sync_action_10623|action,id,user_id,token|Unique admin-post sync action 10623
+GET|/wp-content/plugins/module-10624/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10624
+GET|/?rest_route=/custom/v1/report/10625|id,from,to,page|Unique custom report route 10625
+GET|/?anibus_ext_probe_10626=1|anibus_ext_probe_10626,id,cat,author|Unique query probe route 10626
+GET|/wp-admin/options-general.php?page=settings-10627|page,tab,section|Unique admin settings route 10627
+GET|/wp-json/wp/v2/custom_type_10628|search,page,per_page,orderby|Unique custom post type route 10628
+GET|/shop-api/v1/cart/10629|cart_id,user_id,coupon,qty|Unique shop api cart route 10629
+GET|/wp-json/plugin/v1/items/10630|id,search,page,per_page|Unique plugin REST items route 10630
+GET|/wp-json/plugin/v1/orders/10631|id,status,page,per_page|Unique plugin REST orders route 10631
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10632|action,id,post_id,nonce|Unique admin-ajax bulk action 10632
+POST|/wp-admin/admin-post.php?action=sync_action_10633|action,id,user_id,token|Unique admin-post sync action 10633
+GET|/wp-content/plugins/module-10634/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10634
+GET|/?rest_route=/custom/v1/report/10635|id,from,to,page|Unique custom report route 10635
+GET|/?anibus_ext_probe_10636=1|anibus_ext_probe_10636,id,cat,author|Unique query probe route 10636
+GET|/wp-admin/options-general.php?page=settings-10637|page,tab,section|Unique admin settings route 10637
+GET|/wp-json/wp/v2/custom_type_10638|search,page,per_page,orderby|Unique custom post type route 10638
+GET|/shop-api/v1/cart/10639|cart_id,user_id,coupon,qty|Unique shop api cart route 10639
+GET|/wp-json/plugin/v1/items/10640|id,search,page,per_page|Unique plugin REST items route 10640
+GET|/wp-json/plugin/v1/orders/10641|id,status,page,per_page|Unique plugin REST orders route 10641
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10642|action,id,post_id,nonce|Unique admin-ajax bulk action 10642
+POST|/wp-admin/admin-post.php?action=sync_action_10643|action,id,user_id,token|Unique admin-post sync action 10643
+GET|/wp-content/plugins/module-10644/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10644
+GET|/?rest_route=/custom/v1/report/10645|id,from,to,page|Unique custom report route 10645
+GET|/?anibus_ext_probe_10646=1|anibus_ext_probe_10646,id,cat,author|Unique query probe route 10646
+GET|/wp-admin/options-general.php?page=settings-10647|page,tab,section|Unique admin settings route 10647
+GET|/wp-json/wp/v2/custom_type_10648|search,page,per_page,orderby|Unique custom post type route 10648
+GET|/shop-api/v1/cart/10649|cart_id,user_id,coupon,qty|Unique shop api cart route 10649
+GET|/wp-json/plugin/v1/items/10650|id,search,page,per_page|Unique plugin REST items route 10650
+GET|/wp-json/plugin/v1/orders/10651|id,status,page,per_page|Unique plugin REST orders route 10651
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10652|action,id,post_id,nonce|Unique admin-ajax bulk action 10652
+POST|/wp-admin/admin-post.php?action=sync_action_10653|action,id,user_id,token|Unique admin-post sync action 10653
+GET|/wp-content/plugins/module-10654/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10654
+GET|/?rest_route=/custom/v1/report/10655|id,from,to,page|Unique custom report route 10655
+GET|/?anibus_ext_probe_10656=1|anibus_ext_probe_10656,id,cat,author|Unique query probe route 10656
+GET|/wp-admin/options-general.php?page=settings-10657|page,tab,section|Unique admin settings route 10657
+GET|/wp-json/wp/v2/custom_type_10658|search,page,per_page,orderby|Unique custom post type route 10658
+GET|/shop-api/v1/cart/10659|cart_id,user_id,coupon,qty|Unique shop api cart route 10659
+GET|/wp-json/plugin/v1/items/10660|id,search,page,per_page|Unique plugin REST items route 10660
+GET|/wp-json/plugin/v1/orders/10661|id,status,page,per_page|Unique plugin REST orders route 10661
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10662|action,id,post_id,nonce|Unique admin-ajax bulk action 10662
+POST|/wp-admin/admin-post.php?action=sync_action_10663|action,id,user_id,token|Unique admin-post sync action 10663
+GET|/wp-content/plugins/module-10664/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10664
+GET|/?rest_route=/custom/v1/report/10665|id,from,to,page|Unique custom report route 10665
+GET|/?anibus_ext_probe_10666=1|anibus_ext_probe_10666,id,cat,author|Unique query probe route 10666
+GET|/wp-admin/options-general.php?page=settings-10667|page,tab,section|Unique admin settings route 10667
+GET|/wp-json/wp/v2/custom_type_10668|search,page,per_page,orderby|Unique custom post type route 10668
+GET|/shop-api/v1/cart/10669|cart_id,user_id,coupon,qty|Unique shop api cart route 10669
+GET|/wp-json/plugin/v1/items/10670|id,search,page,per_page|Unique plugin REST items route 10670
+GET|/wp-json/plugin/v1/orders/10671|id,status,page,per_page|Unique plugin REST orders route 10671
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10672|action,id,post_id,nonce|Unique admin-ajax bulk action 10672
+POST|/wp-admin/admin-post.php?action=sync_action_10673|action,id,user_id,token|Unique admin-post sync action 10673
+GET|/wp-content/plugins/module-10674/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10674
+GET|/?rest_route=/custom/v1/report/10675|id,from,to,page|Unique custom report route 10675
+GET|/?anibus_ext_probe_10676=1|anibus_ext_probe_10676,id,cat,author|Unique query probe route 10676
+GET|/wp-admin/options-general.php?page=settings-10677|page,tab,section|Unique admin settings route 10677
+GET|/wp-json/wp/v2/custom_type_10678|search,page,per_page,orderby|Unique custom post type route 10678
+GET|/shop-api/v1/cart/10679|cart_id,user_id,coupon,qty|Unique shop api cart route 10679
+GET|/wp-json/plugin/v1/items/10680|id,search,page,per_page|Unique plugin REST items route 10680
+GET|/wp-json/plugin/v1/orders/10681|id,status,page,per_page|Unique plugin REST orders route 10681
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10682|action,id,post_id,nonce|Unique admin-ajax bulk action 10682
+POST|/wp-admin/admin-post.php?action=sync_action_10683|action,id,user_id,token|Unique admin-post sync action 10683
+GET|/wp-content/plugins/module-10684/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10684
+GET|/?rest_route=/custom/v1/report/10685|id,from,to,page|Unique custom report route 10685
+GET|/?anibus_ext_probe_10686=1|anibus_ext_probe_10686,id,cat,author|Unique query probe route 10686
+GET|/wp-admin/options-general.php?page=settings-10687|page,tab,section|Unique admin settings route 10687
+GET|/wp-json/wp/v2/custom_type_10688|search,page,per_page,orderby|Unique custom post type route 10688
+GET|/shop-api/v1/cart/10689|cart_id,user_id,coupon,qty|Unique shop api cart route 10689
+GET|/wp-json/plugin/v1/items/10690|id,search,page,per_page|Unique plugin REST items route 10690
+GET|/wp-json/plugin/v1/orders/10691|id,status,page,per_page|Unique plugin REST orders route 10691
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10692|action,id,post_id,nonce|Unique admin-ajax bulk action 10692
+POST|/wp-admin/admin-post.php?action=sync_action_10693|action,id,user_id,token|Unique admin-post sync action 10693
+GET|/wp-content/plugins/module-10694/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10694
+GET|/?rest_route=/custom/v1/report/10695|id,from,to,page|Unique custom report route 10695
+GET|/?anibus_ext_probe_10696=1|anibus_ext_probe_10696,id,cat,author|Unique query probe route 10696
+GET|/wp-admin/options-general.php?page=settings-10697|page,tab,section|Unique admin settings route 10697
+GET|/wp-json/wp/v2/custom_type_10698|search,page,per_page,orderby|Unique custom post type route 10698
+GET|/shop-api/v1/cart/10699|cart_id,user_id,coupon,qty|Unique shop api cart route 10699
+GET|/wp-json/plugin/v1/items/10700|id,search,page,per_page|Unique plugin REST items route 10700
+GET|/wp-json/plugin/v1/orders/10701|id,status,page,per_page|Unique plugin REST orders route 10701
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10702|action,id,post_id,nonce|Unique admin-ajax bulk action 10702
+POST|/wp-admin/admin-post.php?action=sync_action_10703|action,id,user_id,token|Unique admin-post sync action 10703
+GET|/wp-content/plugins/module-10704/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10704
+GET|/?rest_route=/custom/v1/report/10705|id,from,to,page|Unique custom report route 10705
+GET|/?anibus_ext_probe_10706=1|anibus_ext_probe_10706,id,cat,author|Unique query probe route 10706
+GET|/wp-admin/options-general.php?page=settings-10707|page,tab,section|Unique admin settings route 10707
+GET|/wp-json/wp/v2/custom_type_10708|search,page,per_page,orderby|Unique custom post type route 10708
+GET|/shop-api/v1/cart/10709|cart_id,user_id,coupon,qty|Unique shop api cart route 10709
+GET|/wp-json/plugin/v1/items/10710|id,search,page,per_page|Unique plugin REST items route 10710
+GET|/wp-json/plugin/v1/orders/10711|id,status,page,per_page|Unique plugin REST orders route 10711
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10712|action,id,post_id,nonce|Unique admin-ajax bulk action 10712
+POST|/wp-admin/admin-post.php?action=sync_action_10713|action,id,user_id,token|Unique admin-post sync action 10713
+GET|/wp-content/plugins/module-10714/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10714
+GET|/?rest_route=/custom/v1/report/10715|id,from,to,page|Unique custom report route 10715
+GET|/?anibus_ext_probe_10716=1|anibus_ext_probe_10716,id,cat,author|Unique query probe route 10716
+GET|/wp-admin/options-general.php?page=settings-10717|page,tab,section|Unique admin settings route 10717
+GET|/wp-json/wp/v2/custom_type_10718|search,page,per_page,orderby|Unique custom post type route 10718
+GET|/shop-api/v1/cart/10719|cart_id,user_id,coupon,qty|Unique shop api cart route 10719
+GET|/wp-json/plugin/v1/items/10720|id,search,page,per_page|Unique plugin REST items route 10720
+GET|/wp-json/plugin/v1/orders/10721|id,status,page,per_page|Unique plugin REST orders route 10721
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10722|action,id,post_id,nonce|Unique admin-ajax bulk action 10722
+POST|/wp-admin/admin-post.php?action=sync_action_10723|action,id,user_id,token|Unique admin-post sync action 10723
+GET|/wp-content/plugins/module-10724/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10724
+GET|/?rest_route=/custom/v1/report/10725|id,from,to,page|Unique custom report route 10725
+GET|/?anibus_ext_probe_10726=1|anibus_ext_probe_10726,id,cat,author|Unique query probe route 10726
+GET|/wp-admin/options-general.php?page=settings-10727|page,tab,section|Unique admin settings route 10727
+GET|/wp-json/wp/v2/custom_type_10728|search,page,per_page,orderby|Unique custom post type route 10728
+GET|/shop-api/v1/cart/10729|cart_id,user_id,coupon,qty|Unique shop api cart route 10729
+GET|/wp-json/plugin/v1/items/10730|id,search,page,per_page|Unique plugin REST items route 10730
+GET|/wp-json/plugin/v1/orders/10731|id,status,page,per_page|Unique plugin REST orders route 10731
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10732|action,id,post_id,nonce|Unique admin-ajax bulk action 10732
+POST|/wp-admin/admin-post.php?action=sync_action_10733|action,id,user_id,token|Unique admin-post sync action 10733
+GET|/wp-content/plugins/module-10734/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10734
+GET|/?rest_route=/custom/v1/report/10735|id,from,to,page|Unique custom report route 10735
+GET|/?anibus_ext_probe_10736=1|anibus_ext_probe_10736,id,cat,author|Unique query probe route 10736
+GET|/wp-admin/options-general.php?page=settings-10737|page,tab,section|Unique admin settings route 10737
+GET|/wp-json/wp/v2/custom_type_10738|search,page,per_page,orderby|Unique custom post type route 10738
+GET|/shop-api/v1/cart/10739|cart_id,user_id,coupon,qty|Unique shop api cart route 10739
+GET|/wp-json/plugin/v1/items/10740|id,search,page,per_page|Unique plugin REST items route 10740
+GET|/wp-json/plugin/v1/orders/10741|id,status,page,per_page|Unique plugin REST orders route 10741
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10742|action,id,post_id,nonce|Unique admin-ajax bulk action 10742
+POST|/wp-admin/admin-post.php?action=sync_action_10743|action,id,user_id,token|Unique admin-post sync action 10743
+GET|/wp-content/plugins/module-10744/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10744
+GET|/?rest_route=/custom/v1/report/10745|id,from,to,page|Unique custom report route 10745
+GET|/?anibus_ext_probe_10746=1|anibus_ext_probe_10746,id,cat,author|Unique query probe route 10746
+GET|/wp-admin/options-general.php?page=settings-10747|page,tab,section|Unique admin settings route 10747
+GET|/wp-json/wp/v2/custom_type_10748|search,page,per_page,orderby|Unique custom post type route 10748
+GET|/shop-api/v1/cart/10749|cart_id,user_id,coupon,qty|Unique shop api cart route 10749
+GET|/wp-json/plugin/v1/items/10750|id,search,page,per_page|Unique plugin REST items route 10750
+GET|/wp-json/plugin/v1/orders/10751|id,status,page,per_page|Unique plugin REST orders route 10751
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10752|action,id,post_id,nonce|Unique admin-ajax bulk action 10752
+POST|/wp-admin/admin-post.php?action=sync_action_10753|action,id,user_id,token|Unique admin-post sync action 10753
+GET|/wp-content/plugins/module-10754/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10754
+GET|/?rest_route=/custom/v1/report/10755|id,from,to,page|Unique custom report route 10755
+GET|/?anibus_ext_probe_10756=1|anibus_ext_probe_10756,id,cat,author|Unique query probe route 10756
+GET|/wp-admin/options-general.php?page=settings-10757|page,tab,section|Unique admin settings route 10757
+GET|/wp-json/wp/v2/custom_type_10758|search,page,per_page,orderby|Unique custom post type route 10758
+GET|/shop-api/v1/cart/10759|cart_id,user_id,coupon,qty|Unique shop api cart route 10759
+GET|/wp-json/plugin/v1/items/10760|id,search,page,per_page|Unique plugin REST items route 10760
+GET|/wp-json/plugin/v1/orders/10761|id,status,page,per_page|Unique plugin REST orders route 10761
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10762|action,id,post_id,nonce|Unique admin-ajax bulk action 10762
+POST|/wp-admin/admin-post.php?action=sync_action_10763|action,id,user_id,token|Unique admin-post sync action 10763
+GET|/wp-content/plugins/module-10764/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10764
+GET|/?rest_route=/custom/v1/report/10765|id,from,to,page|Unique custom report route 10765
+GET|/?anibus_ext_probe_10766=1|anibus_ext_probe_10766,id,cat,author|Unique query probe route 10766
+GET|/wp-admin/options-general.php?page=settings-10767|page,tab,section|Unique admin settings route 10767
+GET|/wp-json/wp/v2/custom_type_10768|search,page,per_page,orderby|Unique custom post type route 10768
+GET|/shop-api/v1/cart/10769|cart_id,user_id,coupon,qty|Unique shop api cart route 10769
+GET|/wp-json/plugin/v1/items/10770|id,search,page,per_page|Unique plugin REST items route 10770
+GET|/wp-json/plugin/v1/orders/10771|id,status,page,per_page|Unique plugin REST orders route 10771
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10772|action,id,post_id,nonce|Unique admin-ajax bulk action 10772
+POST|/wp-admin/admin-post.php?action=sync_action_10773|action,id,user_id,token|Unique admin-post sync action 10773
+GET|/wp-content/plugins/module-10774/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10774
+GET|/?rest_route=/custom/v1/report/10775|id,from,to,page|Unique custom report route 10775
+GET|/?anibus_ext_probe_10776=1|anibus_ext_probe_10776,id,cat,author|Unique query probe route 10776
+GET|/wp-admin/options-general.php?page=settings-10777|page,tab,section|Unique admin settings route 10777
+GET|/wp-json/wp/v2/custom_type_10778|search,page,per_page,orderby|Unique custom post type route 10778
+GET|/shop-api/v1/cart/10779|cart_id,user_id,coupon,qty|Unique shop api cart route 10779
+GET|/wp-json/plugin/v1/items/10780|id,search,page,per_page|Unique plugin REST items route 10780
+GET|/wp-json/plugin/v1/orders/10781|id,status,page,per_page|Unique plugin REST orders route 10781
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10782|action,id,post_id,nonce|Unique admin-ajax bulk action 10782
+POST|/wp-admin/admin-post.php?action=sync_action_10783|action,id,user_id,token|Unique admin-post sync action 10783
+GET|/wp-content/plugins/module-10784/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10784
+GET|/?rest_route=/custom/v1/report/10785|id,from,to,page|Unique custom report route 10785
+GET|/?anibus_ext_probe_10786=1|anibus_ext_probe_10786,id,cat,author|Unique query probe route 10786
+GET|/wp-admin/options-general.php?page=settings-10787|page,tab,section|Unique admin settings route 10787
+GET|/wp-json/wp/v2/custom_type_10788|search,page,per_page,orderby|Unique custom post type route 10788
+GET|/shop-api/v1/cart/10789|cart_id,user_id,coupon,qty|Unique shop api cart route 10789
+GET|/wp-json/plugin/v1/items/10790|id,search,page,per_page|Unique plugin REST items route 10790
+GET|/wp-json/plugin/v1/orders/10791|id,status,page,per_page|Unique plugin REST orders route 10791
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10792|action,id,post_id,nonce|Unique admin-ajax bulk action 10792
+POST|/wp-admin/admin-post.php?action=sync_action_10793|action,id,user_id,token|Unique admin-post sync action 10793
+GET|/wp-content/plugins/module-10794/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10794
+GET|/?rest_route=/custom/v1/report/10795|id,from,to,page|Unique custom report route 10795
+GET|/?anibus_ext_probe_10796=1|anibus_ext_probe_10796,id,cat,author|Unique query probe route 10796
+GET|/wp-admin/options-general.php?page=settings-10797|page,tab,section|Unique admin settings route 10797
+GET|/wp-json/wp/v2/custom_type_10798|search,page,per_page,orderby|Unique custom post type route 10798
+GET|/shop-api/v1/cart/10799|cart_id,user_id,coupon,qty|Unique shop api cart route 10799
+GET|/wp-json/plugin/v1/items/10800|id,search,page,per_page|Unique plugin REST items route 10800
+GET|/wp-json/plugin/v1/orders/10801|id,status,page,per_page|Unique plugin REST orders route 10801
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10802|action,id,post_id,nonce|Unique admin-ajax bulk action 10802
+POST|/wp-admin/admin-post.php?action=sync_action_10803|action,id,user_id,token|Unique admin-post sync action 10803
+GET|/wp-content/plugins/module-10804/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10804
+GET|/?rest_route=/custom/v1/report/10805|id,from,to,page|Unique custom report route 10805
+GET|/?anibus_ext_probe_10806=1|anibus_ext_probe_10806,id,cat,author|Unique query probe route 10806
+GET|/wp-admin/options-general.php?page=settings-10807|page,tab,section|Unique admin settings route 10807
+GET|/wp-json/wp/v2/custom_type_10808|search,page,per_page,orderby|Unique custom post type route 10808
+GET|/shop-api/v1/cart/10809|cart_id,user_id,coupon,qty|Unique shop api cart route 10809
+GET|/wp-json/plugin/v1/items/10810|id,search,page,per_page|Unique plugin REST items route 10810
+GET|/wp-json/plugin/v1/orders/10811|id,status,page,per_page|Unique plugin REST orders route 10811
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10812|action,id,post_id,nonce|Unique admin-ajax bulk action 10812
+POST|/wp-admin/admin-post.php?action=sync_action_10813|action,id,user_id,token|Unique admin-post sync action 10813
+GET|/wp-content/plugins/module-10814/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10814
+GET|/?rest_route=/custom/v1/report/10815|id,from,to,page|Unique custom report route 10815
+GET|/?anibus_ext_probe_10816=1|anibus_ext_probe_10816,id,cat,author|Unique query probe route 10816
+GET|/wp-admin/options-general.php?page=settings-10817|page,tab,section|Unique admin settings route 10817
+GET|/wp-json/wp/v2/custom_type_10818|search,page,per_page,orderby|Unique custom post type route 10818
+GET|/shop-api/v1/cart/10819|cart_id,user_id,coupon,qty|Unique shop api cart route 10819
+GET|/wp-json/plugin/v1/items/10820|id,search,page,per_page|Unique plugin REST items route 10820
+GET|/wp-json/plugin/v1/orders/10821|id,status,page,per_page|Unique plugin REST orders route 10821
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10822|action,id,post_id,nonce|Unique admin-ajax bulk action 10822
+POST|/wp-admin/admin-post.php?action=sync_action_10823|action,id,user_id,token|Unique admin-post sync action 10823
+GET|/wp-content/plugins/module-10824/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10824
+GET|/?rest_route=/custom/v1/report/10825|id,from,to,page|Unique custom report route 10825
+GET|/?anibus_ext_probe_10826=1|anibus_ext_probe_10826,id,cat,author|Unique query probe route 10826
+GET|/wp-admin/options-general.php?page=settings-10827|page,tab,section|Unique admin settings route 10827
+GET|/wp-json/wp/v2/custom_type_10828|search,page,per_page,orderby|Unique custom post type route 10828
+GET|/shop-api/v1/cart/10829|cart_id,user_id,coupon,qty|Unique shop api cart route 10829
+GET|/wp-json/plugin/v1/items/10830|id,search,page,per_page|Unique plugin REST items route 10830
+GET|/wp-json/plugin/v1/orders/10831|id,status,page,per_page|Unique plugin REST orders route 10831
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10832|action,id,post_id,nonce|Unique admin-ajax bulk action 10832
+POST|/wp-admin/admin-post.php?action=sync_action_10833|action,id,user_id,token|Unique admin-post sync action 10833
+GET|/wp-content/plugins/module-10834/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10834
+GET|/?rest_route=/custom/v1/report/10835|id,from,to,page|Unique custom report route 10835
+GET|/?anibus_ext_probe_10836=1|anibus_ext_probe_10836,id,cat,author|Unique query probe route 10836
+GET|/wp-admin/options-general.php?page=settings-10837|page,tab,section|Unique admin settings route 10837
+GET|/wp-json/wp/v2/custom_type_10838|search,page,per_page,orderby|Unique custom post type route 10838
+GET|/shop-api/v1/cart/10839|cart_id,user_id,coupon,qty|Unique shop api cart route 10839
+GET|/wp-json/plugin/v1/items/10840|id,search,page,per_page|Unique plugin REST items route 10840
+GET|/wp-json/plugin/v1/orders/10841|id,status,page,per_page|Unique plugin REST orders route 10841
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10842|action,id,post_id,nonce|Unique admin-ajax bulk action 10842
+POST|/wp-admin/admin-post.php?action=sync_action_10843|action,id,user_id,token|Unique admin-post sync action 10843
+GET|/wp-content/plugins/module-10844/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10844
+GET|/?rest_route=/custom/v1/report/10845|id,from,to,page|Unique custom report route 10845
+GET|/?anibus_ext_probe_10846=1|anibus_ext_probe_10846,id,cat,author|Unique query probe route 10846
+GET|/wp-admin/options-general.php?page=settings-10847|page,tab,section|Unique admin settings route 10847
+GET|/wp-json/wp/v2/custom_type_10848|search,page,per_page,orderby|Unique custom post type route 10848
+GET|/shop-api/v1/cart/10849|cart_id,user_id,coupon,qty|Unique shop api cart route 10849
+GET|/wp-json/plugin/v1/items/10850|id,search,page,per_page|Unique plugin REST items route 10850
+GET|/wp-json/plugin/v1/orders/10851|id,status,page,per_page|Unique plugin REST orders route 10851
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10852|action,id,post_id,nonce|Unique admin-ajax bulk action 10852
+POST|/wp-admin/admin-post.php?action=sync_action_10853|action,id,user_id,token|Unique admin-post sync action 10853
+GET|/wp-content/plugins/module-10854/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10854
+GET|/?rest_route=/custom/v1/report/10855|id,from,to,page|Unique custom report route 10855
+GET|/?anibus_ext_probe_10856=1|anibus_ext_probe_10856,id,cat,author|Unique query probe route 10856
+GET|/wp-admin/options-general.php?page=settings-10857|page,tab,section|Unique admin settings route 10857
+GET|/wp-json/wp/v2/custom_type_10858|search,page,per_page,orderby|Unique custom post type route 10858
+GET|/shop-api/v1/cart/10859|cart_id,user_id,coupon,qty|Unique shop api cart route 10859
+GET|/wp-json/plugin/v1/items/10860|id,search,page,per_page|Unique plugin REST items route 10860
+GET|/wp-json/plugin/v1/orders/10861|id,status,page,per_page|Unique plugin REST orders route 10861
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10862|action,id,post_id,nonce|Unique admin-ajax bulk action 10862
+POST|/wp-admin/admin-post.php?action=sync_action_10863|action,id,user_id,token|Unique admin-post sync action 10863
+GET|/wp-content/plugins/module-10864/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10864
+GET|/?rest_route=/custom/v1/report/10865|id,from,to,page|Unique custom report route 10865
+GET|/?anibus_ext_probe_10866=1|anibus_ext_probe_10866,id,cat,author|Unique query probe route 10866
+GET|/wp-admin/options-general.php?page=settings-10867|page,tab,section|Unique admin settings route 10867
+GET|/wp-json/wp/v2/custom_type_10868|search,page,per_page,orderby|Unique custom post type route 10868
+GET|/shop-api/v1/cart/10869|cart_id,user_id,coupon,qty|Unique shop api cart route 10869
+GET|/wp-json/plugin/v1/items/10870|id,search,page,per_page|Unique plugin REST items route 10870
+GET|/wp-json/plugin/v1/orders/10871|id,status,page,per_page|Unique plugin REST orders route 10871
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10872|action,id,post_id,nonce|Unique admin-ajax bulk action 10872
+POST|/wp-admin/admin-post.php?action=sync_action_10873|action,id,user_id,token|Unique admin-post sync action 10873
+GET|/wp-content/plugins/module-10874/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10874
+GET|/?rest_route=/custom/v1/report/10875|id,from,to,page|Unique custom report route 10875
+GET|/?anibus_ext_probe_10876=1|anibus_ext_probe_10876,id,cat,author|Unique query probe route 10876
+GET|/wp-admin/options-general.php?page=settings-10877|page,tab,section|Unique admin settings route 10877
+GET|/wp-json/wp/v2/custom_type_10878|search,page,per_page,orderby|Unique custom post type route 10878
+GET|/shop-api/v1/cart/10879|cart_id,user_id,coupon,qty|Unique shop api cart route 10879
+GET|/wp-json/plugin/v1/items/10880|id,search,page,per_page|Unique plugin REST items route 10880
+GET|/wp-json/plugin/v1/orders/10881|id,status,page,per_page|Unique plugin REST orders route 10881
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10882|action,id,post_id,nonce|Unique admin-ajax bulk action 10882
+POST|/wp-admin/admin-post.php?action=sync_action_10883|action,id,user_id,token|Unique admin-post sync action 10883
+GET|/wp-content/plugins/module-10884/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10884
+GET|/?rest_route=/custom/v1/report/10885|id,from,to,page|Unique custom report route 10885
+GET|/?anibus_ext_probe_10886=1|anibus_ext_probe_10886,id,cat,author|Unique query probe route 10886
+GET|/wp-admin/options-general.php?page=settings-10887|page,tab,section|Unique admin settings route 10887
+GET|/wp-json/wp/v2/custom_type_10888|search,page,per_page,orderby|Unique custom post type route 10888
+GET|/shop-api/v1/cart/10889|cart_id,user_id,coupon,qty|Unique shop api cart route 10889
+GET|/wp-json/plugin/v1/items/10890|id,search,page,per_page|Unique plugin REST items route 10890
+GET|/wp-json/plugin/v1/orders/10891|id,status,page,per_page|Unique plugin REST orders route 10891
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10892|action,id,post_id,nonce|Unique admin-ajax bulk action 10892
+POST|/wp-admin/admin-post.php?action=sync_action_10893|action,id,user_id,token|Unique admin-post sync action 10893
+GET|/wp-content/plugins/module-10894/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10894
+GET|/?rest_route=/custom/v1/report/10895|id,from,to,page|Unique custom report route 10895
+GET|/?anibus_ext_probe_10896=1|anibus_ext_probe_10896,id,cat,author|Unique query probe route 10896
+GET|/wp-admin/options-general.php?page=settings-10897|page,tab,section|Unique admin settings route 10897
+GET|/wp-json/wp/v2/custom_type_10898|search,page,per_page,orderby|Unique custom post type route 10898
+GET|/shop-api/v1/cart/10899|cart_id,user_id,coupon,qty|Unique shop api cart route 10899
+GET|/wp-json/plugin/v1/items/10900|id,search,page,per_page|Unique plugin REST items route 10900
+GET|/wp-json/plugin/v1/orders/10901|id,status,page,per_page|Unique plugin REST orders route 10901
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10902|action,id,post_id,nonce|Unique admin-ajax bulk action 10902
+POST|/wp-admin/admin-post.php?action=sync_action_10903|action,id,user_id,token|Unique admin-post sync action 10903
+GET|/wp-content/plugins/module-10904/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10904
+GET|/?rest_route=/custom/v1/report/10905|id,from,to,page|Unique custom report route 10905
+GET|/?anibus_ext_probe_10906=1|anibus_ext_probe_10906,id,cat,author|Unique query probe route 10906
+GET|/wp-admin/options-general.php?page=settings-10907|page,tab,section|Unique admin settings route 10907
+GET|/wp-json/wp/v2/custom_type_10908|search,page,per_page,orderby|Unique custom post type route 10908
+GET|/shop-api/v1/cart/10909|cart_id,user_id,coupon,qty|Unique shop api cart route 10909
+GET|/wp-json/plugin/v1/items/10910|id,search,page,per_page|Unique plugin REST items route 10910
+GET|/wp-json/plugin/v1/orders/10911|id,status,page,per_page|Unique plugin REST orders route 10911
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10912|action,id,post_id,nonce|Unique admin-ajax bulk action 10912
+POST|/wp-admin/admin-post.php?action=sync_action_10913|action,id,user_id,token|Unique admin-post sync action 10913
+GET|/wp-content/plugins/module-10914/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10914
+GET|/?rest_route=/custom/v1/report/10915|id,from,to,page|Unique custom report route 10915
+GET|/?anibus_ext_probe_10916=1|anibus_ext_probe_10916,id,cat,author|Unique query probe route 10916
+GET|/wp-admin/options-general.php?page=settings-10917|page,tab,section|Unique admin settings route 10917
+GET|/wp-json/wp/v2/custom_type_10918|search,page,per_page,orderby|Unique custom post type route 10918
+GET|/shop-api/v1/cart/10919|cart_id,user_id,coupon,qty|Unique shop api cart route 10919
+GET|/wp-json/plugin/v1/items/10920|id,search,page,per_page|Unique plugin REST items route 10920
+GET|/wp-json/plugin/v1/orders/10921|id,status,page,per_page|Unique plugin REST orders route 10921
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10922|action,id,post_id,nonce|Unique admin-ajax bulk action 10922
+POST|/wp-admin/admin-post.php?action=sync_action_10923|action,id,user_id,token|Unique admin-post sync action 10923
+GET|/wp-content/plugins/module-10924/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10924
+GET|/?rest_route=/custom/v1/report/10925|id,from,to,page|Unique custom report route 10925
+GET|/?anibus_ext_probe_10926=1|anibus_ext_probe_10926,id,cat,author|Unique query probe route 10926
+GET|/wp-admin/options-general.php?page=settings-10927|page,tab,section|Unique admin settings route 10927
+GET|/wp-json/wp/v2/custom_type_10928|search,page,per_page,orderby|Unique custom post type route 10928
+GET|/shop-api/v1/cart/10929|cart_id,user_id,coupon,qty|Unique shop api cart route 10929
+GET|/wp-json/plugin/v1/items/10930|id,search,page,per_page|Unique plugin REST items route 10930
+GET|/wp-json/plugin/v1/orders/10931|id,status,page,per_page|Unique plugin REST orders route 10931
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10932|action,id,post_id,nonce|Unique admin-ajax bulk action 10932
+POST|/wp-admin/admin-post.php?action=sync_action_10933|action,id,user_id,token|Unique admin-post sync action 10933
+GET|/wp-content/plugins/module-10934/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10934
+GET|/?rest_route=/custom/v1/report/10935|id,from,to,page|Unique custom report route 10935
+GET|/?anibus_ext_probe_10936=1|anibus_ext_probe_10936,id,cat,author|Unique query probe route 10936
+GET|/wp-admin/options-general.php?page=settings-10937|page,tab,section|Unique admin settings route 10937
+GET|/wp-json/wp/v2/custom_type_10938|search,page,per_page,orderby|Unique custom post type route 10938
+GET|/shop-api/v1/cart/10939|cart_id,user_id,coupon,qty|Unique shop api cart route 10939
+GET|/wp-json/plugin/v1/items/10940|id,search,page,per_page|Unique plugin REST items route 10940
+GET|/wp-json/plugin/v1/orders/10941|id,status,page,per_page|Unique plugin REST orders route 10941
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10942|action,id,post_id,nonce|Unique admin-ajax bulk action 10942
+POST|/wp-admin/admin-post.php?action=sync_action_10943|action,id,user_id,token|Unique admin-post sync action 10943
+GET|/wp-content/plugins/module-10944/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10944
+GET|/?rest_route=/custom/v1/report/10945|id,from,to,page|Unique custom report route 10945
+GET|/?anibus_ext_probe_10946=1|anibus_ext_probe_10946,id,cat,author|Unique query probe route 10946
+GET|/wp-admin/options-general.php?page=settings-10947|page,tab,section|Unique admin settings route 10947
+GET|/wp-json/wp/v2/custom_type_10948|search,page,per_page,orderby|Unique custom post type route 10948
+GET|/shop-api/v1/cart/10949|cart_id,user_id,coupon,qty|Unique shop api cart route 10949
+GET|/wp-json/plugin/v1/items/10950|id,search,page,per_page|Unique plugin REST items route 10950
+GET|/wp-json/plugin/v1/orders/10951|id,status,page,per_page|Unique plugin REST orders route 10951
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10952|action,id,post_id,nonce|Unique admin-ajax bulk action 10952
+POST|/wp-admin/admin-post.php?action=sync_action_10953|action,id,user_id,token|Unique admin-post sync action 10953
+GET|/wp-content/plugins/module-10954/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10954
+GET|/?rest_route=/custom/v1/report/10955|id,from,to,page|Unique custom report route 10955
+GET|/?anibus_ext_probe_10956=1|anibus_ext_probe_10956,id,cat,author|Unique query probe route 10956
+GET|/wp-admin/options-general.php?page=settings-10957|page,tab,section|Unique admin settings route 10957
+GET|/wp-json/wp/v2/custom_type_10958|search,page,per_page,orderby|Unique custom post type route 10958
+GET|/shop-api/v1/cart/10959|cart_id,user_id,coupon,qty|Unique shop api cart route 10959
+GET|/wp-json/plugin/v1/items/10960|id,search,page,per_page|Unique plugin REST items route 10960
+GET|/wp-json/plugin/v1/orders/10961|id,status,page,per_page|Unique plugin REST orders route 10961
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10962|action,id,post_id,nonce|Unique admin-ajax bulk action 10962
+POST|/wp-admin/admin-post.php?action=sync_action_10963|action,id,user_id,token|Unique admin-post sync action 10963
+GET|/wp-content/plugins/module-10964/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10964
+GET|/?rest_route=/custom/v1/report/10965|id,from,to,page|Unique custom report route 10965
+GET|/?anibus_ext_probe_10966=1|anibus_ext_probe_10966,id,cat,author|Unique query probe route 10966
+GET|/wp-admin/options-general.php?page=settings-10967|page,tab,section|Unique admin settings route 10967
+GET|/wp-json/wp/v2/custom_type_10968|search,page,per_page,orderby|Unique custom post type route 10968
+GET|/shop-api/v1/cart/10969|cart_id,user_id,coupon,qty|Unique shop api cart route 10969
+GET|/wp-json/plugin/v1/items/10970|id,search,page,per_page|Unique plugin REST items route 10970
+GET|/wp-json/plugin/v1/orders/10971|id,status,page,per_page|Unique plugin REST orders route 10971
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10972|action,id,post_id,nonce|Unique admin-ajax bulk action 10972
+POST|/wp-admin/admin-post.php?action=sync_action_10973|action,id,user_id,token|Unique admin-post sync action 10973
+GET|/wp-content/plugins/module-10974/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10974
+GET|/?rest_route=/custom/v1/report/10975|id,from,to,page|Unique custom report route 10975
+GET|/?anibus_ext_probe_10976=1|anibus_ext_probe_10976,id,cat,author|Unique query probe route 10976
+GET|/wp-admin/options-general.php?page=settings-10977|page,tab,section|Unique admin settings route 10977
+GET|/wp-json/wp/v2/custom_type_10978|search,page,per_page,orderby|Unique custom post type route 10978
+GET|/shop-api/v1/cart/10979|cart_id,user_id,coupon,qty|Unique shop api cart route 10979
+GET|/wp-json/plugin/v1/items/10980|id,search,page,per_page|Unique plugin REST items route 10980
+GET|/wp-json/plugin/v1/orders/10981|id,status,page,per_page|Unique plugin REST orders route 10981
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10982|action,id,post_id,nonce|Unique admin-ajax bulk action 10982
+POST|/wp-admin/admin-post.php?action=sync_action_10983|action,id,user_id,token|Unique admin-post sync action 10983
+GET|/wp-content/plugins/module-10984/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10984
+GET|/?rest_route=/custom/v1/report/10985|id,from,to,page|Unique custom report route 10985
+GET|/?anibus_ext_probe_10986=1|anibus_ext_probe_10986,id,cat,author|Unique query probe route 10986
+GET|/wp-admin/options-general.php?page=settings-10987|page,tab,section|Unique admin settings route 10987
+GET|/wp-json/wp/v2/custom_type_10988|search,page,per_page,orderby|Unique custom post type route 10988
+GET|/shop-api/v1/cart/10989|cart_id,user_id,coupon,qty|Unique shop api cart route 10989
+GET|/wp-json/plugin/v1/items/10990|id,search,page,per_page|Unique plugin REST items route 10990
+GET|/wp-json/plugin/v1/orders/10991|id,status,page,per_page|Unique plugin REST orders route 10991
+POST|/wp-admin/admin-ajax.php?action=bulk_action_10992|action,id,post_id,nonce|Unique admin-ajax bulk action 10992
+POST|/wp-admin/admin-post.php?action=sync_action_10993|action,id,user_id,token|Unique admin-post sync action 10993
+GET|/wp-content/plugins/module-10994/api/query.php|id,type,offset,limit|Unique plugin query endpoint 10994
+GET|/?rest_route=/custom/v1/report/10995|id,from,to,page|Unique custom report route 10995
+GET|/?anibus_ext_probe_10996=1|anibus_ext_probe_10996,id,cat,author|Unique query probe route 10996
+GET|/wp-admin/options-general.php?page=settings-10997|page,tab,section|Unique admin settings route 10997
+GET|/wp-json/wp/v2/custom_type_10998|search,page,per_page,orderby|Unique custom post type route 10998
+GET|/shop-api/v1/cart/10999|cart_id,user_id,coupon,qty|Unique shop api cart route 10999
+GET|/wp-json/plugin/v1/items/11000|id,search,page,per_page|Unique plugin REST items route 11000

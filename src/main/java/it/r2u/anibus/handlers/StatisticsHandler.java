@@ -2,6 +2,7 @@ package it.r2u.anibus.handlers;
 
 import it.r2u.anibus.model.PortScanResult;
 
+import java.util.ArrayList;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.chart.BarChart;
@@ -40,10 +41,10 @@ public class StatisticsHandler {
 
         long open   = results.stream().filter(r -> "Open".equalsIgnoreCase(r.getState())).count();
         long closed = Math.max(0, results.size() - open);
-        statsPortStateChart.setData(FXCollections.observableArrayList(
-            new PieChart.Data("Open", open),
-            new PieChart.Data("Other", closed)
-        ));
+        var portStateData = new ArrayList<PieChart.Data>();
+        portStateData.add(new PieChart.Data("Open", open));
+        portStateData.add(new PieChart.Data("Other", closed));
+        statsPortStateChart.setData(FXCollections.observableArrayList(portStateData));
 
         Map<String, Long> byService = results.stream()
             .collect(Collectors.groupingBy(
@@ -60,7 +61,8 @@ public class StatisticsHandler {
             .limit(8)
             .forEach(e -> serviceSeries.getData().add(new XYChart.Data<>(e.getKey(), e.getValue())));
         serviceSeries.setName("Services");
-        statsServiceChart.getData().setAll(serviceSeries);
+        statsServiceChart.getData().clear();
+        statsServiceChart.getData().add(serviceSeries);
 
         long highRisk   = results.stream().filter(this::isHighRiskPort).count();
         long mediumRisk = results.stream().filter(this::isMediumRiskPort).count();
@@ -71,7 +73,8 @@ public class StatisticsHandler {
         riskSeries.getData().add(new XYChart.Data<>("Medium", mediumRisk));
         riskSeries.getData().add(new XYChart.Data<>("Low", lowRisk));
         riskSeries.setName("Risk");
-        statsRiskChart.getData().setAll(riskSeries);
+        statsRiskChart.getData().clear();
+        statsRiskChart.getData().add(riskSeries);
     }
 
     private boolean isHighRiskPort(PortScanResult r) {

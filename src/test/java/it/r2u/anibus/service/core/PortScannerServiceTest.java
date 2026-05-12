@@ -1,10 +1,12 @@
 package it.r2u.anibus.service.core;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 class PortScannerServiceTest {
 
@@ -23,9 +25,16 @@ class PortScannerServiceTest {
     @Test
     void returnsNullForMalformedInput() {
         assertNull(service.parsePortsRange("abc"));
-        assertNull(service.parsePortsRange("80"));
         assertNull(service.parsePortsRange(""));
         assertNull(service.parsePortsRange(null));
+    }
+
+    @Test
+    void parsesSinglePort() {
+        int[] range = service.parsePortsRange("80");
+        assertNotNull(range);
+        assertEquals(80, range[0]);
+        assertEquals(80, range[1]);
     }
 
     @Test

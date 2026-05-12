@@ -46,7 +46,16 @@ public class PortScannerService {
     public int[] parsePortsRange(String portsRange) {
         if (portsRange == null || portsRange.isBlank()) return null;
         Matcher m = Pattern.compile("(\\d+)-(\\d+)").matcher(portsRange);
-        if (!m.find()) return null;
+        if (!m.find()) {
+            Matcher single = Pattern.compile("^\\s*(\\d+)\\s*$").matcher(portsRange);
+            if (!single.find()) return null;
+            try {
+                int port = Integer.parseInt(single.group(1));
+                return (port < 1 || port > 65535) ? null : new int[]{port, port};
+            } catch (NumberFormatException e) {
+                return null;
+            }
+        }
         try {
             int start = Integer.parseInt(m.group(1));
             int end   = Integer.parseInt(m.group(2));

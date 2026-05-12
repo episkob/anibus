@@ -8,8 +8,6 @@ import it.r2u.anibus.model.JavaScriptAnalysisResult;
 import it.r2u.anibus.model.LeakInfo;
 import it.r2u.anibus.model.PortScanResult;
 import it.r2u.anibus.service.analysis.JavaScriptSecurityAnalyzer;
-import it.r2u.anibus.service.analysis.SQLInjectionAnalyzer;
-import it.r2u.anibus.ui.ConsoleViewManager;
 import it.r2u.anibus.ui.LanguageManager;
 
 import javafx.application.Platform;
@@ -41,7 +39,7 @@ public class JsAnalysisHandler {
             Button exportButton,
             Button jsExportButton,
             Button clearButton,
-            CheckBox jsInjectionCheckBox,
+            Button jsAnalysisRunButton,
             javafx.scene.layout.VBox jsResultsCard,
             Label jsEndpointsLabel,
             Label jsDataStructuresLabel,
@@ -49,16 +47,14 @@ public class JsAnalysisHandler {
             Label jsSensitiveInfoLabel,
             Label jsArchitectureLabel,
             TreeView<String> jsStructureTree,
-            TextArea sqlInjectionTextArea,
+            TextArea jsAnalysisTextArea,
             TextArea consoleTextArea,
             Label consoleHeaderLabel,
             Label resultCountLabel) {}
 
     private final UIComponents ui;
     private final JavaScriptSecurityAnalyzer jsAnalyzer;
-    private final SQLInjectionAnalyzer injectionAnalyzer;
     private final ExportActionHandler exportHandler;
-    private final ConsoleViewManager consoleViewManager;
     private final ObservableList<PortScanResult> results;
     private final Consumer<String> statusSetter;
     private final Runnable resetScanUiCallback;
@@ -75,17 +71,13 @@ public class JsAnalysisHandler {
     public JsAnalysisHandler(
             UIComponents ui,
             JavaScriptSecurityAnalyzer jsAnalyzer,
-            SQLInjectionAnalyzer injectionAnalyzer,
             ExportActionHandler exportHandler,
-            ConsoleViewManager consoleViewManager,
             ObservableList<PortScanResult> results,
             Consumer<String> statusSetter,
             Runnable resetScanUiCallback) {
         this.ui = ui;
         this.jsAnalyzer = jsAnalyzer;
-        this.injectionAnalyzer = injectionAnalyzer;
         this.exportHandler = exportHandler;
-        this.consoleViewManager = consoleViewManager;
         this.results = results;
         this.statusSetter = statusSetter;
         this.resetScanUiCallback = resetScanUiCallback;
@@ -119,6 +111,7 @@ public class JsAnalysisHandler {
         jsAnalysisTask = createJavaScriptAnalysisTask(targetUrl);
 
         ui.scanButton().setDisable(true);
+        if (ui.jsAnalysisRunButton() != null) ui.jsAnalysisRunButton().setDisable(true);
         ui.stopButton().setDisable(false);
         ui.progressBar().setVisible(true);
         ui.jsResultsCard().setVisible(false);
@@ -137,7 +130,7 @@ public class JsAnalysisHandler {
 
     public void onJsExportClick() {
         if (lastJsAnalysisResult != null) {
-            exportHandler.exportJavaScriptAnalysis(lastJsAnalysisResult, ui.consoleTextArea().getText());
+            exportHandler.exportJavaScriptAnalysis(lastJsAnalysisResult, getJsAnalysisDetails());
         }
     }
 
@@ -167,7 +160,6 @@ public class JsAnalysisHandler {
     // ── Private: task creation ────────────────────────────────────────────────
 
     private Task<Void> createJavaScriptAnalysisTask(String targetUrl) {
-        final boolean runInjections = ui.jsInjectionCheckBox() != null && ui.jsInjectionCheckBox().isSelected();
         return new Task<Void>() {
             @Override
             protected Void call() throws Exception {
@@ -176,26 +168,10 @@ public class JsAnalysisHandler {
 
                     JavaScriptAnalysisResult result = jsAnalyzer.analyzeTarget(targetUrl, JavaScriptSecurityAnalyzer.AnalysisDepth.COMPREHENSIVE);
 
-                    final Map<String, List<SQLInjectionAnalyzer.InjectionResult>> injectionResults;
-                    if (runInjections) {
-                        Platform.runLater(() -> statusSetter.accept("Running SQL injection tests (with CMS detection & form discovery)..."));
-                        injectionResults = injectionAnalyzer.fullScan(
-                                result.getEndpoints(), targetUrl,
-                                msg -> Platform.runLater(() -> statusSetter.accept(msg))
-                        );
-                    } else {
-                        injectionResults = null;
-                    }
-
                     Platform.runLater(() -> {
                         lastJsAnalysisResult = result;
-                        displayJsAnalysisResults(result, injectionResults);
-                        String statusMsg = "JavaScript analysis completed (Full analysis)";
-                        if (runInjections) {
-                            int vulnCount = injectionResults != null ? injectionResults.size() : 0;
-                            statusMsg += " + Injection testing (" + vulnCount + " vulnerable endpoints)";
-                        }
-                        statusSetter.accept(statusMsg);
+                        displayJsAnalysisResults(result);
+                        statusSetter.accept("JavaScript analysis completed");
                         jsAnalysisInProgress = false;
                         resetScanUiCallback.run();
                     });
@@ -214,8 +190,7 @@ public class JsAnalysisHandler {
 
     // ── Private: display results ──────────────────────────────────────────────
 
-    private void displayJsAnalysisResults(JavaScriptAnalysisResult result,
-            Map<String, List<SQLInjectionAnalyzer.InjectionResult>> injectionResults) {
+    private void displayJsAnalysisResults(JavaScriptAnalysisResult result) {
         ui.jsEndpointsLabel().setText(String.valueOf(result.getEndpoints().size()));
         ui.jsDataStructuresLabel().setText(String.valueOf(result.getDataStructures().size()));
         ui.jsDbSchemasLabel().setText(String.valueOf(result.getDatabaseSchemas().size()));
@@ -311,15 +286,17 @@ public class JsAnalysisHandler {
         detailedResults.append("\n=== ANALYSIS TIMING ===\n");
         appendAnalysisTimingSection(detailedResults, result);
 
-        updateSqlInjectionResults(injectionResults);
-
         if (!result.getErrors().isEmpty()) {
             detailedResults.append("\n=== ERRORS ===\n");
             result.getErrors().forEach(error ->
                 detailedResults.append("• ").append(error).append("\n"));
         }
 
-        ui.consoleTextArea().setText(detailedResults.toString());
+        String output = detailedResults.toString();
+        if (ui.jsAnalysisTextArea() != null) {
+            ui.jsAnalysisTextArea().setText(output);
+            ui.jsAnalysisTextArea().setScrollTop(0);
+        }
         ui.jsResultsCard().setVisible(true);
 
         switchToJsAnalysisMode();
@@ -706,19 +683,14 @@ public class JsAnalysisHandler {
         ui.jsArchitectureLabel().setText("-");
         lastJsAnalysisResult = null;
         if (ui.jsStructureTree() != null) ui.jsStructureTree().setRoot(null);
-        if (ui.sqlInjectionTextArea() != null) ui.sqlInjectionTextArea().clear();
+        if (ui.jsAnalysisTextArea() != null) ui.jsAnalysisTextArea().clear();
     }
 
-    private void updateSqlInjectionResults(Map<String, List<SQLInjectionAnalyzer.InjectionResult>> injectionResults) {
-        if (ui.sqlInjectionTextArea() == null) return;
-
-        if (injectionResults == null || injectionResults.isEmpty()) {
-            ui.sqlInjectionTextArea().setText("SQL injection testing was not run for this scan.");
-            return;
+    private String getJsAnalysisDetails() {
+        if (ui.jsAnalysisTextArea() != null && !ui.jsAnalysisTextArea().getText().isBlank()) {
+            return ui.jsAnalysisTextArea().getText();
         }
-
-        ui.sqlInjectionTextArea().setText(injectionAnalyzer.formatResults(injectionResults));
-        ui.sqlInjectionTextArea().setScrollTop(0);
+        return ui.consoleTextArea() != null ? ui.consoleTextArea().getText() : "";
     }
 
     // ── Private: structure tree ───────────────────────────────────────────────

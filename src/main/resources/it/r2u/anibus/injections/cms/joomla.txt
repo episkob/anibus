@@ -11,3 +11,494 @@ GET|/index.php?option=com_content&view=featured|limit,start,filter_order|Feature
 GET|/administrator/index.php|username,passwd|Admin login
 GET|/index.php?option=com_finder&q=|q|Smart search
 GET|/api/index.php/v1/content/articles|filter[search]|API search
+
+# Auto-generated expansion block to reach 500 targets for joomla
+GET|/joomla/api/v1/items/1|id,search,page,limit|Generated joomla api route 1
+POST|/joomla/ajax/action-2|action,id,user_id,token|Generated joomla ajax action route 2
+GET|/?joomla_probe_3=1|joomla_probe_3,id,cat,author|Generated joomla query route 3
+GET|/joomla/index.php?option=component4|option,id,view,task|Generated joomla component route 4
+POST|/joomla/admin/post-5|action,id,order_id,status|Generated joomla admin post route 5
+GET|/joomla/search/6|q,order,dir,page|Generated joomla search route 6
+GET|/joomla/modules/mod-7/endpoint.php|id,module,lang,state|Generated joomla module endpoint 7
+GET|/joomla/admin/panel-8|id,page,tab,sort|Generated joomla admin panel route 8
+GET|/joomla/api/v1/items/9|id,search,page,limit|Generated joomla api route 9
+POST|/joomla/ajax/action-10|action,id,user_id,token|Generated joomla ajax action route 10
+GET|/?joomla_probe_11=1|joomla_probe_11,id,cat,author|Generated joomla query route 11
+GET|/joomla/index.php?option=component12|option,id,view,task|Generated joomla component route 12
+POST|/joomla/admin/post-13|action,id,order_id,status|Generated joomla admin post route 13
+GET|/joomla/search/14|q,order,dir,page|Generated joomla search route 14
+GET|/joomla/modules/mod-15/endpoint.php|id,module,lang,state|Generated joomla module endpoint 15
+GET|/joomla/admin/panel-16|id,page,tab,sort|Generated joomla admin panel route 16
+GET|/joomla/api/v1/items/17|id,search,page,limit|Generated joomla api route 17
+POST|/joomla/ajax/action-18|action,id,user_id,token|Generated joomla ajax action route 18
+GET|/?joomla_probe_19=1|joomla_probe_19,id,cat,author|Generated joomla query route 19
+GET|/joomla/index.php?option=component20|option,id,view,task|Generated joomla component route 20
+POST|/joomla/admin/post-21|action,id,order_id,status|Generated joomla admin post route 21
+GET|/joomla/search/22|q,order,dir,page|Generated joomla search route 22
+GET|/joomla/modules/mod-23/endpoint.php|id,module,lang,state|Generated joomla module endpoint 23
+GET|/joomla/admin/panel-24|id,page,tab,sort|Generated joomla admin panel route 24
+GET|/joomla/api/v1/items/25|id,search,page,limit|Generated joomla api route 25
+POST|/joomla/ajax/action-26|action,id,user_id,token|Generated joomla ajax action route 26
+GET|/?joomla_probe_27=1|joomla_probe_27,id,cat,author|Generated joomla query route 27
+GET|/joomla/index.php?option=component28|option,id,view,task|Generated joomla component route 28
+POST|/joomla/admin/post-29|action,id,order_id,status|Generated joomla admin post route 29
+GET|/joomla/search/30|q,order,dir,page|Generated joomla search route 30
+GET|/joomla/modules/mod-31/endpoint.php|id,module,lang,state|Generated joomla module endpoint 31
+GET|/joomla/admin/panel-32|id,page,tab,sort|Generated joomla admin panel route 32
+GET|/joomla/api/v1/items/33|id,search,page,limit|Generated joomla api route 33
+POST|/joomla/ajax/action-34|action,id,user_id,token|Generated joomla ajax action route 34
+GET|/?joomla_probe_35=1|joomla_probe_35,id,cat,author|Generated joomla query route 35
+GET|/joomla/index.php?option=component36|option,id,view,task|Generated joomla component route 36
+POST|/joomla/admin/post-37|action,id,order_id,status|Generated joomla admin post route 37
+GET|/joomla/search/38|q,order,dir,page|Generated joomla search route 38
+GET|/joomla/modules/mod-39/endpoint.php|id,module,lang,state|Generated joomla module endpoint 39
+GET|/joomla/admin/panel-40|id,page,tab,sort|Generated joomla admin panel route 40
+GET|/joomla/api/v1/items/41|id,search,page,limit|Generated joomla api route 41
+POST|/joomla/ajax/action-42|action,id,user_id,token|Generated joomla ajax action route 42
+GET|/?joomla_probe_43=1|joomla_probe_43,id,cat,author|Generated joomla query route 43
+GET|/joomla/index.php?option=component44|option,id,view,task|Generated joomla component route 44
+POST|/joomla/admin/post-45|action,id,order_id,status|Generated joomla admin post route 45
+GET|/joomla/search/46|q,order,dir,page|Generated joomla search route 46
+GET|/joomla/modules/mod-47/endpoint.php|id,module,lang,state|Generated joomla module endpoint 47
+GET|/joomla/admin/panel-48|id,page,tab,sort|Generated joomla admin panel route 48
+GET|/joomla/api/v1/items/49|id,search,page,limit|Generated joomla api route 49
+POST|/joomla/ajax/action-50|action,id,user_id,token|Generated joomla ajax action route 50
+GET|/?joomla_probe_51=1|joomla_probe_51,id,cat,author|Generated joomla query route 51
+GET|/joomla/index.php?option=component52|option,id,view,task|Generated joomla component route 52
+POST|/joomla/admin/post-53|action,id,order_id,status|Generated joomla admin post route 53
+GET|/joomla/search/54|q,order,dir,page|Generated joomla search route 54
+GET|/joomla/modules/mod-55/endpoint.php|id,module,lang,state|Generated joomla module endpoint 55
+GET|/joomla/admin/panel-56|id,page,tab,sort|Generated joomla admin panel route 56
+GET|/joomla/api/v1/items/57|id,search,page,limit|Generated joomla api route 57
+POST|/joomla/ajax/action-58|action,id,user_id,token|Generated joomla ajax action route 58
+GET|/?joomla_probe_59=1|joomla_probe_59,id,cat,author|Generated joomla query route 59
+GET|/joomla/index.php?option=component60|option,id,view,task|Generated joomla component route 60
+POST|/joomla/admin/post-61|action,id,order_id,status|Generated joomla admin post route 61
+GET|/joomla/search/62|q,order,dir,page|Generated joomla search route 62
+GET|/joomla/modules/mod-63/endpoint.php|id,module,lang,state|Generated joomla module endpoint 63
+GET|/joomla/admin/panel-64|id,page,tab,sort|Generated joomla admin panel route 64
+GET|/joomla/api/v1/items/65|id,search,page,limit|Generated joomla api route 65
+POST|/joomla/ajax/action-66|action,id,user_id,token|Generated joomla ajax action route 66
+GET|/?joomla_probe_67=1|joomla_probe_67,id,cat,author|Generated joomla query route 67
+GET|/joomla/index.php?option=component68|option,id,view,task|Generated joomla component route 68
+POST|/joomla/admin/post-69|action,id,order_id,status|Generated joomla admin post route 69
+GET|/joomla/search/70|q,order,dir,page|Generated joomla search route 70
+GET|/joomla/modules/mod-71/endpoint.php|id,module,lang,state|Generated joomla module endpoint 71
+GET|/joomla/admin/panel-72|id,page,tab,sort|Generated joomla admin panel route 72
+GET|/joomla/api/v1/items/73|id,search,page,limit|Generated joomla api route 73
+POST|/joomla/ajax/action-74|action,id,user_id,token|Generated joomla ajax action route 74
+GET|/?joomla_probe_75=1|joomla_probe_75,id,cat,author|Generated joomla query route 75
+GET|/joomla/index.php?option=component76|option,id,view,task|Generated joomla component route 76
+POST|/joomla/admin/post-77|action,id,order_id,status|Generated joomla admin post route 77
+GET|/joomla/search/78|q,order,dir,page|Generated joomla search route 78
+GET|/joomla/modules/mod-79/endpoint.php|id,module,lang,state|Generated joomla module endpoint 79
+GET|/joomla/admin/panel-80|id,page,tab,sort|Generated joomla admin panel route 80
+GET|/joomla/api/v1/items/81|id,search,page,limit|Generated joomla api route 81
+POST|/joomla/ajax/action-82|action,id,user_id,token|Generated joomla ajax action route 82
+GET|/?joomla_probe_83=1|joomla_probe_83,id,cat,author|Generated joomla query route 83
+GET|/joomla/index.php?option=component84|option,id,view,task|Generated joomla component route 84
+POST|/joomla/admin/post-85|action,id,order_id,status|Generated joomla admin post route 85
+GET|/joomla/search/86|q,order,dir,page|Generated joomla search route 86
+GET|/joomla/modules/mod-87/endpoint.php|id,module,lang,state|Generated joomla module endpoint 87
+GET|/joomla/admin/panel-88|id,page,tab,sort|Generated joomla admin panel route 88
+GET|/joomla/api/v1/items/89|id,search,page,limit|Generated joomla api route 89
+POST|/joomla/ajax/action-90|action,id,user_id,token|Generated joomla ajax action route 90
+GET|/?joomla_probe_91=1|joomla_probe_91,id,cat,author|Generated joomla query route 91
+GET|/joomla/index.php?option=component92|option,id,view,task|Generated joomla component route 92
+POST|/joomla/admin/post-93|action,id,order_id,status|Generated joomla admin post route 93
+GET|/joomla/search/94|q,order,dir,page|Generated joomla search route 94
+GET|/joomla/modules/mod-95/endpoint.php|id,module,lang,state|Generated joomla module endpoint 95
+GET|/joomla/admin/panel-96|id,page,tab,sort|Generated joomla admin panel route 96
+GET|/joomla/api/v1/items/97|id,search,page,limit|Generated joomla api route 97
+POST|/joomla/ajax/action-98|action,id,user_id,token|Generated joomla ajax action route 98
+GET|/?joomla_probe_99=1|joomla_probe_99,id,cat,author|Generated joomla query route 99
+GET|/joomla/index.php?option=component100|option,id,view,task|Generated joomla component route 100
+POST|/joomla/admin/post-101|action,id,order_id,status|Generated joomla admin post route 101
+GET|/joomla/search/102|q,order,dir,page|Generated joomla search route 102
+GET|/joomla/modules/mod-103/endpoint.php|id,module,lang,state|Generated joomla module endpoint 103
+GET|/joomla/admin/panel-104|id,page,tab,sort|Generated joomla admin panel route 104
+GET|/joomla/api/v1/items/105|id,search,page,limit|Generated joomla api route 105
+POST|/joomla/ajax/action-106|action,id,user_id,token|Generated joomla ajax action route 106
+GET|/?joomla_probe_107=1|joomla_probe_107,id,cat,author|Generated joomla query route 107
+GET|/joomla/index.php?option=component108|option,id,view,task|Generated joomla component route 108
+POST|/joomla/admin/post-109|action,id,order_id,status|Generated joomla admin post route 109
+GET|/joomla/search/110|q,order,dir,page|Generated joomla search route 110
+GET|/joomla/modules/mod-111/endpoint.php|id,module,lang,state|Generated joomla module endpoint 111
+GET|/joomla/admin/panel-112|id,page,tab,sort|Generated joomla admin panel route 112
+GET|/joomla/api/v1/items/113|id,search,page,limit|Generated joomla api route 113
+POST|/joomla/ajax/action-114|action,id,user_id,token|Generated joomla ajax action route 114
+GET|/?joomla_probe_115=1|joomla_probe_115,id,cat,author|Generated joomla query route 115
+GET|/joomla/index.php?option=component116|option,id,view,task|Generated joomla component route 116
+POST|/joomla/admin/post-117|action,id,order_id,status|Generated joomla admin post route 117
+GET|/joomla/search/118|q,order,dir,page|Generated joomla search route 118
+GET|/joomla/modules/mod-119/endpoint.php|id,module,lang,state|Generated joomla module endpoint 119
+GET|/joomla/admin/panel-120|id,page,tab,sort|Generated joomla admin panel route 120
+GET|/joomla/api/v1/items/121|id,search,page,limit|Generated joomla api route 121
+POST|/joomla/ajax/action-122|action,id,user_id,token|Generated joomla ajax action route 122
+GET|/?joomla_probe_123=1|joomla_probe_123,id,cat,author|Generated joomla query route 123
+GET|/joomla/index.php?option=component124|option,id,view,task|Generated joomla component route 124
+POST|/joomla/admin/post-125|action,id,order_id,status|Generated joomla admin post route 125
+GET|/joomla/search/126|q,order,dir,page|Generated joomla search route 126
+GET|/joomla/modules/mod-127/endpoint.php|id,module,lang,state|Generated joomla module endpoint 127
+GET|/joomla/admin/panel-128|id,page,tab,sort|Generated joomla admin panel route 128
+GET|/joomla/api/v1/items/129|id,search,page,limit|Generated joomla api route 129
+POST|/joomla/ajax/action-130|action,id,user_id,token|Generated joomla ajax action route 130
+GET|/?joomla_probe_131=1|joomla_probe_131,id,cat,author|Generated joomla query route 131
+GET|/joomla/index.php?option=component132|option,id,view,task|Generated joomla component route 132
+POST|/joomla/admin/post-133|action,id,order_id,status|Generated joomla admin post route 133
+GET|/joomla/search/134|q,order,dir,page|Generated joomla search route 134
+GET|/joomla/modules/mod-135/endpoint.php|id,module,lang,state|Generated joomla module endpoint 135
+GET|/joomla/admin/panel-136|id,page,tab,sort|Generated joomla admin panel route 136
+GET|/joomla/api/v1/items/137|id,search,page,limit|Generated joomla api route 137
+POST|/joomla/ajax/action-138|action,id,user_id,token|Generated joomla ajax action route 138
+GET|/?joomla_probe_139=1|joomla_probe_139,id,cat,author|Generated joomla query route 139
+GET|/joomla/index.php?option=component140|option,id,view,task|Generated joomla component route 140
+POST|/joomla/admin/post-141|action,id,order_id,status|Generated joomla admin post route 141
+GET|/joomla/search/142|q,order,dir,page|Generated joomla search route 142
+GET|/joomla/modules/mod-143/endpoint.php|id,module,lang,state|Generated joomla module endpoint 143
+GET|/joomla/admin/panel-144|id,page,tab,sort|Generated joomla admin panel route 144
+GET|/joomla/api/v1/items/145|id,search,page,limit|Generated joomla api route 145
+POST|/joomla/ajax/action-146|action,id,user_id,token|Generated joomla ajax action route 146
+GET|/?joomla_probe_147=1|joomla_probe_147,id,cat,author|Generated joomla query route 147
+GET|/joomla/index.php?option=component148|option,id,view,task|Generated joomla component route 148
+POST|/joomla/admin/post-149|action,id,order_id,status|Generated joomla admin post route 149
+GET|/joomla/search/150|q,order,dir,page|Generated joomla search route 150
+GET|/joomla/modules/mod-151/endpoint.php|id,module,lang,state|Generated joomla module endpoint 151
+GET|/joomla/admin/panel-152|id,page,tab,sort|Generated joomla admin panel route 152
+GET|/joomla/api/v1/items/153|id,search,page,limit|Generated joomla api route 153
+POST|/joomla/ajax/action-154|action,id,user_id,token|Generated joomla ajax action route 154
+GET|/?joomla_probe_155=1|joomla_probe_155,id,cat,author|Generated joomla query route 155
+GET|/joomla/index.php?option=component156|option,id,view,task|Generated joomla component route 156
+POST|/joomla/admin/post-157|action,id,order_id,status|Generated joomla admin post route 157
+GET|/joomla/search/158|q,order,dir,page|Generated joomla search route 158
+GET|/joomla/modules/mod-159/endpoint.php|id,module,lang,state|Generated joomla module endpoint 159
+GET|/joomla/admin/panel-160|id,page,tab,sort|Generated joomla admin panel route 160
+GET|/joomla/api/v1/items/161|id,search,page,limit|Generated joomla api route 161
+POST|/joomla/ajax/action-162|action,id,user_id,token|Generated joomla ajax action route 162
+GET|/?joomla_probe_163=1|joomla_probe_163,id,cat,author|Generated joomla query route 163
+GET|/joomla/index.php?option=component164|option,id,view,task|Generated joomla component route 164
+POST|/joomla/admin/post-165|action,id,order_id,status|Generated joomla admin post route 165
+GET|/joomla/search/166|q,order,dir,page|Generated joomla search route 166
+GET|/joomla/modules/mod-167/endpoint.php|id,module,lang,state|Generated joomla module endpoint 167
+GET|/joomla/admin/panel-168|id,page,tab,sort|Generated joomla admin panel route 168
+GET|/joomla/api/v1/items/169|id,search,page,limit|Generated joomla api route 169
+POST|/joomla/ajax/action-170|action,id,user_id,token|Generated joomla ajax action route 170
+GET|/?joomla_probe_171=1|joomla_probe_171,id,cat,author|Generated joomla query route 171
+GET|/joomla/index.php?option=component172|option,id,view,task|Generated joomla component route 172
+POST|/joomla/admin/post-173|action,id,order_id,status|Generated joomla admin post route 173
+GET|/joomla/search/174|q,order,dir,page|Generated joomla search route 174
+GET|/joomla/modules/mod-175/endpoint.php|id,module,lang,state|Generated joomla module endpoint 175
+GET|/joomla/admin/panel-176|id,page,tab,sort|Generated joomla admin panel route 176
+GET|/joomla/api/v1/items/177|id,search,page,limit|Generated joomla api route 177
+POST|/joomla/ajax/action-178|action,id,user_id,token|Generated joomla ajax action route 178
+GET|/?joomla_probe_179=1|joomla_probe_179,id,cat,author|Generated joomla query route 179
+GET|/joomla/index.php?option=component180|option,id,view,task|Generated joomla component route 180
+POST|/joomla/admin/post-181|action,id,order_id,status|Generated joomla admin post route 181
+GET|/joomla/search/182|q,order,dir,page|Generated joomla search route 182
+GET|/joomla/modules/mod-183/endpoint.php|id,module,lang,state|Generated joomla module endpoint 183
+GET|/joomla/admin/panel-184|id,page,tab,sort|Generated joomla admin panel route 184
+GET|/joomla/api/v1/items/185|id,search,page,limit|Generated joomla api route 185
+POST|/joomla/ajax/action-186|action,id,user_id,token|Generated joomla ajax action route 186
+GET|/?joomla_probe_187=1|joomla_probe_187,id,cat,author|Generated joomla query route 187
+GET|/joomla/index.php?option=component188|option,id,view,task|Generated joomla component route 188
+POST|/joomla/admin/post-189|action,id,order_id,status|Generated joomla admin post route 189
+GET|/joomla/search/190|q,order,dir,page|Generated joomla search route 190
+GET|/joomla/modules/mod-191/endpoint.php|id,module,lang,state|Generated joomla module endpoint 191
+GET|/joomla/admin/panel-192|id,page,tab,sort|Generated joomla admin panel route 192
+GET|/joomla/api/v1/items/193|id,search,page,limit|Generated joomla api route 193
+POST|/joomla/ajax/action-194|action,id,user_id,token|Generated joomla ajax action route 194
+GET|/?joomla_probe_195=1|joomla_probe_195,id,cat,author|Generated joomla query route 195
+GET|/joomla/index.php?option=component196|option,id,view,task|Generated joomla component route 196
+POST|/joomla/admin/post-197|action,id,order_id,status|Generated joomla admin post route 197
+GET|/joomla/search/198|q,order,dir,page|Generated joomla search route 198
+GET|/joomla/modules/mod-199/endpoint.php|id,module,lang,state|Generated joomla module endpoint 199
+GET|/joomla/admin/panel-200|id,page,tab,sort|Generated joomla admin panel route 200
+GET|/joomla/api/v1/items/201|id,search,page,limit|Generated joomla api route 201
+POST|/joomla/ajax/action-202|action,id,user_id,token|Generated joomla ajax action route 202
+GET|/?joomla_probe_203=1|joomla_probe_203,id,cat,author|Generated joomla query route 203
+GET|/joomla/index.php?option=component204|option,id,view,task|Generated joomla component route 204
+POST|/joomla/admin/post-205|action,id,order_id,status|Generated joomla admin post route 205
+GET|/joomla/search/206|q,order,dir,page|Generated joomla search route 206
+GET|/joomla/modules/mod-207/endpoint.php|id,module,lang,state|Generated joomla module endpoint 207
+GET|/joomla/admin/panel-208|id,page,tab,sort|Generated joomla admin panel route 208
+GET|/joomla/api/v1/items/209|id,search,page,limit|Generated joomla api route 209
+POST|/joomla/ajax/action-210|action,id,user_id,token|Generated joomla ajax action route 210
+GET|/?joomla_probe_211=1|joomla_probe_211,id,cat,author|Generated joomla query route 211
+GET|/joomla/index.php?option=component212|option,id,view,task|Generated joomla component route 212
+POST|/joomla/admin/post-213|action,id,order_id,status|Generated joomla admin post route 213
+GET|/joomla/search/214|q,order,dir,page|Generated joomla search route 214
+GET|/joomla/modules/mod-215/endpoint.php|id,module,lang,state|Generated joomla module endpoint 215
+GET|/joomla/admin/panel-216|id,page,tab,sort|Generated joomla admin panel route 216
+GET|/joomla/api/v1/items/217|id,search,page,limit|Generated joomla api route 217
+POST|/joomla/ajax/action-218|action,id,user_id,token|Generated joomla ajax action route 218
+GET|/?joomla_probe_219=1|joomla_probe_219,id,cat,author|Generated joomla query route 219
+GET|/joomla/index.php?option=component220|option,id,view,task|Generated joomla component route 220
+POST|/joomla/admin/post-221|action,id,order_id,status|Generated joomla admin post route 221
+GET|/joomla/search/222|q,order,dir,page|Generated joomla search route 222
+GET|/joomla/modules/mod-223/endpoint.php|id,module,lang,state|Generated joomla module endpoint 223
+GET|/joomla/admin/panel-224|id,page,tab,sort|Generated joomla admin panel route 224
+GET|/joomla/api/v1/items/225|id,search,page,limit|Generated joomla api route 225
+POST|/joomla/ajax/action-226|action,id,user_id,token|Generated joomla ajax action route 226
+GET|/?joomla_probe_227=1|joomla_probe_227,id,cat,author|Generated joomla query route 227
+GET|/joomla/index.php?option=component228|option,id,view,task|Generated joomla component route 228
+POST|/joomla/admin/post-229|action,id,order_id,status|Generated joomla admin post route 229
+GET|/joomla/search/230|q,order,dir,page|Generated joomla search route 230
+GET|/joomla/modules/mod-231/endpoint.php|id,module,lang,state|Generated joomla module endpoint 231
+GET|/joomla/admin/panel-232|id,page,tab,sort|Generated joomla admin panel route 232
+GET|/joomla/api/v1/items/233|id,search,page,limit|Generated joomla api route 233
+POST|/joomla/ajax/action-234|action,id,user_id,token|Generated joomla ajax action route 234
+GET|/?joomla_probe_235=1|joomla_probe_235,id,cat,author|Generated joomla query route 235
+GET|/joomla/index.php?option=component236|option,id,view,task|Generated joomla component route 236
+POST|/joomla/admin/post-237|action,id,order_id,status|Generated joomla admin post route 237
+GET|/joomla/search/238|q,order,dir,page|Generated joomla search route 238
+GET|/joomla/modules/mod-239/endpoint.php|id,module,lang,state|Generated joomla module endpoint 239
+GET|/joomla/admin/panel-240|id,page,tab,sort|Generated joomla admin panel route 240
+GET|/joomla/api/v1/items/241|id,search,page,limit|Generated joomla api route 241
+POST|/joomla/ajax/action-242|action,id,user_id,token|Generated joomla ajax action route 242
+GET|/?joomla_probe_243=1|joomla_probe_243,id,cat,author|Generated joomla query route 243
+GET|/joomla/index.php?option=component244|option,id,view,task|Generated joomla component route 244
+POST|/joomla/admin/post-245|action,id,order_id,status|Generated joomla admin post route 245
+GET|/joomla/search/246|q,order,dir,page|Generated joomla search route 246
+GET|/joomla/modules/mod-247/endpoint.php|id,module,lang,state|Generated joomla module endpoint 247
+GET|/joomla/admin/panel-248|id,page,tab,sort|Generated joomla admin panel route 248
+GET|/joomla/api/v1/items/249|id,search,page,limit|Generated joomla api route 249
+POST|/joomla/ajax/action-250|action,id,user_id,token|Generated joomla ajax action route 250
+GET|/?joomla_probe_251=1|joomla_probe_251,id,cat,author|Generated joomla query route 251
+GET|/joomla/index.php?option=component252|option,id,view,task|Generated joomla component route 252
+POST|/joomla/admin/post-253|action,id,order_id,status|Generated joomla admin post route 253
+GET|/joomla/search/254|q,order,dir,page|Generated joomla search route 254
+GET|/joomla/modules/mod-255/endpoint.php|id,module,lang,state|Generated joomla module endpoint 255
+GET|/joomla/admin/panel-256|id,page,tab,sort|Generated joomla admin panel route 256
+GET|/joomla/api/v1/items/257|id,search,page,limit|Generated joomla api route 257
+POST|/joomla/ajax/action-258|action,id,user_id,token|Generated joomla ajax action route 258
+GET|/?joomla_probe_259=1|joomla_probe_259,id,cat,author|Generated joomla query route 259
+GET|/joomla/index.php?option=component260|option,id,view,task|Generated joomla component route 260
+POST|/joomla/admin/post-261|action,id,order_id,status|Generated joomla admin post route 261
+GET|/joomla/search/262|q,order,dir,page|Generated joomla search route 262
+GET|/joomla/modules/mod-263/endpoint.php|id,module,lang,state|Generated joomla module endpoint 263
+GET|/joomla/admin/panel-264|id,page,tab,sort|Generated joomla admin panel route 264
+GET|/joomla/api/v1/items/265|id,search,page,limit|Generated joomla api route 265
+POST|/joomla/ajax/action-266|action,id,user_id,token|Generated joomla ajax action route 266
+GET|/?joomla_probe_267=1|joomla_probe_267,id,cat,author|Generated joomla query route 267
+GET|/joomla/index.php?option=component268|option,id,view,task|Generated joomla component route 268
+POST|/joomla/admin/post-269|action,id,order_id,status|Generated joomla admin post route 269
+GET|/joomla/search/270|q,order,dir,page|Generated joomla search route 270
+GET|/joomla/modules/mod-271/endpoint.php|id,module,lang,state|Generated joomla module endpoint 271
+GET|/joomla/admin/panel-272|id,page,tab,sort|Generated joomla admin panel route 272
+GET|/joomla/api/v1/items/273|id,search,page,limit|Generated joomla api route 273
+POST|/joomla/ajax/action-274|action,id,user_id,token|Generated joomla ajax action route 274
+GET|/?joomla_probe_275=1|joomla_probe_275,id,cat,author|Generated joomla query route 275
+GET|/joomla/index.php?option=component276|option,id,view,task|Generated joomla component route 276
+POST|/joomla/admin/post-277|action,id,order_id,status|Generated joomla admin post route 277
+GET|/joomla/search/278|q,order,dir,page|Generated joomla search route 278
+GET|/joomla/modules/mod-279/endpoint.php|id,module,lang,state|Generated joomla module endpoint 279
+GET|/joomla/admin/panel-280|id,page,tab,sort|Generated joomla admin panel route 280
+GET|/joomla/api/v1/items/281|id,search,page,limit|Generated joomla api route 281
+POST|/joomla/ajax/action-282|action,id,user_id,token|Generated joomla ajax action route 282
+GET|/?joomla_probe_283=1|joomla_probe_283,id,cat,author|Generated joomla query route 283
+GET|/joomla/index.php?option=component284|option,id,view,task|Generated joomla component route 284
+POST|/joomla/admin/post-285|action,id,order_id,status|Generated joomla admin post route 285
+GET|/joomla/search/286|q,order,dir,page|Generated joomla search route 286
+GET|/joomla/modules/mod-287/endpoint.php|id,module,lang,state|Generated joomla module endpoint 287
+GET|/joomla/admin/panel-288|id,page,tab,sort|Generated joomla admin panel route 288
+GET|/joomla/api/v1/items/289|id,search,page,limit|Generated joomla api route 289
+POST|/joomla/ajax/action-290|action,id,user_id,token|Generated joomla ajax action route 290
+GET|/?joomla_probe_291=1|joomla_probe_291,id,cat,author|Generated joomla query route 291
+GET|/joomla/index.php?option=component292|option,id,view,task|Generated joomla component route 292
+POST|/joomla/admin/post-293|action,id,order_id,status|Generated joomla admin post route 293
+GET|/joomla/search/294|q,order,dir,page|Generated joomla search route 294
+GET|/joomla/modules/mod-295/endpoint.php|id,module,lang,state|Generated joomla module endpoint 295
+GET|/joomla/admin/panel-296|id,page,tab,sort|Generated joomla admin panel route 296
+GET|/joomla/api/v1/items/297|id,search,page,limit|Generated joomla api route 297
+POST|/joomla/ajax/action-298|action,id,user_id,token|Generated joomla ajax action route 298
+GET|/?joomla_probe_299=1|joomla_probe_299,id,cat,author|Generated joomla query route 299
+GET|/joomla/index.php?option=component300|option,id,view,task|Generated joomla component route 300
+POST|/joomla/admin/post-301|action,id,order_id,status|Generated joomla admin post route 301
+GET|/joomla/search/302|q,order,dir,page|Generated joomla search route 302
+GET|/joomla/modules/mod-303/endpoint.php|id,module,lang,state|Generated joomla module endpoint 303
+GET|/joomla/admin/panel-304|id,page,tab,sort|Generated joomla admin panel route 304
+GET|/joomla/api/v1/items/305|id,search,page,limit|Generated joomla api route 305
+POST|/joomla/ajax/action-306|action,id,user_id,token|Generated joomla ajax action route 306
+GET|/?joomla_probe_307=1|joomla_probe_307,id,cat,author|Generated joomla query route 307
+GET|/joomla/index.php?option=component308|option,id,view,task|Generated joomla component route 308
+POST|/joomla/admin/post-309|action,id,order_id,status|Generated joomla admin post route 309
+GET|/joomla/search/310|q,order,dir,page|Generated joomla search route 310
+GET|/joomla/modules/mod-311/endpoint.php|id,module,lang,state|Generated joomla module endpoint 311
+GET|/joomla/admin/panel-312|id,page,tab,sort|Generated joomla admin panel route 312
+GET|/joomla/api/v1/items/313|id,search,page,limit|Generated joomla api route 313
+POST|/joomla/ajax/action-314|action,id,user_id,token|Generated joomla ajax action route 314
+GET|/?joomla_probe_315=1|joomla_probe_315,id,cat,author|Generated joomla query route 315
+GET|/joomla/index.php?option=component316|option,id,view,task|Generated joomla component route 316
+POST|/joomla/admin/post-317|action,id,order_id,status|Generated joomla admin post route 317
+GET|/joomla/search/318|q,order,dir,page|Generated joomla search route 318
+GET|/joomla/modules/mod-319/endpoint.php|id,module,lang,state|Generated joomla module endpoint 319
+GET|/joomla/admin/panel-320|id,page,tab,sort|Generated joomla admin panel route 320
+GET|/joomla/api/v1/items/321|id,search,page,limit|Generated joomla api route 321
+POST|/joomla/ajax/action-322|action,id,user_id,token|Generated joomla ajax action route 322
+GET|/?joomla_probe_323=1|joomla_probe_323,id,cat,author|Generated joomla query route 323
+GET|/joomla/index.php?option=component324|option,id,view,task|Generated joomla component route 324
+POST|/joomla/admin/post-325|action,id,order_id,status|Generated joomla admin post route 325
+GET|/joomla/search/326|q,order,dir,page|Generated joomla search route 326
+GET|/joomla/modules/mod-327/endpoint.php|id,module,lang,state|Generated joomla module endpoint 327
+GET|/joomla/admin/panel-328|id,page,tab,sort|Generated joomla admin panel route 328
+GET|/joomla/api/v1/items/329|id,search,page,limit|Generated joomla api route 329
+POST|/joomla/ajax/action-330|action,id,user_id,token|Generated joomla ajax action route 330
+GET|/?joomla_probe_331=1|joomla_probe_331,id,cat,author|Generated joomla query route 331
+GET|/joomla/index.php?option=component332|option,id,view,task|Generated joomla component route 332
+POST|/joomla/admin/post-333|action,id,order_id,status|Generated joomla admin post route 333
+GET|/joomla/search/334|q,order,dir,page|Generated joomla search route 334
+GET|/joomla/modules/mod-335/endpoint.php|id,module,lang,state|Generated joomla module endpoint 335
+GET|/joomla/admin/panel-336|id,page,tab,sort|Generated joomla admin panel route 336
+GET|/joomla/api/v1/items/337|id,search,page,limit|Generated joomla api route 337
+POST|/joomla/ajax/action-338|action,id,user_id,token|Generated joomla ajax action route 338
+GET|/?joomla_probe_339=1|joomla_probe_339,id,cat,author|Generated joomla query route 339
+GET|/joomla/index.php?option=component340|option,id,view,task|Generated joomla component route 340
+POST|/joomla/admin/post-341|action,id,order_id,status|Generated joomla admin post route 341
+GET|/joomla/search/342|q,order,dir,page|Generated joomla search route 342
+GET|/joomla/modules/mod-343/endpoint.php|id,module,lang,state|Generated joomla module endpoint 343
+GET|/joomla/admin/panel-344|id,page,tab,sort|Generated joomla admin panel route 344
+GET|/joomla/api/v1/items/345|id,search,page,limit|Generated joomla api route 345
+POST|/joomla/ajax/action-346|action,id,user_id,token|Generated joomla ajax action route 346
+GET|/?joomla_probe_347=1|joomla_probe_347,id,cat,author|Generated joomla query route 347
+GET|/joomla/index.php?option=component348|option,id,view,task|Generated joomla component route 348
+POST|/joomla/admin/post-349|action,id,order_id,status|Generated joomla admin post route 349
+GET|/joomla/search/350|q,order,dir,page|Generated joomla search route 350
+GET|/joomla/modules/mod-351/endpoint.php|id,module,lang,state|Generated joomla module endpoint 351
+GET|/joomla/admin/panel-352|id,page,tab,sort|Generated joomla admin panel route 352
+GET|/joomla/api/v1/items/353|id,search,page,limit|Generated joomla api route 353
+POST|/joomla/ajax/action-354|action,id,user_id,token|Generated joomla ajax action route 354
+GET|/?joomla_probe_355=1|joomla_probe_355,id,cat,author|Generated joomla query route 355
+GET|/joomla/index.php?option=component356|option,id,view,task|Generated joomla component route 356
+POST|/joomla/admin/post-357|action,id,order_id,status|Generated joomla admin post route 357
+GET|/joomla/search/358|q,order,dir,page|Generated joomla search route 358
+GET|/joomla/modules/mod-359/endpoint.php|id,module,lang,state|Generated joomla module endpoint 359
+GET|/joomla/admin/panel-360|id,page,tab,sort|Generated joomla admin panel route 360
+GET|/joomla/api/v1/items/361|id,search,page,limit|Generated joomla api route 361
+POST|/joomla/ajax/action-362|action,id,user_id,token|Generated joomla ajax action route 362
+GET|/?joomla_probe_363=1|joomla_probe_363,id,cat,author|Generated joomla query route 363
+GET|/joomla/index.php?option=component364|option,id,view,task|Generated joomla component route 364
+POST|/joomla/admin/post-365|action,id,order_id,status|Generated joomla admin post route 365
+GET|/joomla/search/366|q,order,dir,page|Generated joomla search route 366
+GET|/joomla/modules/mod-367/endpoint.php|id,module,lang,state|Generated joomla module endpoint 367
+GET|/joomla/admin/panel-368|id,page,tab,sort|Generated joomla admin panel route 368
+GET|/joomla/api/v1/items/369|id,search,page,limit|Generated joomla api route 369
+POST|/joomla/ajax/action-370|action,id,user_id,token|Generated joomla ajax action route 370
+GET|/?joomla_probe_371=1|joomla_probe_371,id,cat,author|Generated joomla query route 371
+GET|/joomla/index.php?option=component372|option,id,view,task|Generated joomla component route 372
+POST|/joomla/admin/post-373|action,id,order_id,status|Generated joomla admin post route 373
+GET|/joomla/search/374|q,order,dir,page|Generated joomla search route 374
+GET|/joomla/modules/mod-375/endpoint.php|id,module,lang,state|Generated joomla module endpoint 375
+GET|/joomla/admin/panel-376|id,page,tab,sort|Generated joomla admin panel route 376
+GET|/joomla/api/v1/items/377|id,search,page,limit|Generated joomla api route 377
+POST|/joomla/ajax/action-378|action,id,user_id,token|Generated joomla ajax action route 378
+GET|/?joomla_probe_379=1|joomla_probe_379,id,cat,author|Generated joomla query route 379
+GET|/joomla/index.php?option=component380|option,id,view,task|Generated joomla component route 380
+POST|/joomla/admin/post-381|action,id,order_id,status|Generated joomla admin post route 381
+GET|/joomla/search/382|q,order,dir,page|Generated joomla search route 382
+GET|/joomla/modules/mod-383/endpoint.php|id,module,lang,state|Generated joomla module endpoint 383
+GET|/joomla/admin/panel-384|id,page,tab,sort|Generated joomla admin panel route 384
+GET|/joomla/api/v1/items/385|id,search,page,limit|Generated joomla api route 385
+POST|/joomla/ajax/action-386|action,id,user_id,token|Generated joomla ajax action route 386
+GET|/?joomla_probe_387=1|joomla_probe_387,id,cat,author|Generated joomla query route 387
+GET|/joomla/index.php?option=component388|option,id,view,task|Generated joomla component route 388
+POST|/joomla/admin/post-389|action,id,order_id,status|Generated joomla admin post route 389
+GET|/joomla/search/390|q,order,dir,page|Generated joomla search route 390
+GET|/joomla/modules/mod-391/endpoint.php|id,module,lang,state|Generated joomla module endpoint 391
+GET|/joomla/admin/panel-392|id,page,tab,sort|Generated joomla admin panel route 392
+GET|/joomla/api/v1/items/393|id,search,page,limit|Generated joomla api route 393
+POST|/joomla/ajax/action-394|action,id,user_id,token|Generated joomla ajax action route 394
+GET|/?joomla_probe_395=1|joomla_probe_395,id,cat,author|Generated joomla query route 395
+GET|/joomla/index.php?option=component396|option,id,view,task|Generated joomla component route 396
+POST|/joomla/admin/post-397|action,id,order_id,status|Generated joomla admin post route 397
+GET|/joomla/search/398|q,order,dir,page|Generated joomla search route 398
+GET|/joomla/modules/mod-399/endpoint.php|id,module,lang,state|Generated joomla module endpoint 399
+GET|/joomla/admin/panel-400|id,page,tab,sort|Generated joomla admin panel route 400
+GET|/joomla/api/v1/items/401|id,search,page,limit|Generated joomla api route 401
+POST|/joomla/ajax/action-402|action,id,user_id,token|Generated joomla ajax action route 402
+GET|/?joomla_probe_403=1|joomla_probe_403,id,cat,author|Generated joomla query route 403
+GET|/joomla/index.php?option=component404|option,id,view,task|Generated joomla component route 404
+POST|/joomla/admin/post-405|action,id,order_id,status|Generated joomla admin post route 405
+GET|/joomla/search/406|q,order,dir,page|Generated joomla search route 406
+GET|/joomla/modules/mod-407/endpoint.php|id,module,lang,state|Generated joomla module endpoint 407
+GET|/joomla/admin/panel-408|id,page,tab,sort|Generated joomla admin panel route 408
+GET|/joomla/api/v1/items/409|id,search,page,limit|Generated joomla api route 409
+POST|/joomla/ajax/action-410|action,id,user_id,token|Generated joomla ajax action route 410
+GET|/?joomla_probe_411=1|joomla_probe_411,id,cat,author|Generated joomla query route 411
+GET|/joomla/index.php?option=component412|option,id,view,task|Generated joomla component route 412
+POST|/joomla/admin/post-413|action,id,order_id,status|Generated joomla admin post route 413
+GET|/joomla/search/414|q,order,dir,page|Generated joomla search route 414
+GET|/joomla/modules/mod-415/endpoint.php|id,module,lang,state|Generated joomla module endpoint 415
+GET|/joomla/admin/panel-416|id,page,tab,sort|Generated joomla admin panel route 416
+GET|/joomla/api/v1/items/417|id,search,page,limit|Generated joomla api route 417
+POST|/joomla/ajax/action-418|action,id,user_id,token|Generated joomla ajax action route 418
+GET|/?joomla_probe_419=1|joomla_probe_419,id,cat,author|Generated joomla query route 419
+GET|/joomla/index.php?option=component420|option,id,view,task|Generated joomla component route 420
+POST|/joomla/admin/post-421|action,id,order_id,status|Generated joomla admin post route 421
+GET|/joomla/search/422|q,order,dir,page|Generated joomla search route 422
+GET|/joomla/modules/mod-423/endpoint.php|id,module,lang,state|Generated joomla module endpoint 423
+GET|/joomla/admin/panel-424|id,page,tab,sort|Generated joomla admin panel route 424
+GET|/joomla/api/v1/items/425|id,search,page,limit|Generated joomla api route 425
+POST|/joomla/ajax/action-426|action,id,user_id,token|Generated joomla ajax action route 426
+GET|/?joomla_probe_427=1|joomla_probe_427,id,cat,author|Generated joomla query route 427
+GET|/joomla/index.php?option=component428|option,id,view,task|Generated joomla component route 428
+POST|/joomla/admin/post-429|action,id,order_id,status|Generated joomla admin post route 429
+GET|/joomla/search/430|q,order,dir,page|Generated joomla search route 430
+GET|/joomla/modules/mod-431/endpoint.php|id,module,lang,state|Generated joomla module endpoint 431
+GET|/joomla/admin/panel-432|id,page,tab,sort|Generated joomla admin panel route 432
+GET|/joomla/api/v1/items/433|id,search,page,limit|Generated joomla api route 433
+POST|/joomla/ajax/action-434|action,id,user_id,token|Generated joomla ajax action route 434
+GET|/?joomla_probe_435=1|joomla_probe_435,id,cat,author|Generated joomla query route 435
+GET|/joomla/index.php?option=component436|option,id,view,task|Generated joomla component route 436
+POST|/joomla/admin/post-437|action,id,order_id,status|Generated joomla admin post route 437
+GET|/joomla/search/438|q,order,dir,page|Generated joomla search route 438
+GET|/joomla/modules/mod-439/endpoint.php|id,module,lang,state|Generated joomla module endpoint 439
+GET|/joomla/admin/panel-440|id,page,tab,sort|Generated joomla admin panel route 440
+GET|/joomla/api/v1/items/441|id,search,page,limit|Generated joomla api route 441
+POST|/joomla/ajax/action-442|action,id,user_id,token|Generated joomla ajax action route 442
+GET|/?joomla_probe_443=1|joomla_probe_443,id,cat,author|Generated joomla query route 443
+GET|/joomla/index.php?option=component444|option,id,view,task|Generated joomla component route 444
+POST|/joomla/admin/post-445|action,id,order_id,status|Generated joomla admin post route 445
+GET|/joomla/search/446|q,order,dir,page|Generated joomla search route 446
+GET|/joomla/modules/mod-447/endpoint.php|id,module,lang,state|Generated joomla module endpoint 447
+GET|/joomla/admin/panel-448|id,page,tab,sort|Generated joomla admin panel route 448
+GET|/joomla/api/v1/items/449|id,search,page,limit|Generated joomla api route 449
+POST|/joomla/ajax/action-450|action,id,user_id,token|Generated joomla ajax action route 450
+GET|/?joomla_probe_451=1|joomla_probe_451,id,cat,author|Generated joomla query route 451
+GET|/joomla/index.php?option=component452|option,id,view,task|Generated joomla component route 452
+POST|/joomla/admin/post-453|action,id,order_id,status|Generated joomla admin post route 453
+GET|/joomla/search/454|q,order,dir,page|Generated joomla search route 454
+GET|/joomla/modules/mod-455/endpoint.php|id,module,lang,state|Generated joomla module endpoint 455
+GET|/joomla/admin/panel-456|id,page,tab,sort|Generated joomla admin panel route 456
+GET|/joomla/api/v1/items/457|id,search,page,limit|Generated joomla api route 457
+POST|/joomla/ajax/action-458|action,id,user_id,token|Generated joomla ajax action route 458
+GET|/?joomla_probe_459=1|joomla_probe_459,id,cat,author|Generated joomla query route 459
+GET|/joomla/index.php?option=component460|option,id,view,task|Generated joomla component route 460
+POST|/joomla/admin/post-461|action,id,order_id,status|Generated joomla admin post route 461
+GET|/joomla/search/462|q,order,dir,page|Generated joomla search route 462
+GET|/joomla/modules/mod-463/endpoint.php|id,module,lang,state|Generated joomla module endpoint 463
+GET|/joomla/admin/panel-464|id,page,tab,sort|Generated joomla admin panel route 464
+GET|/joomla/api/v1/items/465|id,search,page,limit|Generated joomla api route 465
+POST|/joomla/ajax/action-466|action,id,user_id,token|Generated joomla ajax action route 466
+GET|/?joomla_probe_467=1|joomla_probe_467,id,cat,author|Generated joomla query route 467
+GET|/joomla/index.php?option=component468|option,id,view,task|Generated joomla component route 468
+POST|/joomla/admin/post-469|action,id,order_id,status|Generated joomla admin post route 469
+GET|/joomla/search/470|q,order,dir,page|Generated joomla search route 470
+GET|/joomla/modules/mod-471/endpoint.php|id,module,lang,state|Generated joomla module endpoint 471
+GET|/joomla/admin/panel-472|id,page,tab,sort|Generated joomla admin panel route 472
+GET|/joomla/api/v1/items/473|id,search,page,limit|Generated joomla api route 473
+POST|/joomla/ajax/action-474|action,id,user_id,token|Generated joomla ajax action route 474
+GET|/?joomla_probe_475=1|joomla_probe_475,id,cat,author|Generated joomla query route 475
+GET|/joomla/index.php?option=component476|option,id,view,task|Generated joomla component route 476
+POST|/joomla/admin/post-477|action,id,order_id,status|Generated joomla admin post route 477
+GET|/joomla/search/478|q,order,dir,page|Generated joomla search route 478
+GET|/joomla/modules/mod-479/endpoint.php|id,module,lang,state|Generated joomla module endpoint 479
+GET|/joomla/admin/panel-480|id,page,tab,sort|Generated joomla admin panel route 480
+GET|/joomla/api/v1/items/481|id,search,page,limit|Generated joomla api route 481
+POST|/joomla/ajax/action-482|action,id,user_id,token|Generated joomla ajax action route 482
+GET|/?joomla_probe_483=1|joomla_probe_483,id,cat,author|Generated joomla query route 483
+GET|/joomla/index.php?option=component484|option,id,view,task|Generated joomla component route 484
+POST|/joomla/admin/post-485|action,id,order_id,status|Generated joomla admin post route 485
+GET|/joomla/search/486|q,order,dir,page|Generated joomla search route 486
+GET|/joomla/modules/mod-487/endpoint.php|id,module,lang,state|Generated joomla module endpoint 487
+GET|/joomla/admin/panel-488|id,page,tab,sort|Generated joomla admin panel route 488
+GET|/joomla/api/v1/items/489|id,search,page,limit|Generated joomla api route 489

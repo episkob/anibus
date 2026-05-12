@@ -1,6 +1,5 @@
 package it.r2u.anibus.service.network.proxy;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Optional;
@@ -33,14 +32,6 @@ class ProxyPool {
     /** Fastest live node for a given country, or empty. */
     Optional<ProxyNode> bestByCountry(String countryCode) {
         return getByCountry(countryCode).stream()
-                .filter(ProxyNode::isAlive)
-                .min(Comparator.comparingLong(ProxyNode::latencyMs));
-    }
-
-    /** Fastest live node across all countries. */
-    Optional<ProxyNode> bestOverall() {
-        return pool.values().stream()
-                .flatMap(Collection::stream)
                 .filter(ProxyNode::isAlive)
                 .min(Comparator.comparingLong(ProxyNode::latencyMs));
     }

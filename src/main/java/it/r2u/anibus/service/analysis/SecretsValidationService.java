@@ -74,6 +74,14 @@ public class SecretsValidationService {
             Pattern.compile("xox[baprs]-[0-9]+-[0-9A-Za-z-]+"),
             "Revoke at api.slack.com/apps under OAuth & Permissions."),
 
+        new Rule("NPM",      "Automation Token",
+            Pattern.compile("npm_[A-Za-z0-9]{36,}"),
+            "Revoke at npmjs.com settings and rotate CI secrets."),
+
+        new Rule("Docker",   "Docker Hub Personal Access Token",
+            Pattern.compile("dckr_pat_[A-Za-z0-9_-]{20,}"),
+            "Revoke in Docker Hub security settings and rotate pipeline secrets."),
+
         new Rule("Google",   "API Key",
             Pattern.compile("AIza[0-9A-Za-z\\-_]{35}"),
             "Restrict or rotate at console.cloud.google.com/apis/credentials."),
@@ -86,8 +94,8 @@ public class SecretsValidationService {
             Pattern.compile("eyJ[A-Za-z0-9_-]+\\.eyJ[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]*"),
             "Tokens should not persist in source code. Check exp and aud claims."),
 
-        new Rule("Generic",  "Private Key (PEM)",
-            Pattern.compile("-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----"),
+        new Rule("Generic",  "Private Key Block (PEM)",
+            Pattern.compile("-----BEGIN (?:RSA |DSA |EC |OPENSSH |ENCRYPTED )?PRIVATE KEY-----"),
             "Remove private key material from source/config immediately."),
 
         new Rule("Generic",  "Generic High-Entropy Token",

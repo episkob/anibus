@@ -4,7 +4,9 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.DoubleConsumer;
 
 /**
@@ -15,6 +17,7 @@ import java.util.function.DoubleConsumer;
 public class DirectoryBruteforcer {
 
     private static final int TIMEOUT = 5000;
+    private static final List<String> BACKUP_SUFFIXES = List.of(".bak", ".old", ".orig", "~", ".swp");
 
     private static final List<String> WORDLIST = List.of(
         "admin", "administrator", "login", "panel", "dashboard", "cpanel",
@@ -56,16 +59,50 @@ public class DirectoryBruteforcer {
         if (baseUrl == null || baseUrl.isBlank()) return findings;
 
         String base = baseUrl.replaceAll("/$", "");
-        int total = WORDLIST.size();
-        int done = 0;
-
+        List<String> queue = new ArrayList<>();
+        Set<String> seen = new LinkedHashSet<>();
         for (String path : WORDLIST) {
-            PathResult r = probe(base + "/" + path);
-            if (r != null && r.isInteresting()) findings.add(r);
+            String candidate = base + "/" + path;
+            queue.add(candidate);
+            seen.add(candidate);
+        }
+
+        int done = 0;
+        while (done < queue.size()) {
+            String candidate = queue.get(done);
+            PathResult r = probe(candidate);
+            if (r != null && r.isInteresting()) {
+                findings.add(r);
+                for (String backupUrl : buildBackupCandidates(r.url())) {
+                    if (seen.add(backupUrl)) {
+                        queue.add(backupUrl);
+                    }
+                }
+            }
             done++;
-            if (progress != null) progress.accept((double) done / total);
+            if (progress != null) progress.accept((double) done / Math.max(done, queue.size()));
         }
         return findings;
+    }
+
+    private List<String> buildBackupCandidates(String url) {
+        List<String> variants = new ArrayList<>();
+        if (url == null || url.isBlank() || hasBackupSuffix(url)) {
+            return variants;
+        }
+        for (String suffix : BACKUP_SUFFIXES) {
+            variants.add(url + suffix);
+        }
+        return variants;
+    }
+
+    private boolean hasBackupSuffix(String url) {
+        String lower = url.toLowerCase();
+        return lower.endsWith(".bak")
+                || lower.endsWith(".old")
+                || lower.endsWith(".orig")
+                || lower.endsWith("~")
+                || lower.endsWith(".swp");
     }
 
     private PathResult probe(String url) {

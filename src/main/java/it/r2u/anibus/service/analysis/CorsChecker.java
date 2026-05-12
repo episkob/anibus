@@ -15,6 +15,8 @@ public class CorsChecker {
     private static final int TIMEOUT = 7000;
     private static final String EVIL_ORIGIN = "https://evil.attacker.com";
     private static final String NULL_ORIGIN  = "null";
+    private static final String PREFLIGHT_METHOD = "POST";
+    private static final String PREFLIGHT_HEADERS = "Authorization, Content-Type";
 
     public enum CorsRisk { CRITICAL, HIGH, MEDIUM, SAFE }
 
@@ -69,6 +71,8 @@ public class CorsChecker {
             String acac = conn.getHeaderField("Access-Control-Allow-Credentials");
             conn.disconnect();
 
+            PreflightOutcome preflight = probePreflight(url, origin);
+
             if (acao == null) return new CorsResult(url, null, acac, CorsRisk.SAFE, "CORS not configured");
 
             CorsRisk risk;
@@ -94,11 +98,76 @@ public class CorsChecker {
                 finding = "ACAO fixed to: " + acao;
             }
 
+            if (preflight.allowingCrossOriginAuthHeaders()) {
+                risk = maxRisk(risk, CorsRisk.HIGH);
+                finding = finding + " | Preflight allows cross-origin auth headers";
+            } else if (preflight.permissive()) {
+                risk = maxRisk(risk, CorsRisk.MEDIUM);
+                finding = finding + " | Preflight is permissive";
+            }
+
             return new CorsResult(url, acao, acac, risk, finding);
         } catch (IOException ignored) {
             return null;
         }
     }
+
+    private PreflightOutcome probePreflight(String url, String origin) {
+        try {
+            HttpURLConnection conn = (HttpURLConnection) URI.create(url).toURL().openConnection();
+            conn.setRequestMethod("OPTIONS");
+            conn.setRequestProperty("Origin", origin);
+            conn.setRequestProperty("Access-Control-Request-Method", PREFLIGHT_METHOD);
+            conn.setRequestProperty("Access-Control-Request-Headers", PREFLIGHT_HEADERS);
+            conn.setConnectTimeout(TIMEOUT);
+            conn.setReadTimeout(TIMEOUT);
+            conn.setInstanceFollowRedirects(true);
+            conn.connect();
+
+            int status = conn.getResponseCode();
+            String acao = conn.getHeaderField("Access-Control-Allow-Origin");
+            String acam = conn.getHeaderField("Access-Control-Allow-Methods");
+            String acah = conn.getHeaderField("Access-Control-Allow-Headers");
+            conn.disconnect();
+
+            boolean methodAllowed = containsTokenIgnoreCase(acam, PREFLIGHT_METHOD);
+            boolean originAllowed = "*".equals(acao) || origin.equals(acao);
+            boolean headersAllowed = containsTokenIgnoreCase(acah, "Authorization") || "*".equals(acah);
+
+            boolean permissive = status >= 200 && status < 300 && originAllowed && methodAllowed;
+            boolean allowingAuthHeaders = permissive && headersAllowed;
+            return new PreflightOutcome(permissive, allowingAuthHeaders);
+        } catch (IOException ignored) {
+            return new PreflightOutcome(false, false);
+        }
+    }
+
+    private boolean containsTokenIgnoreCase(String csv, String token) {
+        if (csv == null || csv.isBlank()) {
+            return false;
+        }
+        for (String part : csv.split(",")) {
+            if (token.equalsIgnoreCase(part.trim())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private CorsRisk maxRisk(CorsRisk a, CorsRisk b) {
+        return severity(a) >= severity(b) ? a : b;
+    }
+
+    private int severity(CorsRisk risk) {
+        return switch (risk) {
+            case CRITICAL -> 4;
+            case HIGH -> 3;
+            case MEDIUM -> 2;
+            case SAFE -> 1;
+        };
+    }
+
+    private record PreflightOutcome(boolean permissive, boolean allowingCrossOriginAuthHeaders) {}
 
     /** Formats a human-readable CORS report. */
     public static String formatReport(List<CorsResult> results, String targetUrl) {

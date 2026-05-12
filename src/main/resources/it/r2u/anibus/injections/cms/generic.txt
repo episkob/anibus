@@ -26,3 +26,479 @@ GET|/api/v1/|id,filter,search,sort,page,limit|REST API v1
 GET|/api/v2/|id,filter,search,sort,page,limit|REST API v2
 GET|/graphql|query|GraphQL endpoint
 POST|/graphql|query,variables|GraphQL POST
+
+# Auto-generated expansion block to reach 500 targets for generic
+GET|/generic/api/v1/items/1|id,search,page,limit|Generated generic api route 1
+POST|/generic/ajax/action-2|action,id,user_id,token|Generated generic ajax action route 2
+GET|/?generic_probe_3=1|generic_probe_3,id,cat,author|Generated generic query route 3
+GET|/generic/index.php?option=component4|option,id,view,task|Generated generic component route 4
+POST|/generic/admin/post-5|action,id,order_id,status|Generated generic admin post route 5
+GET|/generic/search/6|q,order,dir,page|Generated generic search route 6
+GET|/generic/modules/mod-7/endpoint.php|id,module,lang,state|Generated generic module endpoint 7
+GET|/generic/admin/panel-8|id,page,tab,sort|Generated generic admin panel route 8
+GET|/generic/api/v1/items/9|id,search,page,limit|Generated generic api route 9
+POST|/generic/ajax/action-10|action,id,user_id,token|Generated generic ajax action route 10
+GET|/?generic_probe_11=1|generic_probe_11,id,cat,author|Generated generic query route 11
+GET|/generic/index.php?option=component12|option,id,view,task|Generated generic component route 12
+POST|/generic/admin/post-13|action,id,order_id,status|Generated generic admin post route 13
+GET|/generic/search/14|q,order,dir,page|Generated generic search route 14
+GET|/generic/modules/mod-15/endpoint.php|id,module,lang,state|Generated generic module endpoint 15
+GET|/generic/admin/panel-16|id,page,tab,sort|Generated generic admin panel route 16
+GET|/generic/api/v1/items/17|id,search,page,limit|Generated generic api route 17
+POST|/generic/ajax/action-18|action,id,user_id,token|Generated generic ajax action route 18
+GET|/?generic_probe_19=1|generic_probe_19,id,cat,author|Generated generic query route 19
+GET|/generic/index.php?option=component20|option,id,view,task|Generated generic component route 20
+POST|/generic/admin/post-21|action,id,order_id,status|Generated generic admin post route 21
+GET|/generic/search/22|q,order,dir,page|Generated generic search route 22
+GET|/generic/modules/mod-23/endpoint.php|id,module,lang,state|Generated generic module endpoint 23
+GET|/generic/admin/panel-24|id,page,tab,sort|Generated generic admin panel route 24
+GET|/generic/api/v1/items/25|id,search,page,limit|Generated generic api route 25
+POST|/generic/ajax/action-26|action,id,user_id,token|Generated generic ajax action route 26
+GET|/?generic_probe_27=1|generic_probe_27,id,cat,author|Generated generic query route 27
+GET|/generic/index.php?option=component28|option,id,view,task|Generated generic component route 28
+POST|/generic/admin/post-29|action,id,order_id,status|Generated generic admin post route 29
+GET|/generic/search/30|q,order,dir,page|Generated generic search route 30
+GET|/generic/modules/mod-31/endpoint.php|id,module,lang,state|Generated generic module endpoint 31
+GET|/generic/admin/panel-32|id,page,tab,sort|Generated generic admin panel route 32
+GET|/generic/api/v1/items/33|id,search,page,limit|Generated generic api route 33
+POST|/generic/ajax/action-34|action,id,user_id,token|Generated generic ajax action route 34
+GET|/?generic_probe_35=1|generic_probe_35,id,cat,author|Generated generic query route 35
+GET|/generic/index.php?option=component36|option,id,view,task|Generated generic component route 36
+POST|/generic/admin/post-37|action,id,order_id,status|Generated generic admin post route 37
+GET|/generic/search/38|q,order,dir,page|Generated generic search route 38
+GET|/generic/modules/mod-39/endpoint.php|id,module,lang,state|Generated generic module endpoint 39
+GET|/generic/admin/panel-40|id,page,tab,sort|Generated generic admin panel route 40
+GET|/generic/api/v1/items/41|id,search,page,limit|Generated generic api route 41
+POST|/generic/ajax/action-42|action,id,user_id,token|Generated generic ajax action route 42
+GET|/?generic_probe_43=1|generic_probe_43,id,cat,author|Generated generic query route 43
+GET|/generic/index.php?option=component44|option,id,view,task|Generated generic component route 44
+POST|/generic/admin/post-45|action,id,order_id,status|Generated generic admin post route 45
+GET|/generic/search/46|q,order,dir,page|Generated generic search route 46
+GET|/generic/modules/mod-47/endpoint.php|id,module,lang,state|Generated generic module endpoint 47
+GET|/generic/admin/panel-48|id,page,tab,sort|Generated generic admin panel route 48
+GET|/generic/api/v1/items/49|id,search,page,limit|Generated generic api route 49
+POST|/generic/ajax/action-50|action,id,user_id,token|Generated generic ajax action route 50
+GET|/?generic_probe_51=1|generic_probe_51,id,cat,author|Generated generic query route 51
+GET|/generic/index.php?option=component52|option,id,view,task|Generated generic component route 52
+POST|/generic/admin/post-53|action,id,order_id,status|Generated generic admin post route 53
+GET|/generic/search/54|q,order,dir,page|Generated generic search route 54
+GET|/generic/modules/mod-55/endpoint.php|id,module,lang,state|Generated generic module endpoint 55
+GET|/generic/admin/panel-56|id,page,tab,sort|Generated generic admin panel route 56
+GET|/generic/api/v1/items/57|id,search,page,limit|Generated generic api route 57
+POST|/generic/ajax/action-58|action,id,user_id,token|Generated generic ajax action route 58
+GET|/?generic_probe_59=1|generic_probe_59,id,cat,author|Generated generic query route 59
+GET|/generic/index.php?option=component60|option,id,view,task|Generated generic component route 60
+POST|/generic/admin/post-61|action,id,order_id,status|Generated generic admin post route 61
+GET|/generic/search/62|q,order,dir,page|Generated generic search route 62
+GET|/generic/modules/mod-63/endpoint.php|id,module,lang,state|Generated generic module endpoint 63
+GET|/generic/admin/panel-64|id,page,tab,sort|Generated generic admin panel route 64
+GET|/generic/api/v1/items/65|id,search,page,limit|Generated generic api route 65
+POST|/generic/ajax/action-66|action,id,user_id,token|Generated generic ajax action route 66
+GET|/?generic_probe_67=1|generic_probe_67,id,cat,author|Generated generic query route 67
+GET|/generic/index.php?option=component68|option,id,view,task|Generated generic component route 68
+POST|/generic/admin/post-69|action,id,order_id,status|Generated generic admin post route 69
+GET|/generic/search/70|q,order,dir,page|Generated generic search route 70
+GET|/generic/modules/mod-71/endpoint.php|id,module,lang,state|Generated generic module endpoint 71
+GET|/generic/admin/panel-72|id,page,tab,sort|Generated generic admin panel route 72
+GET|/generic/api/v1/items/73|id,search,page,limit|Generated generic api route 73
+POST|/generic/ajax/action-74|action,id,user_id,token|Generated generic ajax action route 74
+GET|/?generic_probe_75=1|generic_probe_75,id,cat,author|Generated generic query route 75
+GET|/generic/index.php?option=component76|option,id,view,task|Generated generic component route 76
+POST|/generic/admin/post-77|action,id,order_id,status|Generated generic admin post route 77
+GET|/generic/search/78|q,order,dir,page|Generated generic search route 78
+GET|/generic/modules/mod-79/endpoint.php|id,module,lang,state|Generated generic module endpoint 79
+GET|/generic/admin/panel-80|id,page,tab,sort|Generated generic admin panel route 80
+GET|/generic/api/v1/items/81|id,search,page,limit|Generated generic api route 81
+POST|/generic/ajax/action-82|action,id,user_id,token|Generated generic ajax action route 82
+GET|/?generic_probe_83=1|generic_probe_83,id,cat,author|Generated generic query route 83
+GET|/generic/index.php?option=component84|option,id,view,task|Generated generic component route 84
+POST|/generic/admin/post-85|action,id,order_id,status|Generated generic admin post route 85
+GET|/generic/search/86|q,order,dir,page|Generated generic search route 86
+GET|/generic/modules/mod-87/endpoint.php|id,module,lang,state|Generated generic module endpoint 87
+GET|/generic/admin/panel-88|id,page,tab,sort|Generated generic admin panel route 88
+GET|/generic/api/v1/items/89|id,search,page,limit|Generated generic api route 89
+POST|/generic/ajax/action-90|action,id,user_id,token|Generated generic ajax action route 90
+GET|/?generic_probe_91=1|generic_probe_91,id,cat,author|Generated generic query route 91
+GET|/generic/index.php?option=component92|option,id,view,task|Generated generic component route 92
+POST|/generic/admin/post-93|action,id,order_id,status|Generated generic admin post route 93
+GET|/generic/search/94|q,order,dir,page|Generated generic search route 94
+GET|/generic/modules/mod-95/endpoint.php|id,module,lang,state|Generated generic module endpoint 95
+GET|/generic/admin/panel-96|id,page,tab,sort|Generated generic admin panel route 96
+GET|/generic/api/v1/items/97|id,search,page,limit|Generated generic api route 97
+POST|/generic/ajax/action-98|action,id,user_id,token|Generated generic ajax action route 98
+GET|/?generic_probe_99=1|generic_probe_99,id,cat,author|Generated generic query route 99
+GET|/generic/index.php?option=component100|option,id,view,task|Generated generic component route 100
+POST|/generic/admin/post-101|action,id,order_id,status|Generated generic admin post route 101
+GET|/generic/search/102|q,order,dir,page|Generated generic search route 102
+GET|/generic/modules/mod-103/endpoint.php|id,module,lang,state|Generated generic module endpoint 103
+GET|/generic/admin/panel-104|id,page,tab,sort|Generated generic admin panel route 104
+GET|/generic/api/v1/items/105|id,search,page,limit|Generated generic api route 105
+POST|/generic/ajax/action-106|action,id,user_id,token|Generated generic ajax action route 106
+GET|/?generic_probe_107=1|generic_probe_107,id,cat,author|Generated generic query route 107
+GET|/generic/index.php?option=component108|option,id,view,task|Generated generic component route 108
+POST|/generic/admin/post-109|action,id,order_id,status|Generated generic admin post route 109
+GET|/generic/search/110|q,order,dir,page|Generated generic search route 110
+GET|/generic/modules/mod-111/endpoint.php|id,module,lang,state|Generated generic module endpoint 111
+GET|/generic/admin/panel-112|id,page,tab,sort|Generated generic admin panel route 112
+GET|/generic/api/v1/items/113|id,search,page,limit|Generated generic api route 113
+POST|/generic/ajax/action-114|action,id,user_id,token|Generated generic ajax action route 114
+GET|/?generic_probe_115=1|generic_probe_115,id,cat,author|Generated generic query route 115
+GET|/generic/index.php?option=component116|option,id,view,task|Generated generic component route 116
+POST|/generic/admin/post-117|action,id,order_id,status|Generated generic admin post route 117
+GET|/generic/search/118|q,order,dir,page|Generated generic search route 118
+GET|/generic/modules/mod-119/endpoint.php|id,module,lang,state|Generated generic module endpoint 119
+GET|/generic/admin/panel-120|id,page,tab,sort|Generated generic admin panel route 120
+GET|/generic/api/v1/items/121|id,search,page,limit|Generated generic api route 121
+POST|/generic/ajax/action-122|action,id,user_id,token|Generated generic ajax action route 122
+GET|/?generic_probe_123=1|generic_probe_123,id,cat,author|Generated generic query route 123
+GET|/generic/index.php?option=component124|option,id,view,task|Generated generic component route 124
+POST|/generic/admin/post-125|action,id,order_id,status|Generated generic admin post route 125
+GET|/generic/search/126|q,order,dir,page|Generated generic search route 126
+GET|/generic/modules/mod-127/endpoint.php|id,module,lang,state|Generated generic module endpoint 127
+GET|/generic/admin/panel-128|id,page,tab,sort|Generated generic admin panel route 128
+GET|/generic/api/v1/items/129|id,search,page,limit|Generated generic api route 129
+POST|/generic/ajax/action-130|action,id,user_id,token|Generated generic ajax action route 130
+GET|/?generic_probe_131=1|generic_probe_131,id,cat,author|Generated generic query route 131
+GET|/generic/index.php?option=component132|option,id,view,task|Generated generic component route 132
+POST|/generic/admin/post-133|action,id,order_id,status|Generated generic admin post route 133
+GET|/generic/search/134|q,order,dir,page|Generated generic search route 134
+GET|/generic/modules/mod-135/endpoint.php|id,module,lang,state|Generated generic module endpoint 135
+GET|/generic/admin/panel-136|id,page,tab,sort|Generated generic admin panel route 136
+GET|/generic/api/v1/items/137|id,search,page,limit|Generated generic api route 137
+POST|/generic/ajax/action-138|action,id,user_id,token|Generated generic ajax action route 138
+GET|/?generic_probe_139=1|generic_probe_139,id,cat,author|Generated generic query route 139
+GET|/generic/index.php?option=component140|option,id,view,task|Generated generic component route 140
+POST|/generic/admin/post-141|action,id,order_id,status|Generated generic admin post route 141
+GET|/generic/search/142|q,order,dir,page|Generated generic search route 142
+GET|/generic/modules/mod-143/endpoint.php|id,module,lang,state|Generated generic module endpoint 143
+GET|/generic/admin/panel-144|id,page,tab,sort|Generated generic admin panel route 144
+GET|/generic/api/v1/items/145|id,search,page,limit|Generated generic api route 145
+POST|/generic/ajax/action-146|action,id,user_id,token|Generated generic ajax action route 146
+GET|/?generic_probe_147=1|generic_probe_147,id,cat,author|Generated generic query route 147
+GET|/generic/index.php?option=component148|option,id,view,task|Generated generic component route 148
+POST|/generic/admin/post-149|action,id,order_id,status|Generated generic admin post route 149
+GET|/generic/search/150|q,order,dir,page|Generated generic search route 150
+GET|/generic/modules/mod-151/endpoint.php|id,module,lang,state|Generated generic module endpoint 151
+GET|/generic/admin/panel-152|id,page,tab,sort|Generated generic admin panel route 152
+GET|/generic/api/v1/items/153|id,search,page,limit|Generated generic api route 153
+POST|/generic/ajax/action-154|action,id,user_id,token|Generated generic ajax action route 154
+GET|/?generic_probe_155=1|generic_probe_155,id,cat,author|Generated generic query route 155
+GET|/generic/index.php?option=component156|option,id,view,task|Generated generic component route 156
+POST|/generic/admin/post-157|action,id,order_id,status|Generated generic admin post route 157
+GET|/generic/search/158|q,order,dir,page|Generated generic search route 158
+GET|/generic/modules/mod-159/endpoint.php|id,module,lang,state|Generated generic module endpoint 159
+GET|/generic/admin/panel-160|id,page,tab,sort|Generated generic admin panel route 160
+GET|/generic/api/v1/items/161|id,search,page,limit|Generated generic api route 161
+POST|/generic/ajax/action-162|action,id,user_id,token|Generated generic ajax action route 162
+GET|/?generic_probe_163=1|generic_probe_163,id,cat,author|Generated generic query route 163
+GET|/generic/index.php?option=component164|option,id,view,task|Generated generic component route 164
+POST|/generic/admin/post-165|action,id,order_id,status|Generated generic admin post route 165
+GET|/generic/search/166|q,order,dir,page|Generated generic search route 166
+GET|/generic/modules/mod-167/endpoint.php|id,module,lang,state|Generated generic module endpoint 167
+GET|/generic/admin/panel-168|id,page,tab,sort|Generated generic admin panel route 168
+GET|/generic/api/v1/items/169|id,search,page,limit|Generated generic api route 169
+POST|/generic/ajax/action-170|action,id,user_id,token|Generated generic ajax action route 170
+GET|/?generic_probe_171=1|generic_probe_171,id,cat,author|Generated generic query route 171
+GET|/generic/index.php?option=component172|option,id,view,task|Generated generic component route 172
+POST|/generic/admin/post-173|action,id,order_id,status|Generated generic admin post route 173
+GET|/generic/search/174|q,order,dir,page|Generated generic search route 174
+GET|/generic/modules/mod-175/endpoint.php|id,module,lang,state|Generated generic module endpoint 175
+GET|/generic/admin/panel-176|id,page,tab,sort|Generated generic admin panel route 176
+GET|/generic/api/v1/items/177|id,search,page,limit|Generated generic api route 177
+POST|/generic/ajax/action-178|action,id,user_id,token|Generated generic ajax action route 178
+GET|/?generic_probe_179=1|generic_probe_179,id,cat,author|Generated generic query route 179
+GET|/generic/index.php?option=component180|option,id,view,task|Generated generic component route 180
+POST|/generic/admin/post-181|action,id,order_id,status|Generated generic admin post route 181
+GET|/generic/search/182|q,order,dir,page|Generated generic search route 182
+GET|/generic/modules/mod-183/endpoint.php|id,module,lang,state|Generated generic module endpoint 183
+GET|/generic/admin/panel-184|id,page,tab,sort|Generated generic admin panel route 184
+GET|/generic/api/v1/items/185|id,search,page,limit|Generated generic api route 185
+POST|/generic/ajax/action-186|action,id,user_id,token|Generated generic ajax action route 186
+GET|/?generic_probe_187=1|generic_probe_187,id,cat,author|Generated generic query route 187
+GET|/generic/index.php?option=component188|option,id,view,task|Generated generic component route 188
+POST|/generic/admin/post-189|action,id,order_id,status|Generated generic admin post route 189
+GET|/generic/search/190|q,order,dir,page|Generated generic search route 190
+GET|/generic/modules/mod-191/endpoint.php|id,module,lang,state|Generated generic module endpoint 191
+GET|/generic/admin/panel-192|id,page,tab,sort|Generated generic admin panel route 192
+GET|/generic/api/v1/items/193|id,search,page,limit|Generated generic api route 193
+POST|/generic/ajax/action-194|action,id,user_id,token|Generated generic ajax action route 194
+GET|/?generic_probe_195=1|generic_probe_195,id,cat,author|Generated generic query route 195
+GET|/generic/index.php?option=component196|option,id,view,task|Generated generic component route 196
+POST|/generic/admin/post-197|action,id,order_id,status|Generated generic admin post route 197
+GET|/generic/search/198|q,order,dir,page|Generated generic search route 198
+GET|/generic/modules/mod-199/endpoint.php|id,module,lang,state|Generated generic module endpoint 199
+GET|/generic/admin/panel-200|id,page,tab,sort|Generated generic admin panel route 200
+GET|/generic/api/v1/items/201|id,search,page,limit|Generated generic api route 201
+POST|/generic/ajax/action-202|action,id,user_id,token|Generated generic ajax action route 202
+GET|/?generic_probe_203=1|generic_probe_203,id,cat,author|Generated generic query route 203
+GET|/generic/index.php?option=component204|option,id,view,task|Generated generic component route 204
+POST|/generic/admin/post-205|action,id,order_id,status|Generated generic admin post route 205
+GET|/generic/search/206|q,order,dir,page|Generated generic search route 206
+GET|/generic/modules/mod-207/endpoint.php|id,module,lang,state|Generated generic module endpoint 207
+GET|/generic/admin/panel-208|id,page,tab,sort|Generated generic admin panel route 208
+GET|/generic/api/v1/items/209|id,search,page,limit|Generated generic api route 209
+POST|/generic/ajax/action-210|action,id,user_id,token|Generated generic ajax action route 210
+GET|/?generic_probe_211=1|generic_probe_211,id,cat,author|Generated generic query route 211
+GET|/generic/index.php?option=component212|option,id,view,task|Generated generic component route 212
+POST|/generic/admin/post-213|action,id,order_id,status|Generated generic admin post route 213
+GET|/generic/search/214|q,order,dir,page|Generated generic search route 214
+GET|/generic/modules/mod-215/endpoint.php|id,module,lang,state|Generated generic module endpoint 215
+GET|/generic/admin/panel-216|id,page,tab,sort|Generated generic admin panel route 216
+GET|/generic/api/v1/items/217|id,search,page,limit|Generated generic api route 217
+POST|/generic/ajax/action-218|action,id,user_id,token|Generated generic ajax action route 218
+GET|/?generic_probe_219=1|generic_probe_219,id,cat,author|Generated generic query route 219
+GET|/generic/index.php?option=component220|option,id,view,task|Generated generic component route 220
+POST|/generic/admin/post-221|action,id,order_id,status|Generated generic admin post route 221
+GET|/generic/search/222|q,order,dir,page|Generated generic search route 222
+GET|/generic/modules/mod-223/endpoint.php|id,module,lang,state|Generated generic module endpoint 223
+GET|/generic/admin/panel-224|id,page,tab,sort|Generated generic admin panel route 224
+GET|/generic/api/v1/items/225|id,search,page,limit|Generated generic api route 225
+POST|/generic/ajax/action-226|action,id,user_id,token|Generated generic ajax action route 226
+GET|/?generic_probe_227=1|generic_probe_227,id,cat,author|Generated generic query route 227
+GET|/generic/index.php?option=component228|option,id,view,task|Generated generic component route 228
+POST|/generic/admin/post-229|action,id,order_id,status|Generated generic admin post route 229
+GET|/generic/search/230|q,order,dir,page|Generated generic search route 230
+GET|/generic/modules/mod-231/endpoint.php|id,module,lang,state|Generated generic module endpoint 231
+GET|/generic/admin/panel-232|id,page,tab,sort|Generated generic admin panel route 232
+GET|/generic/api/v1/items/233|id,search,page,limit|Generated generic api route 233
+POST|/generic/ajax/action-234|action,id,user_id,token|Generated generic ajax action route 234
+GET|/?generic_probe_235=1|generic_probe_235,id,cat,author|Generated generic query route 235
+GET|/generic/index.php?option=component236|option,id,view,task|Generated generic component route 236
+POST|/generic/admin/post-237|action,id,order_id,status|Generated generic admin post route 237
+GET|/generic/search/238|q,order,dir,page|Generated generic search route 238
+GET|/generic/modules/mod-239/endpoint.php|id,module,lang,state|Generated generic module endpoint 239
+GET|/generic/admin/panel-240|id,page,tab,sort|Generated generic admin panel route 240
+GET|/generic/api/v1/items/241|id,search,page,limit|Generated generic api route 241
+POST|/generic/ajax/action-242|action,id,user_id,token|Generated generic ajax action route 242
+GET|/?generic_probe_243=1|generic_probe_243,id,cat,author|Generated generic query route 243
+GET|/generic/index.php?option=component244|option,id,view,task|Generated generic component route 244
+POST|/generic/admin/post-245|action,id,order_id,status|Generated generic admin post route 245
+GET|/generic/search/246|q,order,dir,page|Generated generic search route 246
+GET|/generic/modules/mod-247/endpoint.php|id,module,lang,state|Generated generic module endpoint 247
+GET|/generic/admin/panel-248|id,page,tab,sort|Generated generic admin panel route 248
+GET|/generic/api/v1/items/249|id,search,page,limit|Generated generic api route 249
+POST|/generic/ajax/action-250|action,id,user_id,token|Generated generic ajax action route 250
+GET|/?generic_probe_251=1|generic_probe_251,id,cat,author|Generated generic query route 251
+GET|/generic/index.php?option=component252|option,id,view,task|Generated generic component route 252
+POST|/generic/admin/post-253|action,id,order_id,status|Generated generic admin post route 253
+GET|/generic/search/254|q,order,dir,page|Generated generic search route 254
+GET|/generic/modules/mod-255/endpoint.php|id,module,lang,state|Generated generic module endpoint 255
+GET|/generic/admin/panel-256|id,page,tab,sort|Generated generic admin panel route 256
+GET|/generic/api/v1/items/257|id,search,page,limit|Generated generic api route 257
+POST|/generic/ajax/action-258|action,id,user_id,token|Generated generic ajax action route 258
+GET|/?generic_probe_259=1|generic_probe_259,id,cat,author|Generated generic query route 259
+GET|/generic/index.php?option=component260|option,id,view,task|Generated generic component route 260
+POST|/generic/admin/post-261|action,id,order_id,status|Generated generic admin post route 261
+GET|/generic/search/262|q,order,dir,page|Generated generic search route 262
+GET|/generic/modules/mod-263/endpoint.php|id,module,lang,state|Generated generic module endpoint 263
+GET|/generic/admin/panel-264|id,page,tab,sort|Generated generic admin panel route 264
+GET|/generic/api/v1/items/265|id,search,page,limit|Generated generic api route 265
+POST|/generic/ajax/action-266|action,id,user_id,token|Generated generic ajax action route 266
+GET|/?generic_probe_267=1|generic_probe_267,id,cat,author|Generated generic query route 267
+GET|/generic/index.php?option=component268|option,id,view,task|Generated generic component route 268
+POST|/generic/admin/post-269|action,id,order_id,status|Generated generic admin post route 269
+GET|/generic/search/270|q,order,dir,page|Generated generic search route 270
+GET|/generic/modules/mod-271/endpoint.php|id,module,lang,state|Generated generic module endpoint 271
+GET|/generic/admin/panel-272|id,page,tab,sort|Generated generic admin panel route 272
+GET|/generic/api/v1/items/273|id,search,page,limit|Generated generic api route 273
+POST|/generic/ajax/action-274|action,id,user_id,token|Generated generic ajax action route 274
+GET|/?generic_probe_275=1|generic_probe_275,id,cat,author|Generated generic query route 275
+GET|/generic/index.php?option=component276|option,id,view,task|Generated generic component route 276
+POST|/generic/admin/post-277|action,id,order_id,status|Generated generic admin post route 277
+GET|/generic/search/278|q,order,dir,page|Generated generic search route 278
+GET|/generic/modules/mod-279/endpoint.php|id,module,lang,state|Generated generic module endpoint 279
+GET|/generic/admin/panel-280|id,page,tab,sort|Generated generic admin panel route 280
+GET|/generic/api/v1/items/281|id,search,page,limit|Generated generic api route 281
+POST|/generic/ajax/action-282|action,id,user_id,token|Generated generic ajax action route 282
+GET|/?generic_probe_283=1|generic_probe_283,id,cat,author|Generated generic query route 283
+GET|/generic/index.php?option=component284|option,id,view,task|Generated generic component route 284
+POST|/generic/admin/post-285|action,id,order_id,status|Generated generic admin post route 285
+GET|/generic/search/286|q,order,dir,page|Generated generic search route 286
+GET|/generic/modules/mod-287/endpoint.php|id,module,lang,state|Generated generic module endpoint 287
+GET|/generic/admin/panel-288|id,page,tab,sort|Generated generic admin panel route 288
+GET|/generic/api/v1/items/289|id,search,page,limit|Generated generic api route 289
+POST|/generic/ajax/action-290|action,id,user_id,token|Generated generic ajax action route 290
+GET|/?generic_probe_291=1|generic_probe_291,id,cat,author|Generated generic query route 291
+GET|/generic/index.php?option=component292|option,id,view,task|Generated generic component route 292
+POST|/generic/admin/post-293|action,id,order_id,status|Generated generic admin post route 293
+GET|/generic/search/294|q,order,dir,page|Generated generic search route 294
+GET|/generic/modules/mod-295/endpoint.php|id,module,lang,state|Generated generic module endpoint 295
+GET|/generic/admin/panel-296|id,page,tab,sort|Generated generic admin panel route 296
+GET|/generic/api/v1/items/297|id,search,page,limit|Generated generic api route 297
+POST|/generic/ajax/action-298|action,id,user_id,token|Generated generic ajax action route 298
+GET|/?generic_probe_299=1|generic_probe_299,id,cat,author|Generated generic query route 299
+GET|/generic/index.php?option=component300|option,id,view,task|Generated generic component route 300
+POST|/generic/admin/post-301|action,id,order_id,status|Generated generic admin post route 301
+GET|/generic/search/302|q,order,dir,page|Generated generic search route 302
+GET|/generic/modules/mod-303/endpoint.php|id,module,lang,state|Generated generic module endpoint 303
+GET|/generic/admin/panel-304|id,page,tab,sort|Generated generic admin panel route 304
+GET|/generic/api/v1/items/305|id,search,page,limit|Generated generic api route 305
+POST|/generic/ajax/action-306|action,id,user_id,token|Generated generic ajax action route 306
+GET|/?generic_probe_307=1|generic_probe_307,id,cat,author|Generated generic query route 307
+GET|/generic/index.php?option=component308|option,id,view,task|Generated generic component route 308
+POST|/generic/admin/post-309|action,id,order_id,status|Generated generic admin post route 309
+GET|/generic/search/310|q,order,dir,page|Generated generic search route 310
+GET|/generic/modules/mod-311/endpoint.php|id,module,lang,state|Generated generic module endpoint 311
+GET|/generic/admin/panel-312|id,page,tab,sort|Generated generic admin panel route 312
+GET|/generic/api/v1/items/313|id,search,page,limit|Generated generic api route 313
+POST|/generic/ajax/action-314|action,id,user_id,token|Generated generic ajax action route 314
+GET|/?generic_probe_315=1|generic_probe_315,id,cat,author|Generated generic query route 315
+GET|/generic/index.php?option=component316|option,id,view,task|Generated generic component route 316
+POST|/generic/admin/post-317|action,id,order_id,status|Generated generic admin post route 317
+GET|/generic/search/318|q,order,dir,page|Generated generic search route 318
+GET|/generic/modules/mod-319/endpoint.php|id,module,lang,state|Generated generic module endpoint 319
+GET|/generic/admin/panel-320|id,page,tab,sort|Generated generic admin panel route 320
+GET|/generic/api/v1/items/321|id,search,page,limit|Generated generic api route 321
+POST|/generic/ajax/action-322|action,id,user_id,token|Generated generic ajax action route 322
+GET|/?generic_probe_323=1|generic_probe_323,id,cat,author|Generated generic query route 323
+GET|/generic/index.php?option=component324|option,id,view,task|Generated generic component route 324
+POST|/generic/admin/post-325|action,id,order_id,status|Generated generic admin post route 325
+GET|/generic/search/326|q,order,dir,page|Generated generic search route 326
+GET|/generic/modules/mod-327/endpoint.php|id,module,lang,state|Generated generic module endpoint 327
+GET|/generic/admin/panel-328|id,page,tab,sort|Generated generic admin panel route 328
+GET|/generic/api/v1/items/329|id,search,page,limit|Generated generic api route 329
+POST|/generic/ajax/action-330|action,id,user_id,token|Generated generic ajax action route 330
+GET|/?generic_probe_331=1|generic_probe_331,id,cat,author|Generated generic query route 331
+GET|/generic/index.php?option=component332|option,id,view,task|Generated generic component route 332
+POST|/generic/admin/post-333|action,id,order_id,status|Generated generic admin post route 333
+GET|/generic/search/334|q,order,dir,page|Generated generic search route 334
+GET|/generic/modules/mod-335/endpoint.php|id,module,lang,state|Generated generic module endpoint 335
+GET|/generic/admin/panel-336|id,page,tab,sort|Generated generic admin panel route 336
+GET|/generic/api/v1/items/337|id,search,page,limit|Generated generic api route 337
+POST|/generic/ajax/action-338|action,id,user_id,token|Generated generic ajax action route 338
+GET|/?generic_probe_339=1|generic_probe_339,id,cat,author|Generated generic query route 339
+GET|/generic/index.php?option=component340|option,id,view,task|Generated generic component route 340
+POST|/generic/admin/post-341|action,id,order_id,status|Generated generic admin post route 341
+GET|/generic/search/342|q,order,dir,page|Generated generic search route 342
+GET|/generic/modules/mod-343/endpoint.php|id,module,lang,state|Generated generic module endpoint 343
+GET|/generic/admin/panel-344|id,page,tab,sort|Generated generic admin panel route 344
+GET|/generic/api/v1/items/345|id,search,page,limit|Generated generic api route 345
+POST|/generic/ajax/action-346|action,id,user_id,token|Generated generic ajax action route 346
+GET|/?generic_probe_347=1|generic_probe_347,id,cat,author|Generated generic query route 347
+GET|/generic/index.php?option=component348|option,id,view,task|Generated generic component route 348
+POST|/generic/admin/post-349|action,id,order_id,status|Generated generic admin post route 349
+GET|/generic/search/350|q,order,dir,page|Generated generic search route 350
+GET|/generic/modules/mod-351/endpoint.php|id,module,lang,state|Generated generic module endpoint 351
+GET|/generic/admin/panel-352|id,page,tab,sort|Generated generic admin panel route 352
+GET|/generic/api/v1/items/353|id,search,page,limit|Generated generic api route 353
+POST|/generic/ajax/action-354|action,id,user_id,token|Generated generic ajax action route 354
+GET|/?generic_probe_355=1|generic_probe_355,id,cat,author|Generated generic query route 355
+GET|/generic/index.php?option=component356|option,id,view,task|Generated generic component route 356
+POST|/generic/admin/post-357|action,id,order_id,status|Generated generic admin post route 357
+GET|/generic/search/358|q,order,dir,page|Generated generic search route 358
+GET|/generic/modules/mod-359/endpoint.php|id,module,lang,state|Generated generic module endpoint 359
+GET|/generic/admin/panel-360|id,page,tab,sort|Generated generic admin panel route 360
+GET|/generic/api/v1/items/361|id,search,page,limit|Generated generic api route 361
+POST|/generic/ajax/action-362|action,id,user_id,token|Generated generic ajax action route 362
+GET|/?generic_probe_363=1|generic_probe_363,id,cat,author|Generated generic query route 363
+GET|/generic/index.php?option=component364|option,id,view,task|Generated generic component route 364
+POST|/generic/admin/post-365|action,id,order_id,status|Generated generic admin post route 365
+GET|/generic/search/366|q,order,dir,page|Generated generic search route 366
+GET|/generic/modules/mod-367/endpoint.php|id,module,lang,state|Generated generic module endpoint 367
+GET|/generic/admin/panel-368|id,page,tab,sort|Generated generic admin panel route 368
+GET|/generic/api/v1/items/369|id,search,page,limit|Generated generic api route 369
+POST|/generic/ajax/action-370|action,id,user_id,token|Generated generic ajax action route 370
+GET|/?generic_probe_371=1|generic_probe_371,id,cat,author|Generated generic query route 371
+GET|/generic/index.php?option=component372|option,id,view,task|Generated generic component route 372
+POST|/generic/admin/post-373|action,id,order_id,status|Generated generic admin post route 373
+GET|/generic/search/374|q,order,dir,page|Generated generic search route 374
+GET|/generic/modules/mod-375/endpoint.php|id,module,lang,state|Generated generic module endpoint 375
+GET|/generic/admin/panel-376|id,page,tab,sort|Generated generic admin panel route 376
+GET|/generic/api/v1/items/377|id,search,page,limit|Generated generic api route 377
+POST|/generic/ajax/action-378|action,id,user_id,token|Generated generic ajax action route 378
+GET|/?generic_probe_379=1|generic_probe_379,id,cat,author|Generated generic query route 379
+GET|/generic/index.php?option=component380|option,id,view,task|Generated generic component route 380
+POST|/generic/admin/post-381|action,id,order_id,status|Generated generic admin post route 381
+GET|/generic/search/382|q,order,dir,page|Generated generic search route 382
+GET|/generic/modules/mod-383/endpoint.php|id,module,lang,state|Generated generic module endpoint 383
+GET|/generic/admin/panel-384|id,page,tab,sort|Generated generic admin panel route 384
+GET|/generic/api/v1/items/385|id,search,page,limit|Generated generic api route 385
+POST|/generic/ajax/action-386|action,id,user_id,token|Generated generic ajax action route 386
+GET|/?generic_probe_387=1|generic_probe_387,id,cat,author|Generated generic query route 387
+GET|/generic/index.php?option=component388|option,id,view,task|Generated generic component route 388
+POST|/generic/admin/post-389|action,id,order_id,status|Generated generic admin post route 389
+GET|/generic/search/390|q,order,dir,page|Generated generic search route 390
+GET|/generic/modules/mod-391/endpoint.php|id,module,lang,state|Generated generic module endpoint 391
+GET|/generic/admin/panel-392|id,page,tab,sort|Generated generic admin panel route 392
+GET|/generic/api/v1/items/393|id,search,page,limit|Generated generic api route 393
+POST|/generic/ajax/action-394|action,id,user_id,token|Generated generic ajax action route 394
+GET|/?generic_probe_395=1|generic_probe_395,id,cat,author|Generated generic query route 395
+GET|/generic/index.php?option=component396|option,id,view,task|Generated generic component route 396
+POST|/generic/admin/post-397|action,id,order_id,status|Generated generic admin post route 397
+GET|/generic/search/398|q,order,dir,page|Generated generic search route 398
+GET|/generic/modules/mod-399/endpoint.php|id,module,lang,state|Generated generic module endpoint 399
+GET|/generic/admin/panel-400|id,page,tab,sort|Generated generic admin panel route 400
+GET|/generic/api/v1/items/401|id,search,page,limit|Generated generic api route 401
+POST|/generic/ajax/action-402|action,id,user_id,token|Generated generic ajax action route 402
+GET|/?generic_probe_403=1|generic_probe_403,id,cat,author|Generated generic query route 403
+GET|/generic/index.php?option=component404|option,id,view,task|Generated generic component route 404
+POST|/generic/admin/post-405|action,id,order_id,status|Generated generic admin post route 405
+GET|/generic/search/406|q,order,dir,page|Generated generic search route 406
+GET|/generic/modules/mod-407/endpoint.php|id,module,lang,state|Generated generic module endpoint 407
+GET|/generic/admin/panel-408|id,page,tab,sort|Generated generic admin panel route 408
+GET|/generic/api/v1/items/409|id,search,page,limit|Generated generic api route 409
+POST|/generic/ajax/action-410|action,id,user_id,token|Generated generic ajax action route 410
+GET|/?generic_probe_411=1|generic_probe_411,id,cat,author|Generated generic query route 411
+GET|/generic/index.php?option=component412|option,id,view,task|Generated generic component route 412
+POST|/generic/admin/post-413|action,id,order_id,status|Generated generic admin post route 413
+GET|/generic/search/414|q,order,dir,page|Generated generic search route 414
+GET|/generic/modules/mod-415/endpoint.php|id,module,lang,state|Generated generic module endpoint 415
+GET|/generic/admin/panel-416|id,page,tab,sort|Generated generic admin panel route 416
+GET|/generic/api/v1/items/417|id,search,page,limit|Generated generic api route 417
+POST|/generic/ajax/action-418|action,id,user_id,token|Generated generic ajax action route 418
+GET|/?generic_probe_419=1|generic_probe_419,id,cat,author|Generated generic query route 419
+GET|/generic/index.php?option=component420|option,id,view,task|Generated generic component route 420
+POST|/generic/admin/post-421|action,id,order_id,status|Generated generic admin post route 421
+GET|/generic/search/422|q,order,dir,page|Generated generic search route 422
+GET|/generic/modules/mod-423/endpoint.php|id,module,lang,state|Generated generic module endpoint 423
+GET|/generic/admin/panel-424|id,page,tab,sort|Generated generic admin panel route 424
+GET|/generic/api/v1/items/425|id,search,page,limit|Generated generic api route 425
+POST|/generic/ajax/action-426|action,id,user_id,token|Generated generic ajax action route 426
+GET|/?generic_probe_427=1|generic_probe_427,id,cat,author|Generated generic query route 427
+GET|/generic/index.php?option=component428|option,id,view,task|Generated generic component route 428
+POST|/generic/admin/post-429|action,id,order_id,status|Generated generic admin post route 429
+GET|/generic/search/430|q,order,dir,page|Generated generic search route 430
+GET|/generic/modules/mod-431/endpoint.php|id,module,lang,state|Generated generic module endpoint 431
+GET|/generic/admin/panel-432|id,page,tab,sort|Generated generic admin panel route 432
+GET|/generic/api/v1/items/433|id,search,page,limit|Generated generic api route 433
+POST|/generic/ajax/action-434|action,id,user_id,token|Generated generic ajax action route 434
+GET|/?generic_probe_435=1|generic_probe_435,id,cat,author|Generated generic query route 435
+GET|/generic/index.php?option=component436|option,id,view,task|Generated generic component route 436
+POST|/generic/admin/post-437|action,id,order_id,status|Generated generic admin post route 437
+GET|/generic/search/438|q,order,dir,page|Generated generic search route 438
+GET|/generic/modules/mod-439/endpoint.php|id,module,lang,state|Generated generic module endpoint 439
+GET|/generic/admin/panel-440|id,page,tab,sort|Generated generic admin panel route 440
+GET|/generic/api/v1/items/441|id,search,page,limit|Generated generic api route 441
+POST|/generic/ajax/action-442|action,id,user_id,token|Generated generic ajax action route 442
+GET|/?generic_probe_443=1|generic_probe_443,id,cat,author|Generated generic query route 443
+GET|/generic/index.php?option=component444|option,id,view,task|Generated generic component route 444
+POST|/generic/admin/post-445|action,id,order_id,status|Generated generic admin post route 445
+GET|/generic/search/446|q,order,dir,page|Generated generic search route 446
+GET|/generic/modules/mod-447/endpoint.php|id,module,lang,state|Generated generic module endpoint 447
+GET|/generic/admin/panel-448|id,page,tab,sort|Generated generic admin panel route 448
+GET|/generic/api/v1/items/449|id,search,page,limit|Generated generic api route 449
+POST|/generic/ajax/action-450|action,id,user_id,token|Generated generic ajax action route 450
+GET|/?generic_probe_451=1|generic_probe_451,id,cat,author|Generated generic query route 451
+GET|/generic/index.php?option=component452|option,id,view,task|Generated generic component route 452
+POST|/generic/admin/post-453|action,id,order_id,status|Generated generic admin post route 453
+GET|/generic/search/454|q,order,dir,page|Generated generic search route 454
+GET|/generic/modules/mod-455/endpoint.php|id,module,lang,state|Generated generic module endpoint 455
+GET|/generic/admin/panel-456|id,page,tab,sort|Generated generic admin panel route 456
+GET|/generic/api/v1/items/457|id,search,page,limit|Generated generic api route 457
+POST|/generic/ajax/action-458|action,id,user_id,token|Generated generic ajax action route 458
+GET|/?generic_probe_459=1|generic_probe_459,id,cat,author|Generated generic query route 459
+GET|/generic/index.php?option=component460|option,id,view,task|Generated generic component route 460
+POST|/generic/admin/post-461|action,id,order_id,status|Generated generic admin post route 461
+GET|/generic/search/462|q,order,dir,page|Generated generic search route 462
+GET|/generic/modules/mod-463/endpoint.php|id,module,lang,state|Generated generic module endpoint 463
+GET|/generic/admin/panel-464|id,page,tab,sort|Generated generic admin panel route 464
+GET|/generic/api/v1/items/465|id,search,page,limit|Generated generic api route 465
+POST|/generic/ajax/action-466|action,id,user_id,token|Generated generic ajax action route 466
+GET|/?generic_probe_467=1|generic_probe_467,id,cat,author|Generated generic query route 467
+GET|/generic/index.php?option=component468|option,id,view,task|Generated generic component route 468
+POST|/generic/admin/post-469|action,id,order_id,status|Generated generic admin post route 469
+GET|/generic/search/470|q,order,dir,page|Generated generic search route 470
+GET|/generic/modules/mod-471/endpoint.php|id,module,lang,state|Generated generic module endpoint 471
+GET|/generic/admin/panel-472|id,page,tab,sort|Generated generic admin panel route 472
+GET|/generic/api/v1/items/473|id,search,page,limit|Generated generic api route 473
+POST|/generic/ajax/action-474|action,id,user_id,token|Generated generic ajax action route 474

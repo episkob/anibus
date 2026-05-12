@@ -50,6 +50,25 @@ public class SubdomainEnumerationService {
             "support", "ticket", "crm", "erp"
     };
 
+    private volatile List<String> customWordlist = List.of();
+
+    /**
+     * Override built-in brute-force dictionary with a custom wordlist.
+     * Pass null/empty to restore default list.
+     */
+    public void setCustomWordlist(List<String> words) {
+        if (words == null || words.isEmpty()) {
+            customWordlist = List.of();
+            return;
+        }
+        customWordlist = words.stream()
+                .map(String::trim)
+                .map(String::toLowerCase)
+                .filter(s -> !s.isEmpty())
+                .distinct()
+                .toList();
+    }
+
     public record SubdomainResult(
             String subdomain,
             String resolvedIp,
@@ -72,7 +91,8 @@ public class SubdomainEnumerationService {
 
         // ── Phase 1: crt.sh ────────────────────────────────────────────
         List<String> fromCrt = queryCrtSh(rootDomain);
-        int total = fromCrt.size() + (brute ? WORDLIST.length : 0);
+        List<String> bruteWords = resolveBruteforceWordlist();
+        int total = fromCrt.size() + (brute ? bruteWords.size() : 0);
         int done  = 0;
 
         for (String host : fromCrt) {
@@ -88,7 +108,7 @@ public class SubdomainEnumerationService {
 
         // ── Phase 2: DNS brute-force ───────────────────────────────────
         if (brute) {
-            for (String word : WORDLIST) {
+            for (String word : bruteWords) {
                 String fqdn = word + "." + rootDomain;
                 if (seen.add(fqdn)) {
                     SubdomainResult r = resolveAndBuild(fqdn, "brute-force");
@@ -101,6 +121,13 @@ public class SubdomainEnumerationService {
 
         results.sort((a, b) -> a.subdomain().compareToIgnoreCase(b.subdomain()));
         return results;
+    }
+
+    private List<String> resolveBruteforceWordlist() {
+        if (customWordlist != null && !customWordlist.isEmpty()) {
+            return customWordlist;
+        }
+        return List.of(WORDLIST);
     }
 
     // ── crt.sh API ────────────────────────────────────────────────────────

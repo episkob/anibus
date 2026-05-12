@@ -3,6 +3,8 @@ package it.r2u.anibus.service.network.proxy;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Predicate;
 
 /**
  * Selects the optimal proxy for a given target IP based on geographic proximity.
@@ -39,44 +41,111 @@ class GeoRoutingStrategy {
             Map.entry("AU", List.of("NZ", "SG", "JP"))
     );
 
+            /**
+             * Regions where direct same-country proxy usage is often unstable.
+             * For these targets, prefer transit countries first.
+             */
+            private static final Set<String> RESTRICTED_TARGETS = Set.of("RU");
+
+            /** Preferred transit countries for restricted targets (ordered). */
+            private static final Map<String, List<String>> TRANSIT_ROUTES = Map.of(
+                "RU", List.of("FI", "EE", "LV", "LT", "PL", "DE", "NL", "SE", "NO", "TR", "GE", "KZ")
+            );
+
     GeoRoutingStrategy(ProxyPool pool) {
         this.pool = pool;
     }
 
-    /**
-     * Select the best proxy for a given target IP.
-     *
-     * @param targetIp IP address of the scan target
-     * @return optimal ProxyNode, or empty if pool has no live proxies
-     */
-    Optional<ProxyNode> selectBest(String targetIp) {
+    Optional<ProxyNode> selectBest(String targetIp,
+                                   Set<String> excludedCountries,
+                                   ProxySelectionPolicy policy) {
         String targetCountry = resolveCountryCode(targetIp);
-        return selectBestForCountry(targetCountry);
+        return selectBestForCountry(targetCountry, excludedCountries, policy);
     }
 
     /**
      * Select best proxy for an explicit country code.
      * Exposed for unit testing and manual override.
      */
-    Optional<ProxyNode> selectBestForCountry(String countryCode) {
+    Optional<ProxyNode> selectBestForCountry(String countryCode, Set<String> excludedCountries) {
+        return selectBestForCountry(countryCode, excludedCountries, ProxySelectionPolicy.defaultPolicy());
+        }
+
+        Optional<ProxyNode> selectBestForCountry(String countryCode,
+                             Set<String> excludedCountries,
+                             ProxySelectionPolicy policy) {
+        ProxySelectionPolicy effectivePolicy =
+            policy != null ? policy : ProxySelectionPolicy.defaultPolicy();
+        Set<String> excluded = excludedCountries != null ? excludedCountries : Set.of();
+        Set<String> blocked = effectivePolicy.blockedCountries();
+        Predicate<ProxyNode> allowed = node -> isAllowed(node, excluded, blocked, effectivePolicy);
+
+        Optional<ProxyNode> preferred = bestFromCountries(
+            effectivePolicy.preferredCountries(),
+            allowed);
+        if (preferred.isPresent()) return preferred;
+
+        // 0. Transit preference for restricted regions
+        if (RESTRICTED_TARGETS.contains(countryCode) && !effectivePolicy.allowRestrictedSameCountry()) {
+            Optional<ProxyNode> transit = bestFromCountries(
+                    TRANSIT_ROUTES.getOrDefault(countryCode, List.of()),
+                allowed);
+            if (transit.isPresent()) return transit;
+        }
+
         // 1. Same country
-        Optional<ProxyNode> same = pool.bestByCountry(countryCode);
-        if (same.isPresent()) return same;
+        if ((!RESTRICTED_TARGETS.contains(countryCode) || effectivePolicy.allowRestrictedSameCountry())
+            && !excluded.contains(countryCode)
+            && !blocked.contains(countryCode)) {
+            Optional<ProxyNode> same = pool.getByCountry(countryCode).stream()
+                .filter(allowed)
+                .min(java.util.Comparator.comparingLong(ProxyNode::latencyMs));
+            if (same.isPresent()) return same;
+        }
 
         // 2. Neighbouring country — pick the fastest across all neighbours
         List<String> neighbors = NEIGHBORS.getOrDefault(countryCode, List.of());
-        Optional<ProxyNode> neighbor = neighbors.stream()
-                .map(pool::bestByCountry)
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .min(java.util.Comparator.comparingLong(ProxyNode::latencyMs));
+        Optional<ProxyNode> neighbor = bestFromCountries(neighbors, allowed);
         if (neighbor.isPresent()) return neighbor;
 
         // 3. Global fallback — fastest from "XX" (unknown) or any country
-        Optional<ProxyNode> unknown = pool.bestByCountry("XX");
+        Optional<ProxyNode> unknown = (!effectivePolicy.preferUnknownCountryFallback()
+                || excluded.contains("XX")
+                || blocked.contains("XX"))
+                ? Optional.empty()
+                : pool.getByCountry("XX").stream()
+                .filter(allowed)
+                .min(java.util.Comparator.comparingLong(ProxyNode::latencyMs));
         if (unknown.isPresent()) return unknown;
 
-        return pool.bestOverall();
+        return bestOverallExcluding(allowed);
+    }
+
+    private Optional<ProxyNode> bestFromCountries(List<String> countries, Predicate<ProxyNode> allowed) {
+        return countries.stream()
+                .map(pool::getByCountry)
+                .flatMap(Set::stream)
+                .filter(allowed)
+                .min(java.util.Comparator.comparingLong(ProxyNode::latencyMs));
+    }
+
+    private Optional<ProxyNode> bestOverallExcluding(Predicate<ProxyNode> allowed) {
+        return pool.availableCountries().stream()
+                .map(pool::getByCountry)
+                .flatMap(Set::stream)
+                .filter(allowed)
+                .min(java.util.Comparator.comparingLong(ProxyNode::latencyMs));
+    }
+
+    private boolean isAllowed(ProxyNode node,
+                              Set<String> excluded,
+                              Set<String> blocked,
+                              ProxySelectionPolicy policy) {
+        if (!node.isAlive()) return false;
+        if (excluded.contains(node.countryCode())) return false;
+        if (blocked.contains(node.countryCode())) return false;
+        if (!policy.allowedTypes().contains(node.type())) return false;
+        return node.latencyMs() <= policy.maxLatencyMs();
     }
 
     /**

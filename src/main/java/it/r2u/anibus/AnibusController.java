@@ -1,8 +1,9 @@
 package it.r2u.anibus;
 
-import java.net.URI;
-import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 import it.r2u.anibus.coordinator.ScanCoordinator;
@@ -18,6 +19,8 @@ import it.r2u.anibus.handlers.SecurityAnalysisHandler;
 import it.r2u.anibus.handlers.StatisticsHandler;
 import it.r2u.anibus.handlers.TopologyHandler;
 import it.r2u.anibus.handlers.TracerouteActionHandler;
+import it.r2u.anibus.model.EndpointInfo;
+import it.r2u.anibus.model.JavaScriptAnalysisResult;
 import it.r2u.anibus.model.PortScanResult;
 import it.r2u.anibus.network.HostResolver;
 import it.r2u.anibus.network.NetworkStatusMonitor;
@@ -25,16 +28,13 @@ import it.r2u.anibus.service.analysis.ApiSecurityModeService;
 import it.r2u.anibus.service.analysis.CorsChecker;
 import it.r2u.anibus.service.analysis.DirectoryBruteforcer;
 import it.r2u.anibus.service.analysis.GraphqlScanner;
-import it.r2u.anibus.service.analysis.HeartbleedChecker;
 import it.r2u.anibus.service.analysis.JavaScriptSecurityAnalyzer;
 import it.r2u.anibus.service.analysis.JwtAnalyzer;
-import it.r2u.anibus.service.analysis.Log4ShellChecker;
 import it.r2u.anibus.service.analysis.ParamMinerService;
 import it.r2u.anibus.service.analysis.PassiveReconService;
 import it.r2u.anibus.service.analysis.SQLInjectionAnalyzer;
 import it.r2u.anibus.service.analysis.SecretsValidationService;
 import it.r2u.anibus.service.analysis.SourceMapAnalyzer;
-import it.r2u.anibus.service.analysis.Spring4ShellChecker;
 import it.r2u.anibus.service.analysis.SsrfDetector;
 import it.r2u.anibus.service.analysis.SubdomainTakeoverChecker;
 import it.r2u.anibus.service.analysis.WebSocketDetector;
@@ -91,6 +91,7 @@ import javafx.scene.input.KeyCombination;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.Circle;
+import javafx.stage.FileChooser;
 
 /**
  * Refactored UI controller following SOLID principles.
@@ -135,12 +136,9 @@ public class AnibusController {
         XxeDetector xxeDetector,
         SubdomainTakeoverChecker takeoverChecker,
         DnsZoneTransferService dnsAxfrService,
-        Log4ShellChecker log4ShellChecker,
-        Spring4ShellChecker spring4ShellChecker,
         WebSocketDetector webSocketDetector,
         HttpProtocolDetector httpProtocolDetector,
-        AsnLookupService asnLookupService,
-        HeartbleedChecker heartbleedChecker
+        AsnLookupService asnLookupService
     ) {}
 
     /* -- FXML fields ------------------------------------------ */
@@ -166,7 +164,6 @@ public class AnibusController {
     @FXML private Label             infoAvgLatencyLabel;
 
     /* -- JavaScript Analysis FXML fields ---------------------- */
-    @FXML private CheckBox          jsAnalysisCheckBox;
     @FXML private VBox              jsResultsCard;
     @FXML private Label             jsEndpointsLabel;
     @FXML private Label             jsDataStructuresLabel;
@@ -174,8 +171,10 @@ public class AnibusController {
     @FXML private Label             jsSensitiveInfoLabel;
     @FXML private Label             jsArchitectureLabel;
     @FXML private Button            jsExportButton;
-    @FXML private CheckBox          jsInjectionCheckBox;
+    @FXML private Button            jsAnalysisRunButton;
     @FXML private TreeView<String>  jsStructureTree;
+    @FXML private TextArea          jsAnalysisTextArea;
+    @FXML private Button            sqlInjectionRunButton;
     @FXML private TextArea          sqlInjectionTextArea;
     
     /* -- Unified Console FXML fields ------------------------- */
@@ -184,16 +183,12 @@ public class AnibusController {
 
     /* -- i18n: configuration menu + translatable labels ------ */
     @FXML private MenuButton configMenuButton;
+    @FXML private MenuButton actionsMenuButton;
     @FXML private Button aboutButton;
     @FXML private Label  sectionScanTargetLabel;
     @FXML private Label  labelTargetKey;
     @FXML private Label  labelPortRangeKey;
     @FXML private Label  labelThreadsKey;
-    @FXML private Label  labelOptionsKey;
-    @FXML private Label  optionJsTitle;
-    @FXML private Label  optionJsDesc;
-    @FXML private Label  optionSqlTitle;
-    @FXML private Label  optionSqlDesc;
     @FXML private Label  sectionHostInfoLabel;
     @FXML private Label  keyIpAddressLabel;
     @FXML private Label  keyHostnameLabel;
@@ -201,6 +196,10 @@ public class AnibusController {
     @FXML private Label  keyPortsScannedLabel;
     @FXML private Label  keyOpenPortsLabel;
     @FXML private Label  keyAvgLatencyLabel;
+    @FXML private Label  wordlistStatusTitleLabel;
+    @FXML private Label  wordlistSubdomainStatusLabel;
+    @FXML private Label  wordlistSqlStatusLabel;
+    @FXML private Label  wordlistEndpointStatusLabel;
     @FXML private Tab    tabScanResults;
     @FXML private Tab    tabJsAnalysis;
     @FXML private Tab    tabSqlInjection;
@@ -222,6 +221,9 @@ public class AnibusController {
     @FXML private Button   clearProxyButton;
     @FXML private Button   loadProxyButton;
     @FXML private Button   rotateProxyButton;
+    @FXML private CheckBox proxyTransportAutoCheckBox;
+    @FXML private CheckBox proxyTransportTorCheckBox;
+    @FXML private CheckBox proxyTransportOtherOnionCheckBox;
     @FXML private Label    proxyStatCandidates;
     @FXML private Label    proxyStatLive;
     @FXML private Label    proxyStatCountries;
@@ -250,6 +252,8 @@ public class AnibusController {
     private final CoreServices coreServices;
     private final ObservableList<PortScanResult> results = FXCollections.observableArrayList();
     private boolean scanningInProgress = false;
+    private boolean sqlInjectionInProgress = false;
+    private Task<Map<String, List<SQLInjectionAnalyzer.InjectionResult>>> sqlInjectionTask;
     
     /* -- Core services (Dependency Injection candidates) ------ */
     private PortScannerService     scanner;
@@ -281,16 +285,18 @@ public class AnibusController {
     private XxeDetector xxeDetector;
     private SubdomainTakeoverChecker takeoverChecker;
     private DnsZoneTransferService dnsAxfrService;
-    private Log4ShellChecker log4ShellChecker;
-    private Spring4ShellChecker spring4ShellChecker;
     private WebSocketDetector webSocketDetector;
     private HttpProtocolDetector httpProtocolDetector;
     private AsnLookupService asnLookupService;
-    private HeartbleedChecker heartbleedChecker;
 
     /* -- Console filter state --------------------------------- */
     private String  unfilteredConsoleText = "";
     private boolean isFilteringConsole    = false;
+    private volatile List<String> endpointWordlistEntries = List.of();
+    private volatile String subdomainWordlistStatus = "default";
+    private volatile String sqliWordlistStatus = "default";
+    private volatile String endpointWordlistStatus = "none";
+    private volatile String lastStatusMessage = "";
 
     /* -- Notifications ---------------------------------------- */
     private NotificationService notificationService;
@@ -380,18 +386,12 @@ public class AnibusController {
             ? coreServices.takeoverChecker() : new SubdomainTakeoverChecker();
         dnsAxfrService = coreServices != null && coreServices.dnsAxfrService() != null
             ? coreServices.dnsAxfrService() : new DnsZoneTransferService();
-        log4ShellChecker = coreServices != null && coreServices.log4ShellChecker() != null
-            ? coreServices.log4ShellChecker() : new Log4ShellChecker();
-        spring4ShellChecker = coreServices != null && coreServices.spring4ShellChecker() != null
-            ? coreServices.spring4ShellChecker() : new Spring4ShellChecker();
         webSocketDetector = coreServices != null && coreServices.webSocketDetector() != null
             ? coreServices.webSocketDetector() : new WebSocketDetector();
         httpProtocolDetector = coreServices != null && coreServices.httpProtocolDetector() != null
             ? coreServices.httpProtocolDetector() : new HttpProtocolDetector();
         asnLookupService = coreServices != null && coreServices.asnLookupService() != null
             ? coreServices.asnLookupService() : new AsnLookupService();
-        heartbleedChecker = coreServices != null && coreServices.heartbleedChecker() != null
-            ? coreServices.heartbleedChecker() : new HeartbleedChecker();
         
         // Create and configure UI managers
         Tooltip networkTooltip = new Tooltip("Checking network");
@@ -443,9 +443,6 @@ public class AnibusController {
             .targetHostSupplier(() -> SecurityAnalysisHandler.extractHostOrDomain(hostTextField.getText()))
             .consoleTextSupplier(() -> consoleTextArea.getText())
             .firstScanPortSupplier(() -> results.isEmpty() ? 0 : results.get(0).getPort())
-            .tlsPortSupplier(() -> results.stream()
-                .filter(r -> r.getPort() == 443 || r.getPort() == 8443)
-                .mapToInt(PortScanResult::getPort).findFirst().orElse(443))
             .console(consoleViewManager)
             .progressBar(progressBar)
             .setStatus(this::setStatus)
@@ -460,12 +457,9 @@ public class AnibusController {
             .xxeDetector(xxeDetector)
             .takeoverChecker(takeoverChecker)
             .dnsAxfrService(dnsAxfrService)
-            .log4ShellChecker(log4ShellChecker)
-            .spring4ShellChecker(spring4ShellChecker)
             .webSocketDetector(webSocketDetector)
             .httpProtocolDetector(httpProtocolDetector)
             .asnLookupService(asnLookupService)
-            .heartbleedChecker(heartbleedChecker)
             .apiSecurityModeService(apiSecurityModeService)
             .passiveReconService(passiveReconService)
             .secretsValidationService(secretsValidationService)
@@ -481,13 +475,13 @@ public class AnibusController {
             new JsAnalysisHandler.UIComponents(
                 hostTextField, progressBar, scanButton, stopButton,
                 exportButton, jsExportButton, clearButton,
-                jsInjectionCheckBox, jsResultsCard,
+                jsAnalysisRunButton, jsResultsCard,
                 jsEndpointsLabel, jsDataStructuresLabel, jsDbSchemasLabel,
                 jsSensitiveInfoLabel, jsArchitectureLabel,
-                jsStructureTree, sqlInjectionTextArea, consoleTextArea,
+                jsStructureTree, jsAnalysisTextArea, consoleTextArea,
                 consoleHeaderLabel, resultCountLabel),
-            jsAnalyzer, injectionAnalyzer, exportHandler,
-            consoleViewManager, results, this::setStatus,
+            jsAnalyzer, exportHandler,
+            results, this::setStatus,
             this::resetScanUI);
 
         extraScanHandler = new ExtraScanHandler(
@@ -496,7 +490,7 @@ public class AnibusController {
             () -> jsAnalysisHandler.getLastJsAnalysisResult(),
             udpScannerService, subdomainEnumerationService, sourceMapAnalyzer,
             paramMinerService, scanDiffService, scanSchedulerService,
-            scanHistoryService, injectionAnalyzer, scanner);
+            scanHistoryService, scanner);
 
         proxyTabHandler = new ProxyTabHandler(
             proxyLogArea, activeProxyLabel, proxyStatusDot,
@@ -504,7 +498,9 @@ public class AnibusController {
             proxyStatCandidates, proxyStatLive, proxyStatCountries, proxyPhaseLabel,
             proxyProgressBar, chainDisplayArea, chainDisplayCard,
             proxyAvailableListView, proxyChainListView,
-            hostTextField, resolvedHostLabel, hostResolver);
+                hostTextField, resolvedHostLabel, hostResolver,
+                proxyTransportAutoCheckBox, proxyTransportTorCheckBox,
+                proxyTransportOtherOnionCheckBox);
     }
     
     /**
@@ -562,6 +558,7 @@ public class AnibusController {
         themeMenu.getItems().addAll(themeDark, themeLight);
 
         configMenuButton.getItems().addAll(langMenu, themeMenu);
+        setupActionsMenu();
 
         // Show saved-pool hint on startup
         it.r2u.anibus.service.network.proxy.ProxyStore ps =
@@ -571,6 +568,8 @@ public class AnibusController {
             loadProxyButton.setTooltip(new Tooltip(
                     "Cached pool found: " + ps.getStorePath()));
         }
+
+        refreshWordlistStatusLabels();
     }
     
     /**
@@ -668,6 +667,94 @@ public class AnibusController {
     }
 
     /* -- Context menus ---------------------------------------- */
+    private void setupActionsMenu() {
+        if (actionsMenuButton == null) {
+            return;
+        }
+
+        actionsMenuButton.getItems().setAll(
+            buildDiscoveryMenu(),
+            buildSecurityMenu(),
+            buildNetworkMenu(),
+            buildWordlistsMenu(),
+            new SeparatorMenuItem(),
+            createMenuItem("Diff Current Results with XML", this::runDiffMode),
+            createMenuItem("Start Scheduled Scan (custom)", this::startScheduledScan),
+            createMenuItem("Stop Scheduled Scan", this::stopScheduledScan),
+            createMenuItem("Show Scan History", this::runShowScanHistory)
+        );
+    }
+
+    private Menu buildDiscoveryMenu() {
+        Menu menu = createMenu("Discovery");
+        menu.getItems().addAll(
+            createMenuItem("Run Traceroute", () -> tracerouteHandler.runTraceroute(
+                hostTextField.getText(), consoleTextArea, this::renderTopologyGraph)),
+            createMenuItem("UDP Scan (common ports)", this::runUdpScan),
+            createMenuItem("Enumerate Subdomains", this::runSubdomainEnumeration),
+            createMenuItem("Analyze Source Maps", this::runSourceMapAnalysis),
+            createMenuItem("Run Param Miner", this::runParamMiner),
+            createMenuItem("Passive Recon Mode", this::runPassiveRecon),
+            createMenuItem("Validate Secrets and JS Leaks", this::runSecretsValidation)
+        );
+        return menu;
+    }
+
+    private Menu buildSecurityMenu() {
+        Menu menu = createMenu("Security");
+        menu.getItems().addAll(
+            createMenuItem("API Security Mode (OpenAPI/Swagger)", this::runApiSecurityMode),
+            createMenuItem("XSS Scan (reflected)", this::runXssScan),
+            createMenuItem("XSS on JS Endpoints", this::runXssScanOnJsEndpoints),
+            createMenuItem("CORS Misconfiguration Check", this::runCorsCheck),
+            createMenuItem("JWT Analyzer (from JS)", this::runJwtAnalysis),
+            createMenuItem("SSRF Detector", this::runSsrfScan),
+            createMenuItem("Directory Bruteforce", this::runDirectoryBruteforce),
+            createMenuItem("GraphQL Introspection", this::runGraphqlScan),
+            createMenuItem("XXE Detector", this::runXxeScan),
+            createMenuItem("Subdomain Takeover Check", this::runTakeoverCheck),
+            createMenuItem("SQL Metadata Extraction", this::runSqlMetadataExtraction)
+        );
+        return menu;
+    }
+
+    private Menu buildWordlistsMenu() {
+        Menu menu = createMenu("Wordlists");
+        menu.getItems().addAll(
+            createMenuItem("Load Subdomain Wordlist", this::loadSubdomainWordlist),
+            createMenuItem("Load SQLi Payload Wordlist", this::loadSqlPayloadWordlist),
+            createMenuItem("Load Endpoint Wordlist", this::loadEndpointWordlist),
+            createMenuItem("Reset All Wordlists", this::resetWordlists)
+        );
+        return menu;
+    }
+
+    private Menu buildNetworkMenu() {
+        Menu menu = createMenu("Network");
+        menu.getItems().addAll(
+            createMenuItem("WHOIS Lookup", this::runWhoisLookup),
+            createMenuItem("SSL/TLS Audit", this::runSslAudit),
+            createMenuItem("DNS Zone Transfer (AXFR)", this::runDnsAxfr),
+            createMenuItem("WebSocket Detector", this::runWebSocketDetect),
+            createMenuItem("HTTP/2 and HTTP/3 Support", this::runHttpProtocolDetect),
+            createMenuItem("ASN Lookup", this::runAsnLookup)
+        );
+        return menu;
+    }
+
+    private Menu createMenu(String text) {
+        Menu menu = new Menu(text);
+        menu.getStyleClass().add("actions-submenu");
+        return menu;
+    }
+
+    private MenuItem createMenuItem(String text, Runnable action) {
+        MenuItem item = new MenuItem(text);
+        item.getStyleClass().add("actions-menu-item");
+        item.setOnAction(e -> action.run());
+        return item;
+    }
+
     private void setupConsoleContextMenu() {
         MenuItem copySelected = new MenuItem("Copy selected text");
         copySelected.setOnAction(e -> clipboardHandler.copySelectedText(consoleTextArea));
@@ -681,115 +768,9 @@ public class AnibusController {
         
         MenuItem copyResults = new MenuItem("Copy results only");
         copyResults.setOnAction(e -> clipboardHandler.copyAllResults(results));
-        
-        MenuItem runTraceroute = new MenuItem("Run Traceroute...");
-        runTraceroute.setOnAction(e -> tracerouteHandler.runTraceroute(
-            hostTextField.getText(), consoleTextArea, this::renderTopologyGraph));
-
-        MenuItem runUdpScan = new MenuItem("Run UDP Scan (common ports)");
-        runUdpScan.setOnAction(e -> runUdpScan());
-
-        MenuItem runSubdomainEnum = new MenuItem("Enumerate Subdomains");
-        runSubdomainEnum.setOnAction(e -> runSubdomainEnumeration());
-
-        MenuItem runSourceMap = new MenuItem("Analyze Source Maps");
-        runSourceMap.setOnAction(e -> runSourceMapAnalysis());
-
-        MenuItem runParamMiner = new MenuItem("Run Param Miner");
-        runParamMiner.setOnAction(e -> runParamMiner());
-
-        MenuItem runApiSecurityMode = new MenuItem("API Security Mode (OpenAPI/Swagger)...");
-        runApiSecurityMode.setOnAction(e -> runApiSecurityMode());
-
-        MenuItem runPassiveRecon = new MenuItem("Passive Recon Mode...");
-        runPassiveRecon.setOnAction(e -> runPassiveRecon());
-        MenuItem runSecretsValidation = new MenuItem("Validate Secrets (JS Leaks)...");
-        runSecretsValidation.setOnAction(e -> runSecretsValidation());
-
-        MenuItem runDiffMode = new MenuItem("Diff Current Results with XML...");
-        runDiffMode.setOnAction(e -> runDiffMode());
-
-        MenuItem startScheduler = new MenuItem("Start Scheduled Scan (30m)");
-        startScheduler.setOnAction(e -> startScheduledScan());
-
-        MenuItem stopScheduler = new MenuItem("Stop Scheduled Scan");
-        stopScheduler.setOnAction(e -> stopScheduledScan());
-
-        MenuItem showHistory = new MenuItem("Show Scan History...");
-        showHistory.setOnAction(e -> runShowScanHistory());
-
-        MenuItem runXssScan = new MenuItem("XSS Scan (reflected)...");
-        runXssScan.setOnAction(e -> runXssScan());
-
-        MenuItem runCorsScan = new MenuItem("CORS Misconfiguration Check...");
-        runCorsScan.setOnAction(e -> runCorsCheck());
-
-        MenuItem runJwtScan = new MenuItem("JWT Analyzer (from JS)...");
-        runJwtScan.setOnAction(e -> runJwtAnalysis());
-
-        MenuItem runSsrfScan = new MenuItem("SSRF Detector...");
-        runSsrfScan.setOnAction(e -> runSsrfScan());
-
-        MenuItem runDirBrute = new MenuItem("Directory Bruteforce...");
-        runDirBrute.setOnAction(e -> runDirectoryBruteforce());
-
-        MenuItem runWhois = new MenuItem("WHOIS Lookup...");
-        runWhois.setOnAction(e -> runWhoisLookup());
-
-        MenuItem runSslAudit = new MenuItem("SSL/TLS Deep Audit...");
-        runSslAudit.setOnAction(e -> runSslAudit());
-
-        MenuItem runGraphql = new MenuItem("GraphQL Introspection...");
-        runGraphql.setOnAction(e -> runGraphqlScan());
-
-        MenuItem runXxe = new MenuItem("XXE Detector...");
-        runXxe.setOnAction(e -> runXxeScan());
-
-        MenuItem runTakeover = new MenuItem("Subdomain Takeover Check...");
-        runTakeover.setOnAction(e -> runTakeoverCheck());
-
-        MenuItem runAxfr = new MenuItem("DNS Zone Transfer (AXFR)...");
-        runAxfr.setOnAction(e -> runDnsAxfr());
-
-        MenuItem runLog4Shell = new MenuItem("Log4Shell Check (CVE-2021-44228)...");
-        runLog4Shell.setOnAction(e -> runLog4ShellCheck());
-
-        MenuItem runSpring4Shell = new MenuItem("Spring4Shell Check (CVE-2022-22965)...");
-        runSpring4Shell.setOnAction(e -> runSpring4ShellCheck());
-
-        MenuItem runWsDetect = new MenuItem("WebSocket Detector...");
-        runWsDetect.setOnAction(e -> runWebSocketDetect());
-
-        MenuItem runHttpProto = new MenuItem("HTTP/2 + HTTP/3 Detector...");
-        runHttpProto.setOnAction(e -> runHttpProtocolDetect());
-
-        MenuItem runAsnLookup = new MenuItem("ASN Lookup...");
-        runAsnLookup.setOnAction(e -> runAsnLookup());
-
-        MenuItem runHeartbleed = new MenuItem("Heartbleed Check (CVE-2014-0160)...");
-        runHeartbleed.setOnAction(e -> runHeartbleedCheck());
-
-        MenuItem runSqlMeta = new MenuItem("SQL Metadata Extraction...");
-        runSqlMeta.setOnAction(e -> runSqlMetadataExtraction());
 
         consoleTextArea.setContextMenu(new ContextMenu(
-            copySelected, copyAll, saveSelected, copyResults,
-            new SeparatorMenuItem(),
-            runTraceroute, runUdpScan, runSubdomainEnum,
-            runSourceMap, runParamMiner, runApiSecurityMode, runPassiveRecon, runSecretsValidation,
-            new SeparatorMenuItem(),
-            runXssScan, runCorsScan, runJwtScan,
-            runSsrfScan, runDirBrute, runWhois,
-            runSslAudit, runGraphql, runXxe,
-            runTakeover, runAxfr, runLog4Shell,
-            runSpring4Shell, runWsDetect, runHttpProto,
-            runAsnLookup, runHeartbleed, runSqlMeta,
-            new SeparatorMenuItem(),
-            runDiffMode,
-            new SeparatorMenuItem(),
-            startScheduler, stopScheduler,
-            new SeparatorMenuItem(),
-            showHistory));
+            copySelected, copyAll, saveSelected, copyResults));
     }
 
     private void setupReadOnlyTextAreaContextMenu(TextArea textArea, String baseFileName) {
@@ -858,56 +839,287 @@ public class AnibusController {
 
     private void runDnsAxfr() { securityAnalysisHandler.runDnsAxfr(); }
 
-    private void runLog4ShellCheck() { securityAnalysisHandler.runLog4ShellCheck(80); }
-
-    private void runSpring4ShellCheck() { securityAnalysisHandler.runSpring4ShellCheck(); }
-
     private void runWebSocketDetect() { securityAnalysisHandler.runWebSocketDetect(80); }
 
     private void runHttpProtocolDetect() { securityAnalysisHandler.runHttpProtocolDetect(80); }
 
-    private List<PortScanResult> runScheduledTcpSnapshot(String host, int startPort, int endPort) {
-        List<PortScanResult> snapshot = new java.util.ArrayList<>();
-        for (int port = startPort; port <= endPort; port++) {
-            long latency = scanner.measurePortLatency(host, port);
-            if (latency < 0) continue;
-            String banner = scanner.getBanner(host, port);
-            String service = scanner.getServiceName(port);
-            String protocol = scanner.getProtocol(port, banner);
-            String version = scanner.extractVersion(banner);
-            snapshot.add(new PortScanResult(port, service, banner, protocol, latency, version, "Open", "Scheduled"));
+    private void runSqlInjectionScan() {
+        String targetUrl = hostTextField.getText().trim();
+
+        if (targetUrl.isEmpty()) {
+            setStatus("Please enter a target URL");
+            return;
         }
-        return snapshot;
+
+        if (!targetUrl.startsWith("http://") && !targetUrl.startsWith("https://")) {
+            targetUrl = "https://" + targetUrl;
+            hostTextField.setText(targetUrl);
+        }
+
+        final String finalTargetUrl = targetUrl;
+        final List<EndpointInfo> endpointCandidates = collectEndpointCandidates(finalTargetUrl);
+
+        sqlInjectionInProgress = true;
+        injectionAnalyzer.resetStopRequest();
+        setStatus("Starting SQL injection scan (" + endpointCandidates.size() + " JS/wordlist endpoint candidates)...");
+        sqlInjectionTask = new Task<>() {
+            @Override
+            protected Map<String, List<SQLInjectionAnalyzer.InjectionResult>> call() {
+                return injectionAnalyzer.fullScan(
+                        endpointCandidates,
+                        finalTargetUrl,
+                        msg -> Platform.runLater(() -> {
+                            setStatus(msg);
+                            if (sqlInjectionTextArea != null) {
+                                sqlInjectionTextArea.appendText("\n" + msg);
+                                sqlInjectionTextArea.setScrollTop(Double.MAX_VALUE);
+                            }
+                        }));
+            }
+        };
+
+        sqlInjectionTask.setOnSucceeded(ev -> {
+            Map<String, List<SQLInjectionAnalyzer.InjectionResult>> injectionResults = sqlInjectionTask.getValue();
+            sqlInjectionTextArea.setText(injectionAnalyzer.formatResults(injectionResults));
+            sqlInjectionTextArea.setScrollTop(0);
+            sqlInjectionInProgress = false;
+            resetScanUI();
+            if (injectionAnalyzer.isStopRequested()) {
+                setStatus("SQL injection scan stopped (partial results shown)");
+            } else {
+                setStatus("SQL injection scan completed");
+            }
+        });
+        sqlInjectionTask.setOnFailed(ev -> {
+            Throwable error = sqlInjectionTask.getException();
+            sqlInjectionTextArea.setText("SQL injection scan failed: " + (error != null ? error.getMessage() : "unknown error"));
+            sqlInjectionInProgress = false;
+            resetScanUI();
+            setStatus("SQL injection scan failed");
+        });
+
+        scanButton.setDisable(true);
+        if (sqlInjectionRunButton != null) sqlInjectionRunButton.setDisable(true);
+        stopButton.setDisable(false);
+        progressBar.setVisible(true);
+        sqlInjectionTextArea.setText("""
+            Running SQL injection scan...
+            Using endpoint candidates from JS analysis and endpoint wordlist: %d
+            """.formatted(endpointCandidates.size()).stripTrailing());
+
+        Thread thread = new Thread(sqlInjectionTask, "sql-injection-scan");
+        thread.setDaemon(true);
+        thread.start();
     }
 
-    private String extractHostOrDomain(String input) {
-        if (input == null) return "";
-        String trimmed = input.trim();
-        if (trimmed.isBlank()) return "";
+    private void runXssScanOnJsEndpoints() {
+        String targetUrl = SecurityAnalysisHandler.ensureHttpUrl(hostTextField.getText());
+        if (targetUrl.isBlank()) {
+            setStatus("Enter a target URL for XSS endpoint scan");
+            return;
+        }
+
+        List<EndpointInfo> endpoints = collectEndpointCandidates(targetUrl);
+        if (endpoints.isEmpty()) {
+            setStatus("No JS or wordlist endpoints available. Run JS analysis or load endpoint wordlist first.");
+            return;
+        }
+
+        Task<List<XssDetector.XssResult>> task = new Task<>() {
+            @Override
+            protected List<XssDetector.XssResult> call() {
+                List<XssDetector.XssResult> findings = new ArrayList<>();
+                int total = endpoints.size();
+                int idx = 0;
+                for (EndpointInfo ep : endpoints) {
+                    String endpointUrl = resolveEndpointUrlForScan(ep, targetUrl);
+                    List<String> params = (ep.getParameters() == null || ep.getParameters().isEmpty())
+                            ? List.of("q", "id", "search")
+                            : ep.getParameters();
+                    findings.addAll(xssDetector.scan(endpointUrl, params, p -> {
+                        // progress is reported per-endpoint below
+                    }));
+                    idx++;
+                    final int done = idx;
+                    Platform.runLater(() -> setStatus("XSS on JS endpoints: " + done + "/" + total + " tested"));
+                }
+                return findings;
+            }
+        };
+
+        progressBar.setVisible(true);
+        scanButton.setDisable(true);
+        stopButton.setDisable(false);
+        setStatus("Starting XSS scan on JS endpoints...");
+
+        task.setOnSucceeded(ev -> {
+            List<XssDetector.XssResult> findings = task.getValue();
+            consoleViewManager.appendRawText("\n=== XSS ON JS ENDPOINTS ===\n");
+            consoleViewManager.appendRawText(XssDetector.formatReport(findings, targetUrl) + "\n");
+            long reflected = findings.stream().filter(XssDetector.XssResult::reflected).count();
+            setStatus("XSS endpoint scan completed: " + reflected + " reflected finding(s)");
+            resetScanUI();
+        });
+
+        task.setOnFailed(ev -> {
+            Throwable error = task.getException();
+            setStatus("XSS endpoint scan failed: " + (error != null ? error.getMessage() : "unknown error"));
+            resetScanUI();
+        });
+
+        Thread thread = new Thread(task, "xss-endpoints-scan");
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private List<EndpointInfo> collectEndpointCandidates(String baseUrl) {
+        LinkedHashMap<String, EndpointInfo> merged = new LinkedHashMap<>();
+
+        JavaScriptAnalysisResult js = jsAnalysisHandler != null ? jsAnalysisHandler.getLastJsAnalysisResult() : null;
+        if (js != null && js.getEndpoints() != null) {
+            for (EndpointInfo endpoint : js.getEndpoints()) {
+                if (endpoint == null) continue;
+                String key = (endpoint.getHttpMethod() == null ? "GET" : endpoint.getHttpMethod()) + "|" + endpoint.getUrl();
+                merged.putIfAbsent(key, endpoint);
+            }
+        }
+
+        for (String entry : endpointWordlistEntries) {
+            String normalizedPath = normalizeEndpointPath(entry);
+            String fullUrl = baseUrl.endsWith("/")
+                    ? baseUrl.substring(0, baseUrl.length() - 1) + normalizedPath
+                    : baseUrl + normalizedPath;
+            EndpointInfo generated = new EndpointInfo(
+                    fullUrl,
+                    baseUrl,
+                    normalizedPath,
+                    "GET",
+                    List.of("id", "q"),
+                    Map.of(),
+                    "endpoint-wordlist",
+                    false
+            );
+            merged.putIfAbsent("GET|" + fullUrl, generated);
+        }
+
+        return List.copyOf(merged.values());
+    }
+
+    private String resolveEndpointUrlForScan(EndpointInfo endpoint, String baseUrl) {
+        if (endpoint == null) return baseUrl;
+        if (endpoint.getUrl() != null && endpoint.getUrl().startsWith("http")) {
+            return endpoint.getUrl();
+        }
+        String path = endpoint.getPath() != null ? endpoint.getPath() : endpoint.getUrl();
+        if (path == null || path.isBlank()) return baseUrl;
+        String normalizedPath = normalizeEndpointPath(path);
+        return baseUrl.endsWith("/")
+                ? baseUrl.substring(0, baseUrl.length() - 1) + normalizedPath
+                : baseUrl + normalizedPath;
+    }
+
+    private String normalizeEndpointPath(String value) {
+        String trimmed = value == null ? "" : value.trim();
+        if (trimmed.isEmpty()) return "/";
+        if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+            return trimmed;
+        }
+        return trimmed.startsWith("/") ? trimmed : "/" + trimmed;
+    }
+
+    private void loadSubdomainWordlist() {
+        List<String> words = chooseWordlist("Choose subdomain wordlist");
+        if (words == null) return;
+        subdomainEnumerationService.setCustomWordlist(words);
+        subdomainWordlistStatus = "custom (" + words.size() + ")";
+        refreshWordlistStatusLabels();
+        setStatus("Loaded subdomain wordlist: " + words.size() + " entries");
+    }
+
+    private void loadSqlPayloadWordlist() {
+        List<String> words = chooseWordlist("Choose SQLi payload wordlist");
+        if (words == null) return;
+        injectionAnalyzer.setCustomPayloads(words);
+        sqliWordlistStatus = "custom (" + words.size() + ")";
+        refreshWordlistStatusLabels();
+        setStatus("Loaded SQLi payload wordlist: " + words.size() + " payloads");
+    }
+
+    private void loadEndpointWordlist() {
+        List<String> words = chooseWordlist("Choose endpoint wordlist");
+        if (words == null) return;
+        endpointWordlistEntries = words;
+        endpointWordlistStatus = "custom (" + words.size() + ")";
+        refreshWordlistStatusLabels();
+        setStatus("Loaded endpoint wordlist: " + words.size() + " entries");
+    }
+
+    private void resetWordlists() {
+        subdomainEnumerationService.setCustomWordlist(List.of());
+        injectionAnalyzer.setCustomPayloads(List.of());
+        endpointWordlistEntries = List.of();
+        subdomainWordlistStatus = "default";
+        sqliWordlistStatus = "default";
+        endpointWordlistStatus = "none";
+        refreshWordlistStatusLabels();
+        setStatus("Wordlists reset to defaults");
+    }
+
+    private List<String> chooseWordlist(String title) {
+        if (hostTextField == null || hostTextField.getScene() == null) {
+            setStatus("UI is not ready for file selection");
+            return null;
+        }
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle(title);
+        chooser.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter("Text files", "*.txt", "*.list", "*.lst", "*.wordlist"),
+                new FileChooser.ExtensionFilter("All files", "*.*")
+        );
+        java.io.File selected = chooser.showOpenDialog(hostTextField.getScene().getWindow());
+        if (selected == null) return null;
         try {
-            String candidate = trimmed;
-            if (!candidate.startsWith("http://") && !candidate.startsWith("https://")) {
-                candidate = "https://" + candidate;
+            List<String> lines = java.nio.file.Files.readAllLines(selected.toPath(), java.nio.charset.StandardCharsets.UTF_8)
+                    .stream()
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty() && !s.startsWith("#"))
+                    .distinct()
+                    .toList();
+            if (lines.isEmpty()) {
+                setStatus("Selected wordlist is empty: " + selected.getName());
+                return null;
             }
-            URI uri = new URI(candidate);
-            if (uri.getHost() != null) {
-                return uri.getHost().trim();
-            }
-        } catch (URISyntaxException ignored) {
-            // Fallback to host sanitizer for raw hostnames/IPs.
+            return lines;
+        } catch (java.io.IOException | SecurityException e) {
+            setStatus("Failed to read wordlist: " + e.getMessage());
+            return null;
         }
-        return hostResolver.sanitizeHost(trimmed);
     }
 
-    private String ensureHttpUrl(String input) {
-        String host = extractHostOrDomain(input);
-        if (host.isBlank()) return "";
-        if (input != null && (input.startsWith("http://") || input.startsWith("https://"))) {
-            return input.trim();
+    private void refreshWordlistStatusLabels() {
+        if (wordlistStatusTitleLabel != null) {
+            wordlistStatusTitleLabel.setText(getWordlistStatusTitle());
         }
-        return "https://" + host;
+        if (wordlistSubdomainStatusLabel != null) {
+            wordlistSubdomainStatusLabel.setText("Subdomain: " + subdomainWordlistStatus);
+        }
+        if (wordlistSqlStatusLabel != null) {
+            wordlistSqlStatusLabel.setText("SQLi payloads: " + sqliWordlistStatus);
+        }
+        if (wordlistEndpointStatusLabel != null) {
+            wordlistEndpointStatusLabel.setText("Endpoints: " + endpointWordlistStatus);
+        }
     }
-    
+
+    private String getWordlistStatusTitle() {
+        LanguageManager.Language lang = LanguageManager.getInstance().getLanguage();
+        return switch (lang) {
+            case RU -> "СТАТУС WORDLIST";
+            case IT -> "STATO WORDLIST";
+            case EN -> "WORDLIST STATUS";
+        };
+    }
+
     private void setupResolvedHostContextMenu() {
         MenuItem copyIP = new MenuItem("Copy");
         copyIP.setOnAction(e -> clipboardHandler.copyResolvedIP(resolvedHostLabel));
@@ -920,9 +1132,8 @@ public class AnibusController {
     private void handleHostFieldFocusLost() {
         String originalHost = hostTextField.getText().trim();
         
-        // Skip sanitization if JS analysis is selected or input looks like a URL
-        if ((jsAnalysisCheckBox != null && jsAnalysisCheckBox.isSelected()) 
-                || originalHost.toLowerCase().startsWith("http://")
+        // Skip sanitization if input looks like a URL
+        if (originalHost.toLowerCase().startsWith("http://")
                 || originalHost.toLowerCase().startsWith("https://")) {
             return;
         }
@@ -943,35 +1154,38 @@ public class AnibusController {
     /* -- FXML button actions ---------------------------------- */
     @FXML
     protected void onScanButtonClick() {
-        boolean runJsAnalysis = jsAnalysisCheckBox != null && jsAnalysisCheckBox.isSelected();
-        boolean runInjections = jsInjectionCheckBox != null && jsInjectionCheckBox.isSelected();
-        
-        if (runJsAnalysis || runInjections) {
-            jsAnalysisHandler.startJsAnalysis();
-        } else {
-            scanningInProgress = true;
-            jsAnalysisHandler.switchToPortScannerMode();
+        scanningInProgress = true;
+        jsAnalysisHandler.switchToPortScannerMode();
 
-            if (proxyTabHandler.getProxyRoutingService() != null
-                    && proxyTabHandler.getProxyRoutingService().isReady()) {
-                String resolvedIp = hostResolver.extractIPFromResolvedText(
-                        resolvedHostLabel.getText());
-                String geoTarget = resolvedIp.isBlank()
-                        ? hostTextField.getText().trim() : resolvedIp;
-                proxyTabHandler.getProxyRoutingService()
-                        .selectProxy(geoTarget)
-                        .ifPresent(proxyTabHandler::updateActiveProxy);
-            }
-
-            consoleViewManager.printScanHeader(
-                    hostTextField.getText(), proxyTabHandler.getCurrentActiveProxy());
-
-            scanActionHandler.startScan(
-                hostTextField.getText(),
-                portsTextField.getText(),
-                threadSpinner.getValue()
-            );
+        if (proxyTabHandler.getProxyRoutingService() != null
+            && proxyTabHandler.getProxyRoutingService().isReady()) {
+            String resolvedIp = hostResolver.extractIPFromResolvedText(
+                resolvedHostLabel.getText());
+            String geoTarget = resolvedIp.isBlank()
+                ? hostTextField.getText().trim() : resolvedIp;
+            proxyTabHandler.getProxyRoutingService()
+                .selectProxy(geoTarget)
+                .ifPresent(proxyTabHandler::updateActiveProxy);
         }
+
+        consoleViewManager.printScanHeader(
+            hostTextField.getText(), proxyTabHandler.getCurrentActiveProxy());
+
+        scanActionHandler.startScan(
+            hostTextField.getText(),
+            portsTextField.getText(),
+            threadSpinner.getValue()
+        );
+        }
+
+        @FXML
+        protected void onJsAnalysisClick() {
+        jsAnalysisHandler.startJsAnalysis();
+    }
+
+    @FXML
+    protected void onSqlInjectionClick() {
+        runSqlInjectionScan();
     }
 
     @FXML
@@ -980,6 +1194,9 @@ public class AnibusController {
             jsAnalysisHandler.cancelCurrentTask();
             setStatus("JavaScript analysis stopped");
             resetScanUI();
+        } else if (sqlInjectionInProgress && sqlInjectionTask != null && !sqlInjectionTask.isDone()) {
+            injectionAnalyzer.requestStop();
+            setStatus("Stopping SQL injection scan...");
         } else {
             scanActionHandler.stopScan();
             scanningInProgress = false;
@@ -1103,13 +1320,6 @@ public class AnibusController {
         labelPortRangeKey.setText(lm.get("label.portRange"));
         portsTextField.setPromptText(lm.get("prompt.ports"));
         labelThreadsKey.setText(lm.get("label.threads"));
-        labelOptionsKey.setText(lm.get("label.options"));
-
-        // Options
-        optionJsTitle.setText(lm.get("option.jsAnalysis"));
-        optionJsDesc.setText(lm.get("option.jsAnalysis.desc"));
-        optionSqlTitle.setText(lm.get("option.sqlInjection"));
-        optionSqlDesc.setText(lm.get("option.sqlInjection.desc"));
 
         // Buttons
         scanButton.setText(lm.get("btn.startScan"));
@@ -1117,6 +1327,7 @@ public class AnibusController {
         exportButton.setText(lm.get("btn.export"));
         clearButton.setText(lm.get("btn.clear"));
         jsExportButton.setText(lm.get("btn.exportAnalysis"));
+        if (jsAnalysisRunButton != null) jsAnalysisRunButton.setText("▶  Run JavaScript Analysis");
 
         // Host Info card
         sectionHostInfoLabel.setText(lm.get("section.hostInfo"));
@@ -1143,14 +1354,14 @@ public class AnibusController {
         loadProxyButton.setText(lm.get("btn.loadFromFile"));
         rotateProxyButton.setText(lm.get("btn.rotateProxy"));
 
-        plannedFeaturesLabel.setText(lm.get("section.plannedFeatures"));
-        udpScanButton.setText(lm.get("btn.udpScan"));
-        subdomainButton.setText(lm.get("btn.subdomains"));
-        sourceMapButton.setText(lm.get("btn.sourceMaps"));
-        paramMinerButton.setText(lm.get("btn.paramMiner"));
-        diffModeButton.setText(lm.get("btn.diffMode"));
-        schedulerStartButton.setText(lm.get("btn.schedulerOn"));
-        schedulerStopButton.setText(lm.get("btn.schedulerOff"));
+        if (plannedFeaturesLabel != null) plannedFeaturesLabel.setText(lm.get("section.plannedFeatures"));
+        if (udpScanButton != null) udpScanButton.setText(lm.get("btn.udpScan"));
+        if (subdomainButton != null) subdomainButton.setText(lm.get("btn.subdomains"));
+        if (sourceMapButton != null) sourceMapButton.setText(lm.get("btn.sourceMaps"));
+        if (paramMinerButton != null) paramMinerButton.setText(lm.get("btn.paramMiner"));
+        if (diffModeButton != null) diffModeButton.setText(lm.get("btn.diffMode"));
+        if (schedulerStartButton != null) schedulerStartButton.setText(lm.get("btn.schedulerOn"));
+        if (schedulerStopButton != null) schedulerStopButton.setText(lm.get("btn.schedulerOff"));
 
         // JS Analysis pane
         placeholderTitleLabel.setText(lm.get("placeholder.noData"));
@@ -1166,6 +1377,9 @@ public class AnibusController {
         jsAnalysisHandler.refreshResultCountLabel();
 
         // Sync language radio selection in config menu
+        if (actionsMenuButton != null) {
+            actionsMenuButton.setText("Actions");
+        }
         configMenuButton.setText(lm.get("menu.configuration"));
         Menu langMenu = (Menu) configMenuButton.getItems().get(0);
         langMenu.setText(lm.get("menu.language"));
@@ -1179,6 +1393,8 @@ public class AnibusController {
                 );
             }
         }
+
+        refreshWordlistStatusLabels();
     }
 
     /* -- UI helpers ------------------------------------------- */
@@ -1191,6 +1407,15 @@ public class AnibusController {
     private void setStatus(String msg) {
         Platform.runLater(() -> {
             if (statusLabel != null) statusLabel.setText(msg);
+            if (msg == null || msg.isBlank() || consoleViewManager == null) {
+                return;
+            }
+            if (msg.equals(lastStatusMessage)) {
+                return;
+            }
+            lastStatusMessage = msg;
+            String ts = java.time.LocalTime.now().withNano(0).toString();
+            consoleViewManager.appendRawText("[" + ts + "] " + msg + "\n");
         });
     }
 
@@ -1218,38 +1443,36 @@ public class AnibusController {
         jsAnalysisHandler.onJsExportClick();
     }
     
-    @FXML
-    void onJsClearClick() {
-        jsAnalysisHandler.onJsClearClick();
-    }
-
     private void resetScanUI() {
         Platform.runLater(() -> {
             scanButton.setDisable(false);
+            if (jsAnalysisRunButton != null) jsAnalysisRunButton.setDisable(false);
+            if (sqlInjectionRunButton != null) sqlInjectionRunButton.setDisable(false);
             stopButton.setDisable(true);
             progressBar.setVisible(false);
         });
     }
     
     /**
-     * Shutdown all services and cleanup resources.
-     * Called when application closes.
+     * Gracefully shuts down all services and background resources.
+     * Called from {@link it.r2u.anibus.AnibusApplication#stop()} when the window closes.
+     * Each service is stopped independently so a failure in one does not block the others.
      */
     public void shutdownExecutor() {
-        if (scanCoordinator != null) {
-            scanCoordinator.shutdown();
-        }
-        if (networkStatusMonitor != null) {
-            networkStatusMonitor.stop();
-        }
-        if (jsAnalyzer != null) {
-            jsAnalyzer.shutdown();
-        }
-        if (injectionAnalyzer != null) {
-            injectionAnalyzer.shutdown();
-        }
-        if (notificationService != null) {
-            notificationService.shutdown();
+        shutdownSafe("ScanCoordinator", () -> { if (scanCoordinator != null) scanCoordinator.shutdown(); });
+        shutdownSafe("NetworkStatusMonitor", () -> { if (networkStatusMonitor != null) networkStatusMonitor.stop(); });
+        shutdownSafe("ScanSchedulerService", () -> { if (scanSchedulerService != null) scanSchedulerService.shutdown(); });
+        shutdownSafe("JavaScriptAnalyzer", () -> { if (jsAnalyzer != null) jsAnalyzer.shutdown(); });
+        shutdownSafe("SQLInjectionAnalyzer", () -> { if (injectionAnalyzer != null) injectionAnalyzer.shutdown(); });
+        shutdownSafe("NotificationService", () -> { if (notificationService != null) notificationService.shutdown(); });
+    }
+
+    /** Runs {@code action}, catching and logging any exception so shutdown continues. */
+    private static void shutdownSafe(String name, Runnable action) {
+        try {
+            action.run();
+        } catch (Exception e) {
+            System.err.println("[SHUTDOWN] " + name + " failed to stop cleanly: " + e.getMessage());
         }
     }
 
@@ -1319,8 +1542,6 @@ public class AnibusController {
     }
 
     private void runAsnLookup() { securityAnalysisHandler.runAsnLookup(); }
-
-    private void runHeartbleedCheck() { securityAnalysisHandler.runHeartbleedCheck(); }
 
     private void runApiSecurityMode() { securityAnalysisHandler.runApiSecurityMode(); }
 }

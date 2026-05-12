@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -18,12 +19,19 @@ public class JwtAnalyzer {
         "eyJ[A-Za-z0-9_-]+\\.eyJ[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]*"
     );
 
+    private static final Pattern TOKEN_STORAGE_PATTERN = Pattern.compile(
+        "(?:localStorage|sessionStorage)\\s*\\.\\s*(?:setItem|getItem)\\s*\\(\\s*['\"](access_token|id_token|refresh_token|jwt|token)['\"]",
+        Pattern.CASE_INSENSITIVE
+    );
+
     public enum JwtRisk { CRITICAL, HIGH, MEDIUM, LOW, INFO }
 
     /** Result for one discovered JWT. */
     public record JwtFinding(
         String token,
         String algorithm,
+        String kid,
+        boolean suspiciousKid,
         boolean noneAlg,
         boolean expiredOrMissing,
         long expTimestamp,
@@ -57,6 +65,29 @@ public class JwtAnalyzer {
             JwtFinding f = analyze(token);
             if (f != null) findings.add(f);
         }
+
+        Matcher storageMatcher = TOKEN_STORAGE_PATTERN.matcher(text);
+        while (storageMatcher.find()) {
+            String key = storageMatcher.group(1).toLowerCase(Locale.ROOT);
+            String syntheticToken = "[storage-key:" + key + "]";
+            if (seen.contains(syntheticToken)) {
+                continue;
+            }
+            seen.add(syntheticToken);
+            findings.add(new JwtFinding(
+                    syntheticToken,
+                    "N/A",
+                    null,
+                    false,
+                    false,
+                    false,
+                    Long.MIN_VALUE,
+                    "{}",
+                    "{}",
+                    JwtRisk.MEDIUM,
+                    "Token-like value is stored in localStorage/sessionStorage under key '" + key + "'"
+            ));
+        }
         return findings;
     }
 
@@ -69,6 +100,8 @@ public class JwtAnalyzer {
         if (headerJson == null || payloadJson == null) return null;
 
         String alg = extractStringField(headerJson, "alg");
+        String kid = extractStringField(headerJson, "kid");
+        boolean suspiciousKid = isSuspiciousKid(kid);
         boolean noneAlg = alg != null && alg.equalsIgnoreCase("none");
 
         long exp = extractLongField(payloadJson, "exp");
@@ -81,6 +114,9 @@ public class JwtAnalyzer {
         if (noneAlg) {
             risk    = JwtRisk.CRITICAL;
             finding = "Algorithm is 'none' — signature is not verified, token can be forged freely";
+        } else if (suspiciousKid) {
+            risk    = JwtRisk.HIGH;
+            finding = "Suspicious 'kid' header value (possible path traversal/SQL injection): " + kid;
         } else if (expiredOrMissing && exp != Long.MIN_VALUE) {
             risk    = JwtRisk.HIGH;
             finding = "Token is expired (exp=" + exp + ") but may still be accepted by vulnerable services";
@@ -95,8 +131,25 @@ public class JwtAnalyzer {
             finding = "Token appears structurally valid (alg=" + alg + ")";
         }
 
-        return new JwtFinding(token, alg, noneAlg, expiredOrMissing, exp,
+        return new JwtFinding(token, alg, kid, suspiciousKid, noneAlg, expiredOrMissing, exp,
                               headerJson, payloadJson, risk, finding);
+    }
+
+    private boolean isSuspiciousKid(String kid) {
+        if (kid == null || kid.isBlank()) {
+            return false;
+        }
+        String normalized = kid.toLowerCase(Locale.ROOT);
+        return normalized.contains("../")
+                || normalized.contains("..\\")
+                || normalized.contains("%2e%2e")
+                || normalized.contains("'")
+                || normalized.contains("\"")
+                || normalized.contains("--")
+                || normalized.contains(" union ")
+                || normalized.contains(" select ")
+                || normalized.contains(" or ")
+                || normalized.contains(";");
     }
 
     private String decodeSegment(String b64url) {
@@ -137,6 +190,9 @@ public class JwtAnalyzer {
         for (JwtFinding f : findings) {
             sb.append("\n  [").append(f.risk()).append("] ").append(f.shortToken()).append("\n");
             sb.append("    alg    : ").append(f.algorithm() != null ? f.algorithm() : "n/a").append("\n");
+            if (f.kid() != null && !f.kid().isBlank()) {
+                sb.append("    kid    : ").append(f.kid()).append("\n");
+            }
             sb.append("    header : ").append(f.headerJson()).append("\n");
             sb.append("    payload: ").append(
                 f.payloadJson().length() > 200 ? f.payloadJson().substring(0, 200) + "…" : f.payloadJson()

@@ -6,14 +6,11 @@ import it.r2u.anibus.network.HostResolver;
 import it.r2u.anibus.service.analysis.CorsChecker;
 import it.r2u.anibus.service.analysis.DirectoryBruteforcer;
 import it.r2u.anibus.service.analysis.GraphqlScanner;
-import it.r2u.anibus.service.analysis.HeartbleedChecker;
 import it.r2u.anibus.service.analysis.JavaScriptSecurityAnalyzer;
 import it.r2u.anibus.service.analysis.JwtAnalyzer;
-import it.r2u.anibus.service.analysis.Log4ShellChecker;
 import it.r2u.anibus.service.analysis.ParamMinerService;
 import it.r2u.anibus.service.analysis.SQLInjectionAnalyzer;
 import it.r2u.anibus.service.analysis.SourceMapAnalyzer;
-import it.r2u.anibus.service.analysis.Spring4ShellChecker;
 import it.r2u.anibus.service.analysis.SsrfDetector;
 import it.r2u.anibus.service.analysis.SubdomainTakeoverChecker;
 import it.r2u.anibus.service.analysis.WebSocketDetector;
@@ -67,12 +64,9 @@ public class AnibusApplication extends Application {
             new XxeDetector(),
             new SubdomainTakeoverChecker(),
             new DnsZoneTransferService(),
-            new Log4ShellChecker(),
-            new Spring4ShellChecker(),
             new WebSocketDetector(),
             new HttpProtocolDetector(),
-            new AsnLookupService(),
-            new HeartbleedChecker()
+            new AsnLookupService()
         );
         fxmlLoader.setControllerFactory(type -> {
             if (type == AnibusController.class) {
@@ -84,7 +78,7 @@ public class AnibusApplication extends Application {
                 throw new IllegalStateException("Cannot create controller: " + type.getName(), e);
             }
         });
-        Scene scene = new Scene(fxmlLoader.load(), 1200, 800);
+        Scene scene = new Scene(fxmlLoader.load(), 1500, 950);
 
         // Apply Anibus design CSS
         scene.getStylesheets().add(AnibusApplication.class.getResource("anibus-style.css").toExternalForm());
@@ -93,8 +87,9 @@ public class AnibusApplication extends Application {
 
         stage.setTitle("Anibus - Port Scanner");
         stage.setScene(scene);
-        stage.setMinWidth(800);
-        stage.setMinHeight(600);
+        stage.setMinWidth(1200);
+        stage.setMinHeight(800);
+        stage.setMaximized(true);
         stage.show();
     }
 

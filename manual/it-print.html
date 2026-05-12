@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Anibus Manuale - Printable IT</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="print-doc">
+  <header class="hero">
+    <div class="hero-inner">
+      <p class="badge">Edizione stampabile • IT</p>
+      <h1>Anibus Security Toolkit - Manuale Operativo</h1>
+      <p class="lead">Versione italiana stampabile. Usa Stampa / Salva come PDF dal browser.</p>
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="toc">
+      <h2>Indice</h2>
+      <a href="#it-chapter-1">Capitolo 1. Primo avvio e setup rapido</a>
+      <a href="#it-chapter-2">Capitolo 2. Architettura dell'interfaccia</a>
+      <a href="#it-chapter-3">Capitolo 3. Flusso di scansione base</a>
+      <a href="#it-chapter-4">Capitolo 4. Azioni in Scan Results</a>
+      <a href="#it-chapter-5">Capitolo 5. Analisi JavaScript e SQL</a>
+      <a href="#it-chapter-6">Capitolo 6. Proxy, Chain Builder, Transport</a>
+      <a href="#it-chapter-7">Capitolo 7. Controlli security e CVE</a>
+      <a href="#it-chapter-8">Capitolo 8. Funzioni rete e infrastruttura</a>
+      <a href="#it-chapter-9">Capitolo 9. Topology e Statistics</a>
+      <a href="#it-chapter-10">Capitolo 10. Export e reportistica</a>
+      <a href="#it-chapter-11">Capitolo 11. Scorciatoie e produttivita</a>
+      <a href="#it-chapter-12">Capitolo 12. Diagnostica e troubleshooting</a>
+      <a href="#it-chapter-13">Capitolo 13. Workflow consigliati</a>
+      <a href="#it-chapter-14">Capitolo 14. Limiti legali e sicurezza</a>
+      <a href="#it-chapter-15">Capitolo 15. Guida amministratore</a>
+      <a href="#it-15-1">15.1 Modello di deployment</a>
+      <a href="#it-15-2">15.2 Profili operativi</a>
+      <a href="#it-15-3">15.3 Hardening</a>
+      <a href="#it-15-4">15.4 Policy proxy</a>
+      <a href="#it-15-5">15.5 Governance operativa</a>
+      <a href="#it-chapter-16">Capitolo 16. Cookbook (playbook)</a>
+      <a href="#it-16-1">16.1 Mappatura superficie esterna</a>
+      <a href="#it-16-2">16.2 Snapshot rischio web</a>
+      <a href="#it-16-3">16.3 Proxy resiliente</a>
+      <a href="#it-16-4">16.4 Drift schedulato</a>
+      <a href="#it-16-5">16.5 Supporto triage incident</a>
+      <a href="#it-chapter-17">Capitolo 17. Catalogo completo funzioni implementate</a>
+    </aside>
+
+    <section class="content">
+      <article id="it-chapter-1" class="card chapter">
+        <h2>Capitolo 1. Primo avvio e setup rapido</h2>
+        <div class="learning-box">
+          <strong>Obiettivi didattici</strong>
+          <ul>
+            <li>Configurare una scansione iniziale stabile e ripetibile.</li>
+            <li>Bilanciare velocita e accuratezza usando THREADS/PORT RANGE.</li>
+            <li>Produrre un report baseline di riferimento.</li>
+          </ul>
+        </div>
+        <ol>
+          <li>Apri Anibus e verifica lo stato Ready.</li>
+          <li>Inserisci TARGET: hostname, IP o URL.</li>
+          <li>Imposta PORT RANGE e THREADS.</li>
+          <li>Abilita JavaScript Analysis e SQL Injection Testing quando necessario.</li>
+          <li>Premi Start Scan.</li>
+        </ol>
+        <div class="practice-box">
+          <strong>Esercizio guidato</strong>
+          <p>Esegui due run sullo stesso target con THREADS 20 e 60. Confronta stabilita, completezza e rumore nel log.</p>
+        </div>
+      </article>
+      <article id="it-chapter-2" class="card chapter"><h2>Capitolo 2. Architettura dell'interfaccia</h2><p>Pannello sinistro per input, pannello destro a tab per output e analisi.</p></article>
+      <article id="it-chapter-3" class="card chapter"><h2>Capitolo 3. Flusso di scansione base</h2><p>Configura target, avvia, osserva i risultati stream, interrompi in sicurezza, esporta.</p></article>
+      <article id="it-chapter-4" class="card chapter">
+        <h2>Capitolo 4. Azioni in Scan Results</h2>
+        <p>Spiegazione pratica per principianti: ogni termine con significato operativo, momento d'uso e risultato.</p>
+        <table class="grid-table">
+          <thead><tr><th>Termine</th><th>Cos'e</th><th>Quando usarlo</th><th>Output atteso</th></tr></thead>
+          <tbody>
+            <tr><td>UDP Scan</td><td>Controllo servizi su protocollo UDP.</td><td>Per trovare servizi non visibili nei test TCP standard.</td><td>Porte UDP raggiungibili e indizi sul servizio.</td></tr>
+            <tr><td>Subdomain</td><td>Enumerazione dei sottodomini del target.</td><td>All'inizio per ampliare superficie esterna.</td><td>Nuovi host da testare e classificare.</td></tr>
+            <tr><td>Source Maps</td><td>Analisi file <code>.map</code> per ricostruire contesto sorgente JS.</td><td>Quando il frontend e minificato.</td><td>Percorsi sorgente, codice recuperato, leak tecnici.</td></tr>
+            <tr><td>Param Miner</td><td>Scoperta parametri nascosti GET/POST via canary.</td><td>Per endpoint con comportamento non documentato.</td><td>Lista parametri sospetti con evidenze.</td></tr>
+            <tr><td>Diff Mode</td><td>Confronto tra scan corrente e precedente.</td><td>Dopo patch/cambi infrastrutturali.</td><td>Delta su porte, servizi e rischio.</td></tr>
+            <tr><td>Scheduler</td><td>Scansione periodica automatica.</td><td>Per monitoraggio continuo e drift detection.</td><td>Timeline storica con variazioni persistenti.</td></tr>
+          </tbody>
+        </table>
+      </article>
+      <article id="it-chapter-5" class="card chapter"><h2>Capitolo 5. Analisi JavaScript e SQL</h2><p>Estrazione endpoint, strutture dati, leak sensibili e report SQL dedicato.</p></article>
+      <article id="it-chapter-6" class="card chapter">
+        <h2>Capitolo 6. Proxy, Chain Builder, Transport</h2>
+        <p>Raccolta pool, rotazione, failover stabile, trasporto Auto/Tor/Other onion.</p>
+        <div class="case-study">
+          <strong>Case Study: Stabilizzazione route proxy</strong>
+          <div class="case-grid">
+            <div class="case-col">
+              <h4>Prima</h4>
+              <p>Timeout frequenti e risultati instabili sotto restrizioni di rete.</p>
+            </div>
+            <div class="case-col">
+              <h4>Errori tipici</h4>
+              <ul>
+                <li>Thread troppo alti su route deboli.</li>
+                <li>Assenza di fallback chain.</li>
+                <li>Nessuna logica di quarantena.</li>
+              </ul>
+            </div>
+            <div class="case-col">
+              <h4>Analisi soluzione</h4>
+              <p>Selettore stabile, trasporto verificato e rotazione guidata hanno migliorato affidabilita e ripetibilita.</p>
+            </div>
+          </div>
+        </div>
+      </article>
+      <article id="it-chapter-7" class="card chapter"><h2>Capitolo 7. Controlli security e CVE</h2><p>XSS, SSRF, XXE, CORS, JWT, GraphQL, takeover, Log4Shell, Spring4Shell, Heartbleed.</p></article>
+      <article id="it-chapter-8" class="card chapter"><h2>Capitolo 8. Rete e infrastruttura</h2><p>WHOIS, TLS audit, DNS AXFR, HTTP/2-3, WebSocket, ASN, drift scheduler.</p></article>
+      <article id="it-chapter-9" class="card chapter"><h2>Capitolo 9. Topology e Statistics</h2><p>Mappa hop e dashboard grafica di stati/servizi/rischio.</p></article>
+      <article id="it-chapter-10" class="card chapter"><h2>Capitolo 10. Export e report</h2><p>Esporta risultati in output condivisibili e usa history/diff per narrativa tecnica.</p></article>
+      <article id="it-chapter-11" class="card chapter"><h2>Capitolo 11. Scorciatoie</h2><p>F5, Escape, Ctrl+S, Ctrl+L, Ctrl+F.</p></article>
+      <article id="it-chapter-12" class="card chapter"><h2>Capitolo 12. Troubleshooting</h2><p>Testo poco visibile, proxy instabili, endpoint onion non disponibili, falsi positivi.</p></article>
+      <article id="it-chapter-13" class="card chapter"><h2>Capitolo 13. Workflow consigliati</h2><p>Pre-assessment rapido, web triage, modalita rete limitata.</p></article>
+      <article id="it-chapter-14" class="card warning chapter"><h2>Capitolo 14. Limiti legali</h2><p>Usa Anibus solo su target autorizzati in uno scope approvato.</p></article>
+
+      <article id="it-chapter-15" class="card chapter">
+        <h2>Capitolo 15. Guida amministratore (deployment, profili, hardening)</h2>
+        <h3 id="it-15-1">15.1 Modello di deployment</h3>
+        <p>Distribuire Anibus su workstation controllate, separate da sessioni amministrative di produzione.</p>
+        <h3 id="it-15-2">15.2 Profili operativi</h3>
+        <table class="grid-table">
+          <thead><tr><th>Profilo</th><th>Obiettivo</th><th>Impostazioni consigliate</th></tr></thead>
+          <tbody>
+            <tr><td>Dev</td><td>Iterazione rapida</td><td>Range ridotto, thread medi, log estesi</td></tr>
+            <tr><td>Stage</td><td>Validazione pre-produzione</td><td>Range medio, export rigoroso, proxy opzionale</td></tr>
+            <tr><td>Audit Prod</td><td>Assessment autorizzato</td><td>Thread conservativi, finestre pianificate</td></tr>
+          </tbody>
+        </table>
+        <ul>
+          <li>Dev: cicli veloci e output verbose.</li>
+          <li>Stage: validazione pre-produzione con policy di export rigorosa.</li>
+          <li>Audit Prod: thread conservativi e finestre pianificate.</li>
+        </ul>
+        <h3 id="it-15-3">15.3 Hardening</h3>
+        <ul>
+          <li>Account least-privilege.</li>
+          <li>Controllo delle rotte in uscita.</li>
+          <li>Protezione delle cartelle history/report.</li>
+          <li>Tracciabilita di autorizzazioni e artefatti.</li>
+        </ul>
+        <h3 id="it-15-4">15.4 Policy proxy</h3>
+        <ul>
+          <li>Preferire pool validati e selettore stabile.</li>
+          <li>Usare Auto transport solo con endpoint onion locali autorizzati.</li>
+          <li>Monitorare streak di errore e quarantena route.</li>
+        </ul>
+        <h3 id="it-15-5">15.5 Governance operativa</h3>
+        <p>Separare ruoli operatore/revisore/approvatore e conservare i report in archivio immutabile.</p>
+        <div class="case-study">
+          <strong>Case Study: Gap di governance</strong>
+          <div class="case-grid">
+            <div class="case-col">
+              <h4>Prima</h4>
+              <p>Difficile ricostruire ownership e autorizzazioni delle esecuzioni.</p>
+            </div>
+            <div class="case-col">
+              <h4>Errori tipici</h4>
+              <ul>
+                <li>Account condivisi.</li>
+                <li>Report senza riferimento ticket.</li>
+                <li>Retention non immutabile.</li>
+              </ul>
+            </div>
+            <div class="case-col">
+              <h4>Analisi soluzione</h4>
+              <p>Ruoli separati e catena di approvazione tracciata hanno eliminato i gap di audit.</p>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article id="it-chapter-16" class="card chapter">
+        <h2>Capitolo 16. Cookbook (playbook pronti)</h2>
+        <div class="summary-box">
+          <strong>Metodo di studio</strong>
+          <p>Scegli un playbook per obiettivo, segui tutti i passaggi e modifica un solo parametro alla volta.</p>
+        </div>
+        <h3 id="it-16-1">Playbook 1: Mappatura superficie esterna</h3>
+        <ol>
+          <li>Target pubblico, range 1-4096, thread 20-40.</li>
+          <li>Esegui scan base + WHOIS + TLS audit.</li>
+          <li>Esporta baseline e marca servizi critici.</li>
+        </ol>
+        <h3 id="it-16-2">Playbook 2: Snapshot rischio web</h3>
+        <ol>
+          <li>Abilita JS Analysis e SQL Testing.</li>
+          <li>Lancia controlli XSS, CORS, JWT, GraphQL.</li>
+          <li>Ordina risultati per confidenza e impatto.</li>
+        </ol>
+        <h3 id="it-16-3">Playbook 3: Operativita proxy resiliente</h3>
+        <ol>
+          <li>Carica pool da file e aggiorna con harvesting.</li>
+          <li>Abilita Auto transport e verifica endpoint onion.</li>
+          <li>Ruota chain su instabilita ripetuta.</li>
+        </ol>
+        <h3 id="it-16-4">Playbook 4: Drift monitor schedulato</h3>
+        <ol>
+          <li>Abilita scheduler nella finestra approvata.</li>
+          <li>Confronta snapshot con Diff Mode.</li>
+          <li>Escalation solo per differenze persistenti.</li>
+        </ol>
+        <h3 id="it-16-5">Playbook 5: Supporto triage incident</h3>
+        <ol>
+          <li>Riduci scope al perimetro incidente.</li>
+          <li>Esegui check rapidi e confronto storico.</li>
+          <li>Esporta report sintetico per SOC.</li>
+        </ol>
+        <div class="case-study">
+          <strong>Case Study: Triage accelerato</strong>
+          <div class="case-grid">
+            <div class="case-col">
+              <h4>Prima</h4>
+              <p>Triage lento per uso sistematico di scansioni complete.</p>
+            </div>
+            <div class="case-col">
+              <h4>Errori tipici</h4>
+              <ul>
+                <li>Nessuna riduzione del perimetro iniziale.</li>
+                <li>Output incident e baseline mischiati.</li>
+                <li>Template handoff assente.</li>
+              </ul>
+            </div>
+            <div class="case-col">
+              <h4>Analisi soluzione</h4>
+              <p>Playbook con scope ristretto e report breve ha ridotto tempi e rumore decisionale.</p>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article id="it-chapter-17" class="card chapter">
+        <h2>Capitolo 17. Catalogo completo funzioni implementate</h2>
+        <ul>
+          <li>Architettura/qualita: wiring DI, test unitari/integrazione, checkstyle Maven.</li>
+          <li>Azioni Scan Results: UDP, Subdomain, SourceMap, Param Miner, Diff, Scheduler.</li>
+          <li>Analisi: Passive Recon, Auth Crawling, API Security Mode, confidence/risk scoring.</li>
+          <li>Controlli security: XSS, SSRF, XXE, CORS, JWT, GraphQL, takeover checks.</li>
+          <li>Rete/infrastruttura: Topology, WHOIS, TLS audit, DNS AXFR, HTTP/2-3, WebSocket, ASN, drift scheduler.</li>
+          <li>CVE/vulnerability: severity groups, link Exploit-DB, Log4Shell, Spring4Shell, Heartbleed.</li>
+          <li>UI/export: proxy chain visual manager, export HTML/PDF, statistics, history compare, hotkeys, tema, notifiche, IPv6.</li>
+          <li>Avanzato: SQL-to-DB extraction e SourceMap exploit context.</li>
+        </ul>
+      </article>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>Anibus printable handbook • manual/it-print.html</p>
+  </footer>
+
+  <script>
+    (function () {
+      function chapterNum(articleId) {
+        const m = /chapter-(\d+)/.exec(articleId || '');
+        return m ? Number(m[1]) : 0;
+      }
+
+      function itGuide(ch, title) {
+        const base = {
+          what: `Guida dettagliata per ${title}.`,
+          steps: [
+            'Leggi obiettivo e prerequisiti del capitolo.',
+            'Esegui le azioni nell\'ordine indicato.',
+            'Valida la qualita output prima dell\'export.'
+          ],
+          mistakes: [
+            'Saltare la validazione baseline.',
+            'Modificare troppi parametri insieme.',
+            'Non confrontare con run precedenti.'
+          ],
+          result: 'Esecuzione ripetibile con evidenze chiare.'
+        };
+        if (ch === 4) {
+          base.what = 'Glossario pratico delle azioni Scan Results per utenti alla prima esperienza.';
+          base.steps = [
+            'Scegli un\'azione in base all\'obiettivo (UDP/Subdomain/SourceMap/etc.).',
+            'Interpreta il risultato prima di lanciare l\'azione successiva.',
+            'Salva finding confermati in report e history.'
+          ];
+        }
+        return base;
+      }
+
+      function injectDetailedChapterGuides() {
+        document.querySelectorAll('article.chapter').forEach((article) => {
+          if (article.querySelector('.deep-guide-box')) return;
+          const h2 = article.querySelector('h2');
+          const title = h2 ? h2.textContent.trim() : 'capitolo';
+          const g = itGuide(chapterNum(article.id), title);
+          const box = document.createElement('div');
+          box.className = 'deep-guide-box';
+          box.innerHTML = `
+            <strong>Guida dettagliata del capitolo</strong>
+            <p>${g.what}</p>
+            <div class="deep-guide-grid">
+              <div class="deep-guide-col">
+                <strong>Passaggi operativi</strong>
+                <ol>${g.steps.map((x) => `<li>${x}</li>`).join('')}</ol>
+              </div>
+              <div class="deep-guide-col">
+                <strong>Errori comuni</strong>
+                <ul>${g.mistakes.map((x) => `<li>${x}</li>`).join('')}</ul>
+              </div>
+            </div>
+            <div class="summary-box"><strong>Risultato atteso</strong><p>${g.result}</p></div>
+          `;
+          article.append(box);
+        });
+      }
+
+      const outcomeTitle = 'Cosa dovresti saper fare dopo il capitolo';
+      const outcomes = [
+        'Spiegare il flusso del capitolo con parole proprie.',
+        'Ripetere i passaggi principali senza aiuti esterni.',
+        'Identificare almeno un rischio prima dell\'export.'
+      ];
+      const quizTitle = 'Domande di controllo';
+      const questions = [
+        'Quale passaggio influenza di piu la qualita del risultato?',
+        'Quale segnale indica che la configurazione va corretta?'
+      ];
+
+      injectDetailedChapterGuides();
+
+      document.querySelectorAll('article.chapter').forEach((article) => {
+        if (article.querySelector('.outcome-box')) return;
+        const outcome = document.createElement('div');
+        outcome.className = 'outcome-box';
+        outcome.innerHTML = `<strong>${outcomeTitle}</strong><ul>${outcomes.map((x) => `<li>${x}</li>`).join('')}</ul>`;
+
+        const quiz = document.createElement('div');
+        quiz.className = 'quiz-box';
+        quiz.innerHTML = `<strong>${quizTitle}</strong><ol>${questions.map((x) => `<li>${x}</li>`).join('')}</ol>`;
+
+        article.append(outcome, quiz);
+      });
+    })();
+  </script>
+</body>
+</html>

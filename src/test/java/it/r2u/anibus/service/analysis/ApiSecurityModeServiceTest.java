@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -18,9 +19,27 @@ class ApiSecurityModeServiceTest {
     @Test
     void discoversOpenApiAndProbesDeclaredEndpoints() throws Exception {
         HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        AtomicInteger rateCounter = new AtomicInteger(0);
         server.createContext("/openapi.json", this::handleSpec);
         server.createContext("/pets", exchange -> send(exchange, 200, "[]"));
         server.createContext("/admin", exchange -> send(exchange, 403, "forbidden"));
+        server.createContext("/ratelimit", exchange -> {
+            if (rateCounter.incrementAndGet() >= 6) {
+                send(exchange, 429, "too many requests");
+            } else {
+                send(exchange, 200, "ok");
+            }
+        });
+        server.createContext("/users/1", exchange -> send(exchange, 200, "{\"id\":1}"));
+        server.createContext("/users/999999", exchange -> send(exchange, 404, "not found"));
+        server.createContext("/profile", exchange -> {
+            String auth = exchange.getRequestHeaders().getFirst("Authorization");
+            if (auth == null || auth.isBlank()) {
+                send(exchange, 401, "unauthorized");
+            } else {
+                send(exchange, 200, "{\"ok\":true}");
+            }
+        });
         server.start();
 
         try {
@@ -43,6 +62,25 @@ class ApiSecurityModeServiceTest {
                 .findFirst()
                 .orElseThrow();
             assertEquals(403, adminGet.statusCode());
+
+            var rateLimit = result.probes().stream()
+                .filter(p -> "GET+RATELIMIT".equals(p.method()) && "/ratelimit".equals(p.path()))
+                .findFirst()
+                .orElseThrow();
+            assertEquals(429, rateLimit.statusCode());
+            assertTrue(rateLimit.note().contains("triggered"));
+
+            var profileAuth = result.probes().stream()
+                .filter(p -> "GET+AUTH".equals(p.method()) && "/profile".equals(p.path()))
+                .findFirst()
+                .orElseThrow();
+            assertEquals(200, profileAuth.statusCode());
+
+            var fuzzProbe = result.probes().stream()
+                .filter(p -> "GET+FUZZ".equals(p.method()) && "/users/1".equals(p.path()))
+                .findFirst()
+                .orElseThrow();
+            assertEquals(200, fuzzProbe.statusCode());
         } finally {
             server.stop(0);
         }
@@ -58,6 +96,15 @@ class ApiSecurityModeServiceTest {
                 },
                 "/admin": {
                   "get": {"summary": "Admin"}
+                                },
+                                "/ratelimit": {
+                                    "get": {"summary": "Rate limit"}
+                                },
+                                "/users/{id}": {
+                                    "get": {"summary": "User by ID"}
+                                },
+                                "/profile": {
+                                    "get": {"summary": "Profile"}
                 }
               }
             }

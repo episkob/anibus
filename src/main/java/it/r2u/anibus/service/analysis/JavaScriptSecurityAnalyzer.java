@@ -166,6 +166,7 @@ public class JavaScriptSecurityAnalyzer {
             
             // Perform analysis based on depth level
             List<EndpointInfo> endpoints = analyzeEndpoints(combinedJs, depth);
+            endpoints = enrichEndpointReachability(targetUrl, endpoints, session);
             List<DataStructureInfo> dataStructures = (depth == AnalysisDepth.BASIC) ? 
                 new ArrayList<>() : analyzeDataStructures(combinedJs);
             List<DatabaseSchemaInfo> databaseSchemas = (depth == AnalysisDepth.BASIC) ? 
@@ -1072,6 +1073,72 @@ public class JavaScriptSecurityAnalyzer {
             unique.putIfAbsent(key, endpoint);
         }
         return new ArrayList<>(unique.values());
+    }
+
+    private List<EndpointInfo> enrichEndpointReachability(String baseUrl, List<EndpointInfo> endpoints, CrawlSession session) {
+        List<EndpointInfo> enriched = new ArrayList<>();
+        if (endpoints == null || endpoints.isEmpty()) {
+            return enriched;
+        }
+
+        for (EndpointInfo endpoint : endpoints) {
+            String probeUrl = endpoint.getUrl() != null && endpoint.getUrl().startsWith("http")
+                    ? endpoint.getUrl()
+                    : resolveUrl(baseUrl, endpoint.getUrl());
+            int status = probeEndpointReachability(probeUrl, endpoint.getHttpMethod(), session);
+            String reachability = "Reachability: " + endpoint.getHttpMethod() + " " + (status == 0 ? "ERR" : status);
+
+            String context = endpoint.getContext();
+            String mergedContext = (context == null || context.isBlank())
+                    ? reachability
+                    : context + " | " + reachability;
+
+            enriched.add(new EndpointInfo(
+                    endpoint.getUrl(),
+                    endpoint.getBaseUrl(),
+                    endpoint.getPath(),
+                    endpoint.getHttpMethod(),
+                    endpoint.getParameters(),
+                    endpoint.getHeaders(),
+                    mergedContext,
+                    endpoint.isDynamic()
+            ));
+        }
+        return enriched;
+    }
+
+    private int probeEndpointReachability(String url, String httpMethod, CrawlSession session) {
+        if (url == null || url.isBlank()) {
+            return 0;
+        }
+        try {
+            String method = httpMethod == null || httpMethod.isBlank() ? "GET" : httpMethod.toUpperCase();
+            HttpURLConnection conn = openConnection(url);
+            conn.setConnectTimeout(TIMEOUT);
+            conn.setReadTimeout(TIMEOUT);
+            conn.setInstanceFollowRedirects(false);
+            conn.setRequestProperty("User-Agent", "Anibus-JS-Reachability/1.0");
+            conn.setRequestProperty("Accept", "*/*");
+            applySession(conn, session);
+
+            conn.setRequestMethod(method);
+            if ("POST".equals(method) || "PUT".equals(method) || "PATCH".equals(method)) {
+                conn.setDoOutput(true);
+                byte[] body = "{}".getBytes(StandardCharsets.UTF_8);
+                conn.setRequestProperty("Content-Type", "application/json");
+                conn.setRequestProperty("Content-Length", String.valueOf(body.length));
+                try (OutputStream output = conn.getOutputStream()) {
+                    output.write(body);
+                }
+            }
+
+            int status = conn.getResponseCode();
+            captureResponseCookies(conn, session);
+            conn.disconnect();
+            return status;
+        } catch (Exception ignored) {
+            return 0;
+        }
     }
 
     private String generateStructureName(DataStructureInfo.DataType type, int index) {

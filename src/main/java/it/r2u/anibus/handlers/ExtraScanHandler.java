@@ -10,7 +10,6 @@ import it.r2u.anibus.model.JavaScriptAnalysisResult;
 import it.r2u.anibus.model.LeakInfo;
 import it.r2u.anibus.model.PortScanResult;
 import it.r2u.anibus.service.analysis.ParamMinerService;
-import it.r2u.anibus.service.analysis.SQLInjectionAnalyzer;
 import it.r2u.anibus.service.analysis.SourceMapAnalyzer;
 import it.r2u.anibus.service.core.PortScannerService;
 import it.r2u.anibus.service.core.ScanHistoryService;
@@ -23,9 +22,11 @@ import javafx.application.Platform;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import javafx.scene.control.Alert;
+import javafx.scene.control.ChoiceDialog;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TextInputDialog;
 import javafx.stage.FileChooser;
 
 /**
@@ -50,7 +51,6 @@ public class ExtraScanHandler {
     private final ScanDiffService scanDiffService;
     private final ScanSchedulerService scanSchedulerService;
     private final ScanHistoryService scanHistoryService;
-    private final SQLInjectionAnalyzer injectionAnalyzer;
     private final PortScannerService scanner;
 
     /** Ports open in the previous scheduled scan — used for drift detection. */
@@ -72,7 +72,6 @@ public class ExtraScanHandler {
             ScanDiffService scanDiffService,
             ScanSchedulerService scanSchedulerService,
             ScanHistoryService scanHistoryService,
-            SQLInjectionAnalyzer injectionAnalyzer,
             PortScannerService scanner) {
         this.hostTextField = hostTextField;
         this.portsTextField = portsTextField;
@@ -89,7 +88,6 @@ public class ExtraScanHandler {
         this.scanDiffService = scanDiffService;
         this.scanSchedulerService = scanSchedulerService;
         this.scanHistoryService = scanHistoryService;
-        this.injectionAnalyzer = injectionAnalyzer;
         this.scanner = scanner;
     }
 
@@ -339,40 +337,39 @@ public class ExtraScanHandler {
         int end = ports[1];
         prevScheduledPorts = null; // reset drift baseline on new schedule
 
-        scanSchedulerService.schedule(java.time.Duration.ofMinutes(30),
-            () -> runScheduledTcpSnapshot(host, start, end),
-            snapshot -> Platform.runLater(() -> {
-                results.setAll(snapshot.results());
-                consoleViewManager.clear();
-                consoleViewManager.appendRawText("=== SCHEDULED SCAN ===\n");
-                snapshot.results().forEach(consoleViewManager::appendToConsole);
-                statusSetter.accept("Scheduled scan finished at " + snapshot.formattedTimestamp() +
-                        " (" + snapshot.results().size() + " open port(s))");
+        ScanSchedulerService.SchedulerOptions options = requestSchedulerOptions();
+        if (options == null) {
+            statusSetter.accept("Scheduler setup cancelled");
+            return;
+        }
 
-                // Security drift detection
-                java.util.Set<Integer> currentPorts = new java.util.HashSet<>();
-                snapshot.results().forEach(r -> currentPorts.add(r.getPort()));
-                if (prevScheduledPorts != null) {
-                    java.util.Set<Integer> opened = new java.util.HashSet<>(currentPorts);
-                    opened.removeAll(prevScheduledPorts);
-                    java.util.Set<Integer> closed = new java.util.HashSet<>(prevScheduledPorts);
-                    closed.removeAll(currentPorts);
-                    if (!opened.isEmpty() || !closed.isEmpty()) {
-                        String msg = buildDriftMessage(host, opened, closed);
-                        consoleViewManager.appendRawText(msg);
-                        Alert alert = new Alert(Alert.AlertType.WARNING);
-                        alert.setTitle("Security Drift Detected");
-                        alert.setHeaderText("Port changes detected on " + host);
-                        alert.setContentText(msg.strip());
-                        alert.show();
-                    }
-                }
-                prevScheduledPorts = currentPorts;
-            }),
-            error -> Platform.runLater(() -> statusSetter.accept("Scheduled scan failed: " + error))
-        );
+        boolean legacyDefaults = options.interval().equals(java.time.Duration.ofMinutes(30))
+            && options.initialDelay().isZero()
+            && !options.fixedDelay()
+            && options.maxRuns() == 0;
 
-        statusSetter.accept("Scheduled scan started (every 30 minutes)");
+        if (legacyDefaults) {
+            scanSchedulerService.schedule(java.time.Duration.ofMinutes(30),
+                    () -> runScheduledTcpSnapshot(host, start, end),
+                    snapshot -> Platform.runLater(() -> handleScheduledSnapshot(host, snapshot)),
+                    error -> Platform.runLater(() -> statusSetter.accept("Scheduled scan failed: " + error))
+            );
+        } else {
+            scanSchedulerService.schedule(options,
+                    () -> runScheduledTcpSnapshot(host, start, end),
+                    snapshot -> Platform.runLater(() -> handleScheduledSnapshot(host, snapshot)),
+                    error -> Platform.runLater(() -> statusSetter.accept("Scheduled scan failed: " + error))
+            );
+        }
+
+        if (legacyDefaults) {
+            statusSetter.accept("Scheduled scan started (every 30 minutes)");
+        } else {
+            statusSetter.accept("Scheduled scan started: every " + options.interval().toMinutes() +
+                " min, delay " + options.initialDelay().toSeconds() +
+                " sec, mode=" + (options.fixedDelay() ? "fixed-delay" : "fixed-rate") +
+                (options.maxRuns() > 0 ? ", maxRuns=" + options.maxRuns() : ", unlimited runs"));
+        }
     }
 
     public void stopScheduledScan() {
@@ -454,5 +451,102 @@ public class ExtraScanHandler {
         String[] parts = host.split("\\.");
         if (parts.length < 2) return host;
         return parts[parts.length - 2] + "." + parts[parts.length - 1];
+    }
+
+    private void handleScheduledSnapshot(String host, ScanSchedulerService.ScanResults snapshot) {
+        results.setAll(snapshot.results());
+        consoleViewManager.clear();
+        consoleViewManager.appendRawText("=== SCHEDULED SCAN ===\n");
+        snapshot.results().forEach(consoleViewManager::appendToConsole);
+        statusSetter.accept("Scheduled scan finished at " + snapshot.formattedTimestamp() +
+                " (" + snapshot.results().size() + " open port(s))");
+
+        java.util.Set<Integer> currentPorts = new java.util.HashSet<>();
+        snapshot.results().forEach(r -> currentPorts.add(r.getPort()));
+        if (prevScheduledPorts != null) {
+            java.util.Set<Integer> opened = new java.util.HashSet<>(currentPorts);
+            opened.removeAll(prevScheduledPorts);
+            java.util.Set<Integer> closed = new java.util.HashSet<>(prevScheduledPorts);
+            closed.removeAll(currentPorts);
+            if (!opened.isEmpty() || !closed.isEmpty()) {
+                String msg = buildDriftMessage(host, opened, closed);
+                consoleViewManager.appendRawText(msg);
+                Alert alert = new Alert(Alert.AlertType.WARNING);
+                alert.setTitle("Security Drift Detected");
+                alert.setHeaderText("Port changes detected on " + host);
+                alert.setContentText(msg.strip());
+                alert.show();
+            }
+        }
+        prevScheduledPorts = currentPorts;
+    }
+
+    private ScanSchedulerService.SchedulerOptions requestSchedulerOptions() {
+        if (java.awt.GraphicsEnvironment.isHeadless()
+            || hostTextField == null
+            || hostTextField.getScene() == null) {
+            return new ScanSchedulerService.SchedulerOptions(
+                java.time.Duration.ofMinutes(30),
+                java.time.Duration.ZERO,
+                false,
+                0
+            );
+        }
+
+        String intervalRaw = promptText(
+                "Scheduler interval",
+                "Enter interval in minutes",
+                "30"
+        );
+        if (intervalRaw == null) return null;
+
+        String delayRaw = promptText(
+                "Scheduler delay",
+                "Enter initial delay in seconds",
+                "0"
+        );
+        if (delayRaw == null) return null;
+
+        String maxRunsRaw = promptText(
+                "Scheduler max runs",
+                "Enter max runs (0 = unlimited)",
+                "0"
+        );
+        if (maxRunsRaw == null) return null;
+
+        ChoiceDialog<String> modeDialog = new ChoiceDialog<>("fixed-rate", List.of("fixed-rate", "fixed-delay"));
+        modeDialog.setTitle("Scheduler mode");
+        modeDialog.setHeaderText("Choose scheduling mode");
+        modeDialog.setContentText("Mode:");
+        var modeOpt = modeDialog.showAndWait();
+        if (modeOpt.isEmpty()) return null;
+
+        long intervalMinutes = parseLongOrDefault(intervalRaw, 30);
+        long initialDelaySeconds = parseLongOrDefault(delayRaw, 0);
+        int maxRuns = (int) parseLongOrDefault(maxRunsRaw, 0);
+        boolean fixedDelay = "fixed-delay".equals(modeOpt.get());
+
+        return new ScanSchedulerService.SchedulerOptions(
+                java.time.Duration.ofMinutes(Math.max(1, intervalMinutes)),
+                java.time.Duration.ofSeconds(Math.max(0, initialDelaySeconds)),
+                fixedDelay,
+                Math.max(0, maxRuns)
+        );
+    }
+
+    private String promptText(String title, String header, String defaultValue) {
+        TextInputDialog dialog = new TextInputDialog(defaultValue);
+        dialog.setTitle(title);
+        dialog.setHeaderText(header);
+        dialog.setContentText("Value:");
+        return dialog.showAndWait().orElse(null);
+    }
+
+    private long parseLongOrDefault(String value, long fallback) {
+        try {
+            return Long.parseLong(value.trim());
+        } catch (NumberFormatException e) {
+            return fallback;
+        }
     }
 }

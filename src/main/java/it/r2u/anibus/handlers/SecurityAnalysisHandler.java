@@ -1,18 +1,32 @@
 package it.r2u.anibus.handlers;
 
-import it.r2u.anibus.model.LeakInfo;
-import it.r2u.anibus.service.analysis.*;
-import it.r2u.anibus.service.network.*;
-import it.r2u.anibus.ui.ConsoleViewManager;
-
-import javafx.concurrent.Task;
-import javafx.scene.control.ProgressBar;
-
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+
+import it.r2u.anibus.model.LeakInfo;
+import it.r2u.anibus.service.analysis.ApiSecurityModeService;
+import it.r2u.anibus.service.analysis.CorsChecker;
+import it.r2u.anibus.service.analysis.DirectoryBruteforcer;
+import it.r2u.anibus.service.analysis.GraphqlScanner;
+import it.r2u.anibus.service.analysis.JwtAnalyzer;
+import it.r2u.anibus.service.analysis.PassiveReconService;
+import it.r2u.anibus.service.analysis.SecretsValidationService;
+import it.r2u.anibus.service.analysis.SsrfDetector;
+import it.r2u.anibus.service.analysis.SubdomainTakeoverChecker;
+import it.r2u.anibus.service.analysis.WebSocketDetector;
+import it.r2u.anibus.service.analysis.XssDetector;
+import it.r2u.anibus.service.analysis.XxeDetector;
+import it.r2u.anibus.service.network.AsnLookupService;
+import it.r2u.anibus.service.network.DnsZoneTransferService;
+import it.r2u.anibus.service.network.HttpProtocolDetector;
+import it.r2u.anibus.service.network.SslTlsAuditor;
+import it.r2u.anibus.service.network.WhoisService;
+import it.r2u.anibus.ui.ConsoleViewManager;
+import javafx.concurrent.Task;
+import javafx.scene.control.ProgressBar;
 
 /**
  * Handles all security analysis scan operations extracted from AnibusController.
@@ -25,7 +39,6 @@ public class SecurityAnalysisHandler {
     private final Supplier<String>  targetHostSupplier;
     private final Supplier<String>  consoleTextSupplier;
     private final Supplier<Integer> firstScanPortSupplier;
-    private final Supplier<Integer> tlsPortSupplier;
     private final ConsoleViewManager console;
     private final ProgressBar        progressBar;
     private final Consumer<String>   setStatus;
@@ -41,12 +54,9 @@ public class SecurityAnalysisHandler {
     private final XxeDetector              xxeDetector;
     private final SubdomainTakeoverChecker  takeoverChecker;
     private final DnsZoneTransferService    dnsAxfrService;
-    private final Log4ShellChecker          log4ShellChecker;
-    private final Spring4ShellChecker       spring4ShellChecker;
     private final WebSocketDetector         webSocketDetector;
     private final HttpProtocolDetector      httpProtocolDetector;
     private final AsnLookupService          asnLookupService;
-    private final HeartbleedChecker         heartbleedChecker;
     private final ApiSecurityModeService    apiSecurityModeService;
     private final PassiveReconService       passiveReconService;
     private final SecretsValidationService  secretsValidationService;
@@ -57,7 +67,6 @@ public class SecurityAnalysisHandler {
         this.targetHostSupplier    = b.targetHostSupplier;
         this.consoleTextSupplier   = b.consoleTextSupplier;
         this.firstScanPortSupplier = b.firstScanPortSupplier;
-        this.tlsPortSupplier       = b.tlsPortSupplier;
         this.console               = b.console;
         this.progressBar           = b.progressBar;
         this.setStatus             = b.setStatus;
@@ -72,12 +81,9 @@ public class SecurityAnalysisHandler {
         this.xxeDetector           = b.xxeDetector;
         this.takeoverChecker       = b.takeoverChecker;
         this.dnsAxfrService        = b.dnsAxfrService;
-        this.log4ShellChecker      = b.log4ShellChecker;
-        this.spring4ShellChecker   = b.spring4ShellChecker;
         this.webSocketDetector     = b.webSocketDetector;
         this.httpProtocolDetector  = b.httpProtocolDetector;
         this.asnLookupService      = b.asnLookupService;
-        this.heartbleedChecker     = b.heartbleedChecker;
         this.apiSecurityModeService   = b.apiSecurityModeService;
         this.passiveReconService      = b.passiveReconService;
         this.secretsValidationService = b.secretsValidationService;
@@ -285,47 +291,10 @@ public class SecurityAnalysisHandler {
         daemon(task, "dns-axfr");
     }
 
-    public void runLog4ShellCheck(int defaultPort) {
-        String host = targetHostSupplier.get();
-        if (host.isBlank()) { setStatus.accept("Enter a target first"); return; }
-        int port = firstScanPortSupplier.get() > 0 ? firstScanPortSupplier.get() : defaultPort;
-        Task<List<Log4ShellChecker.Log4ShellFinding>> task = new Task<>() {
-            @Override protected List<Log4ShellChecker.Log4ShellFinding> call() {
-                return log4ShellChecker.scan(host, port);
-            }
-        };
-        setStatus.accept("Log4Shell check (CVE-2021-44228) against " + host + ":" + port + "\u2026");
-        task.setOnSucceeded(ev -> {
-            List<Log4ShellChecker.Log4ShellFinding> found = task.getValue();
-            console.appendRawText("\n" + Log4ShellChecker.formatReport(found, host) + "\n");
-            setStatus.accept("Log4Shell check complete: " + found.size() + " indicator(s) found");
-        });
-        task.setOnFailed(ev -> setStatus.accept("Log4Shell check error: " + msg(task)));
-        daemon(task, "log4shell-check");
-    }
-
-    public void runSpring4ShellCheck() {
-        String target = targetUrlSupplier.get();
-        if (target.isBlank()) { setStatus.accept("Enter a target URL first"); return; }
-        Task<List<Spring4ShellChecker.Spring4ShellFinding>> task = new Task<>() {
-            @Override protected List<Spring4ShellChecker.Spring4ShellFinding> call() {
-                return spring4ShellChecker.scan(target);
-            }
-        };
-        setStatus.accept("Spring4Shell check (CVE-2022-22965) against " + target + "\u2026");
-        task.setOnSucceeded(ev -> {
-            List<Spring4ShellChecker.Spring4ShellFinding> found = task.getValue();
-            console.appendRawText("\n" + Spring4ShellChecker.formatReport(found, target) + "\n");
-            setStatus.accept("Spring4Shell check complete: " + found.size() + " indicator(s) found");
-        });
-        task.setOnFailed(ev -> setStatus.accept("Spring4Shell error: " + msg(task)));
-        daemon(task, "spring4shell-check");
-    }
-
     public void runWebSocketDetect(int defaultPort) {
         String host = targetHostSupplier.get();
         if (host.isBlank()) { setStatus.accept("Enter a target first"); return; }
-        int port = firstScanPortSupplier.get() > 0 ? firstScanPortSupplier.get() : defaultPort;
+        int port = resolvePort(firstScanPortSupplier, defaultPort);
         Task<List<WebSocketDetector.WsEndpoint>> task = new Task<>() {
             @Override protected List<WebSocketDetector.WsEndpoint> call() {
                 return webSocketDetector.detect(host, port);
@@ -344,7 +313,7 @@ public class SecurityAnalysisHandler {
     public void runHttpProtocolDetect(int defaultPort) {
         String host = targetHostSupplier.get();
         if (host.isBlank()) { setStatus.accept("Enter a target first"); return; }
-        int port = firstScanPortSupplier.get() > 0 ? firstScanPortSupplier.get() : defaultPort;
+        int port = resolvePort(firstScanPortSupplier, defaultPort);
         Task<HttpProtocolDetector.ProtocolResult> task = new Task<>() {
             @Override protected HttpProtocolDetector.ProtocolResult call() {
                 return httpProtocolDetector.detect(host, port);
@@ -383,27 +352,6 @@ public class SecurityAnalysisHandler {
         });
         task.setOnFailed(ev -> setStatus.accept("ASN lookup error: " + msg(task)));
         daemon(task, "asn-lookup");
-    }
-
-    public void runHeartbleedCheck() {
-        String host = targetHostSupplier.get();
-        if (host.isBlank()) { setStatus.accept("Enter a target first"); return; }
-        int port = tlsPortSupplier.get();
-        Task<HeartbleedChecker.HeartbleedResult> task = new Task<>() {
-            @Override protected HeartbleedChecker.HeartbleedResult call() {
-                return heartbleedChecker.check(host, port);
-            }
-        };
-        setStatus.accept("Heartbleed check on " + host + ":" + port + "\u2026");
-        task.setOnSucceeded(ev -> {
-            HeartbleedChecker.HeartbleedResult r = task.getValue();
-            console.appendRawText("\n" + HeartbleedChecker.formatReport(r) + "\n");
-            setStatus.accept(r.vulnerable()
-                ? "\u26a0 VULNERABLE to Heartbleed! CVE-2014-0160"
-                : "Heartbleed check done \u2014 not vulnerable");
-        });
-        task.setOnFailed(ev -> setStatus.accept("Heartbleed check error: " + msg(task)));
-        daemon(task, "heartbleed-check");
     }
 
     public void runApiSecurityMode() {
@@ -492,6 +440,12 @@ public class SecurityAnalysisHandler {
         return ex != null ? ex.getMessage() : "unknown error";
     }
 
+    private static int resolvePort(Supplier<Integer> portSupplier, int defaultPort) {
+        if (portSupplier == null) return defaultPort;
+        Integer value = portSupplier.get();
+        return value != null && value > 0 ? value : defaultPort;
+    }
+
     private static void daemon(Task<?> task, String name) {
         Thread t = new Thread(task, name);
         t.setDaemon(true);
@@ -530,7 +484,6 @@ public class SecurityAnalysisHandler {
         private Supplier<String>  targetHostSupplier;
         private Supplier<String>  consoleTextSupplier;
         private Supplier<Integer> firstScanPortSupplier;
-        private Supplier<Integer> tlsPortSupplier;
         private ConsoleViewManager console;
         private ProgressBar        progressBar;
         private Consumer<String>   setStatus;
@@ -545,12 +498,9 @@ public class SecurityAnalysisHandler {
         private XxeDetector               xxeDetector;
         private SubdomainTakeoverChecker  takeoverChecker;
         private DnsZoneTransferService    dnsAxfrService;
-        private Log4ShellChecker          log4ShellChecker;
-        private Spring4ShellChecker       spring4ShellChecker;
         private WebSocketDetector         webSocketDetector;
         private HttpProtocolDetector      httpProtocolDetector;
         private AsnLookupService          asnLookupService;
-        private HeartbleedChecker         heartbleedChecker;
         private ApiSecurityModeService    apiSecurityModeService;
         private PassiveReconService       passiveReconService;
         private SecretsValidationService  secretsValidationService;
@@ -560,7 +510,6 @@ public class SecurityAnalysisHandler {
         public Builder targetHostSupplier(Supplier<String> s)     { targetHostSupplier = s; return this; }
         public Builder consoleTextSupplier(Supplier<String> s)    { consoleTextSupplier = s; return this; }
         public Builder firstScanPortSupplier(Supplier<Integer> s) { firstScanPortSupplier = s; return this; }
-        public Builder tlsPortSupplier(Supplier<Integer> s)       { tlsPortSupplier = s; return this; }
         public Builder console(ConsoleViewManager c)               { console = c; return this; }
         public Builder progressBar(ProgressBar p)                  { progressBar = p; return this; }
         public Builder setStatus(Consumer<String> s)               { setStatus = s; return this; }
@@ -575,12 +524,9 @@ public class SecurityAnalysisHandler {
         public Builder xxeDetector(XxeDetector x)                 { xxeDetector = x; return this; }
         public Builder takeoverChecker(SubdomainTakeoverChecker t) { takeoverChecker = t; return this; }
         public Builder dnsAxfrService(DnsZoneTransferService d)   { dnsAxfrService = d; return this; }
-        public Builder log4ShellChecker(Log4ShellChecker l)       { log4ShellChecker = l; return this; }
-        public Builder spring4ShellChecker(Spring4ShellChecker s) { spring4ShellChecker = s; return this; }
         public Builder webSocketDetector(WebSocketDetector w)     { webSocketDetector = w; return this; }
         public Builder httpProtocolDetector(HttpProtocolDetector h) { httpProtocolDetector = h; return this; }
         public Builder asnLookupService(AsnLookupService a)       { asnLookupService = a; return this; }
-        public Builder heartbleedChecker(HeartbleedChecker h)     { heartbleedChecker = h; return this; }
         public Builder apiSecurityModeService(ApiSecurityModeService a) { apiSecurityModeService = a; return this; }
         public Builder passiveReconService(PassiveReconService p)  { passiveReconService = p; return this; }
         public Builder secretsValidationService(SecretsValidationService s) { secretsValidationService = s; return this; }

@@ -83,7 +83,7 @@ public class ScanActionHandler {
         int[] ports = scanner.parsePortsRange(portsRange);
         if (ports == null) {
             AlertHelper.show("Invalid range", 
-                "Use format start-end (1-65535), e.g. 1-1024 or 1-65535.",
+                "Use a single port (e.g. 443) or range start-end (1-65535), e.g. 1-1024.",
                 Alert.AlertType.ERROR, cssUrl);
             return;
         }

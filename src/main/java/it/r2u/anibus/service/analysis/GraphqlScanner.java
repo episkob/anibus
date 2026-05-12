@@ -23,6 +23,10 @@ public class GraphqlScanner {
         {"query":"{__schema{queryType{name}mutationType{name}types{name kind fields{name type{name kind ofType{name kind}}}}}}"}
         """.strip();
 
+    private static final String BATCH_PROBE_QUERY = """
+        [{"query":"{__typename}"},{"query":"{__typename}"}]
+        """.strip();
+
     private static final List<String> GRAPHQL_PATHS = List.of(
         "/graphql", "/graphql/v1", "/graphql/v2",
         "/api/graphql", "/api/v1/graphql", "/api/v2/graphql",
@@ -35,6 +39,9 @@ public class GraphqlScanner {
     public record GraphqlEndpoint(
         String url,
         boolean introspectionEnabled,
+        boolean batchQueryEnabled,
+        boolean minimalQueryAccepted,
+        boolean minimalMutationAccepted,
         List<String> typeNames,
         List<GraphqlField> queryFields,
         List<GraphqlField> mutationFields,
@@ -82,9 +89,12 @@ public class GraphqlScanner {
             if (!response.contains("__schema") && !response.contains("queryType")) return null;
 
             boolean introspectionEnabled = response.contains("__schema") || response.contains("queryType");
+            boolean batchQueryEnabled = supportsBatchQuery(url);
             List<String>        typeNames     = extractTypeNames(response);
             List<GraphqlField>  queryFields   = extractFields(response, "Query");
             List<GraphqlField>  mutationFields = extractFields(response, "Mutation");
+            boolean minimalQueryAccepted = probeMinimalOperation(url, buildMinimalQuery(queryFields));
+            boolean minimalMutationAccepted = probeMinimalOperation(url, buildMinimalMutation(mutationFields));
 
             String finding = introspectionEnabled
                 ? "[HIGH] GraphQL introspection is ENABLED at " + url +
@@ -92,12 +102,95 @@ public class GraphqlScanner {
                   queryFields.size() + " query field(s), " + mutationFields.size() + " mutation(s))"
                 : "";
 
-            return new GraphqlEndpoint(url, introspectionEnabled, typeNames,
+            if (batchQueryEnabled) {
+                finding += " [MEDIUM] Batch GraphQL queries are accepted.";
+            }
+            if (minimalQueryAccepted) {
+                finding += " [INFO] Minimal query generated from schema was accepted.";
+            }
+            if (minimalMutationAccepted) {
+                finding += " [INFO] Minimal mutation generated from schema was accepted.";
+            }
+
+            return new GraphqlEndpoint(url, introspectionEnabled, batchQueryEnabled,
+                minimalQueryAccepted, minimalMutationAccepted, typeNames,
                 queryFields, mutationFields, finding);
 
         } catch (IOException | IllegalArgumentException ignored) {
             return null;
         }
+    }
+
+    private boolean supportsBatchQuery(String url) {
+        try {
+            HttpURLConnection conn = (HttpURLConnection) URI.create(url).toURL().openConnection();
+            conn.setRequestMethod("POST");
+            conn.setDoOutput(true);
+            conn.setConnectTimeout(TIMEOUT);
+            conn.setReadTimeout(TIMEOUT);
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setRequestProperty("Accept", "application/json");
+
+            byte[] body = BATCH_PROBE_QUERY.getBytes(StandardCharsets.UTF_8);
+            conn.setRequestProperty("Content-Length", String.valueOf(body.length));
+            conn.getOutputStream().write(body);
+
+            int status = conn.getResponseCode();
+            if (status < 200 || status >= 300) {
+                return false;
+            }
+
+            String response = new String(conn.getInputStream().readAllBytes(), StandardCharsets.UTF_8).trim();
+            return response.startsWith("[") && response.contains("__typename");
+        } catch (IOException | IllegalArgumentException ignored) {
+            return false;
+        }
+    }
+
+    private boolean probeMinimalOperation(String url, String operation) {
+        if (operation == null || operation.isBlank()) {
+            return false;
+        }
+        String escapedOperation = operation.replace("\\", "\\\\").replace("\"", "\\\"");
+        String payload = "{\"query\":\"" + escapedOperation + "\"}";
+
+        try {
+            HttpURLConnection conn = (HttpURLConnection) URI.create(url).toURL().openConnection();
+            conn.setRequestMethod("POST");
+            conn.setDoOutput(true);
+            conn.setConnectTimeout(TIMEOUT);
+            conn.setReadTimeout(TIMEOUT);
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setRequestProperty("Accept", "application/json");
+
+            byte[] body = payload.getBytes(StandardCharsets.UTF_8);
+            conn.setRequestProperty("Content-Length", String.valueOf(body.length));
+            conn.getOutputStream().write(body);
+
+            int status = conn.getResponseCode();
+            if (status < 200 || status >= 300) {
+                return false;
+            }
+
+            String response = new String(conn.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+            return response.contains("\"data\"");
+        } catch (IOException | IllegalArgumentException ignored) {
+            return false;
+        }
+    }
+
+    private String buildMinimalQuery(List<GraphqlField> queryFields) {
+        if (queryFields == null || queryFields.isEmpty()) {
+            return null;
+        }
+        return "query { " + queryFields.getFirst().name() + " }";
+    }
+
+    private String buildMinimalMutation(List<GraphqlField> mutationFields) {
+        if (mutationFields == null || mutationFields.isEmpty()) {
+            return null;
+        }
+        return "mutation { " + mutationFields.getFirst().name() + " }";
     }
 
     private List<String> extractTypeNames(String json) {
@@ -142,6 +235,15 @@ public class GraphqlScanner {
                 continue;
             }
             sb.append("    [HIGH] Introspection ENABLED\n");
+            if (ep.batchQueryEnabled()) {
+                sb.append("    [MEDIUM] Batch query mode ACCEPTED\n");
+            }
+            if (ep.minimalQueryAccepted()) {
+                sb.append("    [INFO] Minimal schema-derived query ACCEPTED\n");
+            }
+            if (ep.minimalMutationAccepted()) {
+                sb.append("    [INFO] Minimal schema-derived mutation ACCEPTED\n");
+            }
             if (!ep.typeNames().isEmpty()) {
                 sb.append("    Types (").append(ep.typeNames().size()).append("): ")
                   .append(String.join(", ", ep.typeNames().subList(0, Math.min(15, ep.typeNames().size()))))
