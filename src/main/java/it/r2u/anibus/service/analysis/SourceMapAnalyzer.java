@@ -158,13 +158,14 @@ public class SourceMapAnalyzer {
         return sb.toString();
     }
 
-    /** Run WebSourceAnalyzer.analyzeSource over all embedded source content. */
+    /** Run WebSourceAnalyzer + JavaScriptSecurityAnalyzer crypto-key scan over all embedded source content. */
     public static List<it.r2u.anibus.model.LeakInfo> extractLeaks(SourceMapResult result) {
         if (!result.ok()) return List.of();
         List<it.r2u.anibus.model.LeakInfo> leaks = new ArrayList<>();
         for (SourceFile sf : result.sources()) {
             if (sf.hasContent() && !sf.content().isBlank()) {
                 leaks.addAll(WebSourceAnalyzer.analyzeSource(sf.content()));
+                leaks.addAll(JavaScriptSecurityAnalyzer.extractCryptoLeaks(sf.content()));
             }
         }
         return leaks;

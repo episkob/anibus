@@ -1778,6 +1778,63 @@ public class JavaScriptSecurityAnalyzer {
     }
 
     private void findMatches(String source, Pattern pattern, String type, List<LeakInfo> leaks) {
+        addMatches(source, pattern, type, leaks);
+    }
+
+    // ─── Public crypto-key extraction (used by SourceMapAnalyzer) ────────────
+
+    /**
+     * Runs all cryptographic key / certificate patterns against arbitrary source text.
+     * Called by {@link it.r2u.anibus.service.analysis.SourceMapAnalyzer} to analyse
+     * original (unminified) source files embedded inside source maps, and also applied
+     * directly to minified JS when source-map fetch fails.
+     *
+     * @param content any JS / TS / source text
+     * @return list of detected key/secret leaks (never null)
+     */
+    public static List<LeakInfo> extractCryptoLeaks(String content) {
+        List<LeakInfo> leaks = new ArrayList<>();
+        // Private keys — real newlines (template literals)
+        addMatches(content,
+                Pattern.compile("-----BEGIN [A-Z ]*PRIVATE KEY-----[\\s\\S]*?-----END [A-Z ]*PRIVATE KEY-----"),
+                "Private Key (PEM)", leaks);
+        // Private keys — escaped \n in JS string literals
+        addMatches(content,
+                Pattern.compile("-----BEGIN [A-Z ]*PRIVATE KEY-----(?:\\\\n|\\\\r\\\\n)[A-Za-z0-9+/=\\\\nrNT]+-----END [A-Z ]*PRIVATE KEY-----"),
+                "Private Key (JS string)", leaks);
+        // OpenSSH private key format
+        addMatches(content,
+                Pattern.compile("-----BEGIN OPENSSH PRIVATE KEY-----[\\s\\S]*?-----END OPENSSH PRIVATE KEY-----"),
+                "OpenSSH Private Key", leaks);
+        // Public keys — real newlines
+        addMatches(content,
+                Pattern.compile("-----BEGIN [A-Z ]*PUBLIC KEY-----[\\s\\S]*?-----END [A-Z ]*PUBLIC KEY-----"),
+                "Public Key (PEM)", leaks);
+        // Public keys — escaped \n in JS string literals
+        addMatches(content,
+                Pattern.compile("-----BEGIN [A-Z ]*PUBLIC KEY-----(?:\\\\n|\\\\r\\\\n)[A-Za-z0-9+/=\\\\nrNT]+-----END [A-Z ]*PUBLIC KEY-----"),
+                "Public Key (JS string)", leaks);
+        // X.509 certificates (contain public key)
+        addMatches(content,
+                Pattern.compile("-----BEGIN CERTIFICATE-----[\\s\\S]*?-----END CERTIFICATE-----"),
+                "X.509 Certificate", leaks);
+        // JSON Web Key (JWK) — RSA or EC
+        addMatches(content,
+                Pattern.compile("\\{[^}]*\"kty\"\\s*:\\s*\"(RSA|EC)\"[^}]*\\}", Pattern.CASE_INSENSITIVE),
+                "JSON Web Key (JWK)", leaks);
+        // AWS access keys
+        addMatches(content,
+                Pattern.compile("(AKIA[0-9A-Z]{16})"),
+                "AWS Access Key", leaks);
+        // Named cryptographic key material (base64 ≥ 40 chars)
+        addMatches(content,
+                Pattern.compile("(?:(?:public|private)[_-]?key|signing[_-]?key|encryption[_-]?key)\\s*[:=]\\s*['\"]([A-Za-z0-9+/=]{40,})['\"]", Pattern.CASE_INSENSITIVE),
+                "Cryptographic Key Material", leaks);
+        return leaks;
+    }
+
+    /** Static helper shared by {@link #findMatches} and {@link #extractCryptoLeaks}. */
+    private static void addMatches(String source, Pattern pattern, String type, List<LeakInfo> leaks) {
         Matcher matcher = pattern.matcher(source);
         while (matcher.find() && leaks.size() < 50) {
             String match = matcher.group(matcher.groupCount() > 0 ? 1 : 0);
