@@ -27,6 +27,7 @@ import it.r2u.anibus.network.HostResolver;
 import it.r2u.anibus.network.NetworkStatusMonitor;
 import it.r2u.anibus.service.analysis.ApiSecurityModeService;
 import it.r2u.anibus.service.analysis.AuthCrawler;
+import it.r2u.anibus.service.analysis.ContainerExposureChecker;
 import it.r2u.anibus.service.analysis.CorsChecker;
 import it.r2u.anibus.service.analysis.DirectoryBruteforcer;
 import it.r2u.anibus.service.analysis.GraphqlScanner;
@@ -71,6 +72,7 @@ import javafx.scene.chart.PieChart;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
+import javafx.scene.control.CheckMenuItem;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
@@ -469,6 +471,7 @@ public class AnibusController {
             .passiveReconService(passiveReconService)
             .secretsValidationService(secretsValidationService)
             .leaksSupplier(() -> jsAnalysisHandler != null ? jsAnalysisHandler.getLastJsAnalysisResult() != null ? jsAnalysisHandler.getLastJsAnalysisResult().getSensitiveInfo() : null : null)
+            .scanResultsSupplier(() -> results)
             .build();
 
         statisticsHandler = new StatisticsHandler(
@@ -562,7 +565,29 @@ public class AnibusController {
         Menu themeMenu = new Menu("Тема");
         themeMenu.getItems().addAll(themeDark, themeLight);
 
-        configMenuButton.getItems().addAll(langMenu, themeMenu);
+        // Stealth sub-menu — firewall evasion options for the standard scan
+        CheckMenuItem stealthRetry = new CheckMenuItem("Retry on dropped SYN");
+        stealthRetry.setSelected(true);
+        stealthRetry.setOnAction(e -> scanner.setRetryOnDrop(stealthRetry.isSelected()));
+        MenuItem srcEphemeral = new RadioMenuItem("Source port: ephemeral (default)");
+        MenuItem src53  = new RadioMenuItem("Source port: 53 (DNS)");
+        MenuItem src80  = new RadioMenuItem("Source port: 80 (HTTP)");
+        MenuItem src443 = new RadioMenuItem("Source port: 443 (HTTPS)");
+        ToggleGroup srcGroup = new ToggleGroup();
+        ((RadioMenuItem) srcEphemeral).setToggleGroup(srcGroup);
+        ((RadioMenuItem) src53).setToggleGroup(srcGroup);
+        ((RadioMenuItem) src80).setToggleGroup(srcGroup);
+        ((RadioMenuItem) src443).setToggleGroup(srcGroup);
+        ((RadioMenuItem) srcEphemeral).setSelected(true);
+        srcEphemeral.setOnAction(e -> scanner.setStealthSourcePort(0));
+        src53.setOnAction(e  -> scanner.setStealthSourcePort(53));
+        src80.setOnAction(e  -> scanner.setStealthSourcePort(80));
+        src443.setOnAction(e -> scanner.setStealthSourcePort(443));
+        Menu stealthMenu = new Menu("Stealth / firewall bypass");
+        stealthMenu.getItems().addAll(stealthRetry, new SeparatorMenuItem(),
+                srcEphemeral, src53, src80, src443);
+
+        configMenuButton.getItems().addAll(langMenu, themeMenu, stealthMenu);
         setupActionsMenu();
 
         // Show saved-pool hint on startup
@@ -719,7 +744,9 @@ public class AnibusController {
             createMenuItem("GraphQL Introspection", this::runGraphqlScan),
             createMenuItem("XXE Detector", this::runXxeScan),
             createMenuItem("Subdomain Takeover Check", this::runTakeoverCheck),
-            createMenuItem("SQL Metadata Extraction", this::runSqlMetadataExtraction)
+            createMenuItem("SQL Metadata Extraction", this::runSqlMetadataExtraction),
+            createMenuItem("CVE Lookup (from scan results)", this::runCveLookup),
+            createMenuItem("WAF Bypass Test", this::runWafBypass)
         );
         return menu;
     }
@@ -744,7 +771,8 @@ public class AnibusController {
             createMenuItem("WebSocket Detector", this::runWebSocketDetect),
             createMenuItem("HTTP/2 and HTTP/3 Support", this::runHttpProtocolDetect),
             createMenuItem("ASN Lookup", this::runAsnLookup),
-            createMenuItem("Service Misconfiguration Check (Redis/Mongo/ES/Docker/...)", this::runServiceMisconfigCheck)
+            createMenuItem("Service Misconfiguration Check (Redis/Mongo/ES/Docker/...)", this::runServiceMisconfigCheck),
+            createMenuItem("Container Exposure Check (Docker/K8s/Kubelet/etcd)", this::runContainerExposureCheck)
         );
         return menu;
     }
@@ -987,6 +1015,41 @@ public class AnibusController {
         t.start();
     }
 
+    private void runContainerExposureCheck() {
+        String host = it.r2u.anibus.handlers.SecurityAnalysisHandler.extractHostOrDomain(
+            hostTextField != null ? hostTextField.getText() : "");
+        if (host == null || host.isBlank()) {
+            setStatus("Container exposure check: enter a target host");
+            return;
+        }
+        Task<ContainerExposureChecker.ContainerExposureReport> task = new Task<>() {
+            @Override
+            protected ContainerExposureChecker.ContainerExposureReport call() {
+                return new ContainerExposureChecker().scan(host);
+            }
+        };
+        progressBar.progressProperty().unbind();
+        progressBar.progressProperty().bind(task.progressProperty());
+        progressBar.setVisible(true);
+        setStatus("Container exposure probe running against " + host + "...");
+        task.setOnSucceeded(ev -> {
+            progressBar.progressProperty().unbind();
+            progressBar.setVisible(false);
+            ContainerExposureChecker.ContainerExposureReport report = task.getValue();
+            consoleTextArea.appendText("\n" + ContainerExposureChecker.formatReport(report) + "\n");
+            setStatus("Container exposure check finished: " + report.findings().size() + " finding(s)");
+        });
+        task.setOnFailed(ev -> {
+            progressBar.progressProperty().unbind();
+            progressBar.setVisible(false);
+            Throwable ex = task.getException();
+            setStatus("Container exposure probe failed: " + (ex != null ? ex.getMessage() : "unknown error"));
+        });
+        Thread t = new Thread(task, "anibus-container-exposure");
+        t.setDaemon(true);
+        t.start();
+    }
+
     private void runParamMiner() { extraScanHandler.runParamMiner(); }
 
     private void runPassiveRecon() { securityAnalysisHandler.runPassiveRecon(); }
@@ -1016,6 +1079,10 @@ public class AnibusController {
     private void runGraphqlScan() { securityAnalysisHandler.runGraphqlScan(); }
 
     private void runXxeScan() { securityAnalysisHandler.runXxeScan(); }
+
+    private void runCveLookup() { securityAnalysisHandler.runCveLookup(); }
+
+    private void runWafBypass() { securityAnalysisHandler.runWafBypass(); }
 
     private void runTakeoverCheck() { securityAnalysisHandler.runTakeoverCheck(); }
 

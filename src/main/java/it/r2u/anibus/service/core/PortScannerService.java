@@ -26,8 +26,21 @@ import it.r2u.anibus.service.network.proxy.ProxyConnectionFactory;
 public class PortScannerService {
 
     private static final int TIMEOUT = 200;
+    /** Extended timeout for retry pass (stateful firewalls often drop first SYN). */
+    private static final int TIMEOUT_RETRY = 800;
+    /** Small jitter delay before retry to defeat naive rate-limit windows. */
+    private static final int RETRY_BACKOFF_MS = 120;
     private final BannerGrabber bannerGrabber;
     private final ProxyConnectionFactory proxyFactory;
+    /**
+     * Stealth source port: when &gt; 0 the scanner binds the local socket to this
+     * port, which can slip past basic origin-port firewall rules (e.g. allow
+     * 53/80/443 source traffic). Requires privileges for ports &lt; 1024;
+     * silently falls back to ephemeral on bind failure.
+     */
+    private volatile int stealthSourcePort = 0;
+    /** When true, perform one retry pass with a longer timeout on initial failure. */
+    private volatile boolean retryOnDrop = true;
 
     public PortScannerService() {
         this(new BannerGrabber(TIMEOUT), new ProxyConnectionFactory());
@@ -67,13 +80,40 @@ public class PortScannerService {
 
     /* -- Latency probe: returns ms, or -1 if closed ----------- */
     public long measurePortLatency(String host, int port) {
+        long first = tryConnect(host, port, TIMEOUT);
+        if (first >= 0 || !retryOnDrop) return first;
+        // First SYN may have been dropped by a stateful firewall / rate limiter.
+        // Back off briefly and retry with a longer timeout once.
+        try { Thread.sleep(RETRY_BACKOFF_MS); }
+        catch (InterruptedException ie) { Thread.currentThread().interrupt(); return -1; }
+        return tryConnect(host, port, TIMEOUT_RETRY);
+    }
+
+    /** Single TCP-connect attempt; honours {@link #stealthSourcePort} bind hint. */
+    private long tryConnect(String host, int port, int timeoutMs) {
         try (Socket socket = new Socket()) {
+            int srcPort = stealthSourcePort;
+            if (srcPort > 0) {
+                try { socket.bind(new InetSocketAddress(srcPort)); }
+                catch (IOException ignored) { /* port in use / no privilege — fall back to ephemeral */ }
+            }
             long start = System.nanoTime();
-            socket.connect(new InetSocketAddress(host, port), TIMEOUT);
+            socket.connect(new InetSocketAddress(host, port), timeoutMs);
             return (System.nanoTime() - start) / 1_000_000;
         } catch (IOException e) {
             return -1;
         }
+    }
+
+    /** Enable/disable retry-on-drop evasion (on by default). */
+    public void setRetryOnDrop(boolean enabled) { this.retryOnDrop = enabled; }
+
+    /**
+     * Set local source port for probes (0 = ephemeral, default). Try 53, 80 or 443
+     * to slip past simple firewalls that allow traffic from these source ports.
+     */
+    public void setStealthSourcePort(int sourcePort) {
+        this.stealthSourcePort = (sourcePort >= 0 && sourcePort < 65536) ? sourcePort : 0;
     }
 
     public boolean isPortOpen(String host, int port) {

@@ -103,6 +103,7 @@ public final class FaviconFingerprintDatabase {
      * MurmurHash3 32-bit, x86 variant (signed result), bitwise-identical to
      * {@code mmh3.hash(data, seed=0, signed=True)} in Python.
      */
+    @SuppressWarnings("fallthrough")
     private static int murmurHash3_x86_32(byte[] data, int len, int seed) {
         final int c1 = 0xcc9e2d51;
         final int c2 = 0x1b873593;

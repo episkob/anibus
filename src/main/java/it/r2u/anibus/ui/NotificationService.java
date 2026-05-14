@@ -56,7 +56,7 @@ public class NotificationService {
      * @param message body text
      * @param type    INFO, WARNING or ERROR
      */
-    public void notify(String caption, String message, MessageType type) {
+    private void notify(String caption, String message, MessageType type) {
         if (!supported || trayIcon == null) return;
         trayIcon.displayMessage(caption, message, type);
     }

@@ -79,7 +79,7 @@ public class ScanCoordinator {
         if (currentStrategy == null) {
             throw new IllegalStateException("No strategy selected");
         }
-        return (DoubleProperty) currentStrategy.progressProperty();
+        return currentStrategy.progressProperty();
     }
     
     /**

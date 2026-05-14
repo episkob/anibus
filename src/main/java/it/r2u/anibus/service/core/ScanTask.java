@@ -2,6 +2,8 @@ package it.r2u.anibus.service.core;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -88,7 +90,13 @@ public class ScanTask extends Task<Void> {
             CountDownLatch latch = new CountDownLatch(totalPorts);
             executor = Executors.newVirtualThreadPerTaskExecutor();
 
-            for (int port = startPort; port <= endPort; port++) {
+            // Randomize probe order so the scan does not look like a linear sweep
+            // (defeats simple sequential-scan heuristics in IDS/firewalls).
+            List<Integer> portList = new ArrayList<>(totalPorts);
+            for (int port = startPort; port <= endPort; port++) portList.add(port);
+            Collections.shuffle(portList);
+
+            for (int port : portList) {
                 if (isCancelled()) {
                     latch.countDown();   // account for skipped port
                     continue;

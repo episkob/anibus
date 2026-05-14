@@ -7,6 +7,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import it.r2u.anibus.model.LeakInfo;
+import it.r2u.anibus.model.PortScanResult;
 import it.r2u.anibus.service.analysis.ApiSecurityModeService;
 import it.r2u.anibus.service.analysis.CorsChecker;
 import it.r2u.anibus.service.analysis.DirectoryBruteforcer;
@@ -16,9 +17,11 @@ import it.r2u.anibus.service.analysis.PassiveReconService;
 import it.r2u.anibus.service.analysis.SecretsValidationService;
 import it.r2u.anibus.service.analysis.SsrfDetector;
 import it.r2u.anibus.service.analysis.SubdomainTakeoverChecker;
+import it.r2u.anibus.service.analysis.WafBypassTester;
 import it.r2u.anibus.service.analysis.WebSocketDetector;
 import it.r2u.anibus.service.analysis.XssDetector;
 import it.r2u.anibus.service.analysis.XxeDetector;
+import it.r2u.anibus.service.core.VulnerabilityScanner;
 import it.r2u.anibus.service.network.AsnLookupService;
 import it.r2u.anibus.service.network.DnsZoneTransferService;
 import it.r2u.anibus.service.network.HttpProtocolDetector;
@@ -61,6 +64,8 @@ public class SecurityAnalysisHandler {
     private final PassiveReconService       passiveReconService;
     private final SecretsValidationService  secretsValidationService;
     private final Supplier<List<LeakInfo>>  leaksSupplier;
+    private final Supplier<List<PortScanResult>> scanResultsSupplier;
+    private final WafBypassTester           wafBypassTester;
 
     private SecurityAnalysisHandler(Builder b) {
         this.targetUrlSupplier     = b.targetUrlSupplier;
@@ -88,6 +93,81 @@ public class SecurityAnalysisHandler {
         this.passiveReconService      = b.passiveReconService;
         this.secretsValidationService = b.secretsValidationService;
         this.leaksSupplier         = b.leaksSupplier;
+        this.scanResultsSupplier   = b.scanResultsSupplier;
+        this.wafBypassTester       = b.wafBypassTester != null ? b.wafBypassTester : new WafBypassTester();
+    }
+
+    public void runWafBypass() {
+        String target = targetUrlSupplier.get();
+        if (target.isBlank()) { setStatus.accept("Enter a target URL for WAF bypass test"); return; }
+        Task<WafBypassTester.BypassReport> task = new Task<>() {
+            @Override protected WafBypassTester.BypassReport call() {
+                return wafBypassTester.test(target, "q", WafBypassTester.DEFAULT_PROBE,
+                    p -> updateProgress(p, 1.0));
+            }
+        };
+        bindProgress(task);
+        setStatus.accept("WAF bypass test running on " + target + "\u2026");
+        task.setOnSucceeded(ev -> {
+            unbindProgress();
+            WafBypassTester.BypassReport r = task.getValue();
+            console.appendRawText("\n" + WafBypassTester.formatReport(r) + "\n");
+            setStatus.accept("WAF bypass test complete: " + r.successCount() + " potential bypass(es)");
+        });
+        task.setOnFailed(ev -> { unbindProgress(); setStatus.accept("WAF bypass test error: " + msg(task)); });
+        daemon(task, "waf-bypass");
+    }
+
+    public void runCveLookup() {
+        List<PortScanResult> scanResults = scanResultsSupplier != null ? scanResultsSupplier.get() : null;
+        if (scanResults == null || scanResults.isEmpty()) {
+            setStatus.accept("No scan results available. Run a Start Scan first.");
+            return;
+        }
+        String host = targetHostSupplier.get();
+        Task<String> task = new Task<>() {
+            @Override protected String call() {
+                StringBuilder out = new StringBuilder();
+                out.append("\n=== CVE Lookup Report for ").append(host.isBlank() ? "target" : host).append(" ===\n");
+                int total = 0;
+                int portsWithCves = 0;
+                int portsScanned = 0;
+                for (PortScanResult r : scanResults) {
+                    if (r == null) continue;
+                    String state = r.getState();
+                    if (state == null || !state.toLowerCase().contains("open")) continue;
+                    portsScanned++;
+                    String service = r.getService();
+                    String banner = r.getBanner();
+                    String version = r.getVersion();
+                    String fingerprint = ((banner == null ? "" : banner) + " " + (version == null ? "" : version)).trim();
+                    if (service == null || service.isBlank()) continue;
+                    List<VulnerabilityScanner.Vulnerability> vulns =
+                        VulnerabilityScanner.scanVulnerabilities(service, fingerprint);
+                    if (vulns.isEmpty()) continue;
+                    portsWithCves++;
+                    total += vulns.size();
+                    out.append("\nPort ").append(r.getPort()).append(" / ").append(service);
+                    if (version != null && !version.isBlank()) out.append(" ").append(version);
+                    out.append("\n");
+                    out.append(VulnerabilityScanner.formatVulnerabilities(vulns)).append("\n");
+                }
+                if (total == 0) {
+                    out.append("\nNo known CVEs matched (").append(portsScanned).append(" open port(s) checked).\n");
+                } else {
+                    out.append(String.format("%nSummary: %d CVE finding(s) across %d port(s) of %d open port(s).%n",
+                        total, portsWithCves, portsScanned));
+                }
+                return out.toString();
+            }
+        };
+        setStatus.accept("CVE lookup running on " + scanResults.size() + " port result(s)\u2026");
+        task.setOnSucceeded(ev -> {
+            console.appendRawText(task.getValue());
+            setStatus.accept("CVE lookup complete");
+        });
+        task.setOnFailed(ev -> setStatus.accept("CVE lookup error: " + msg(task)));
+        daemon(task, "cve-lookup");
     }
 
     // ── Public scan methods ──────────────────────────────────────────────────
@@ -509,6 +589,8 @@ public class SecurityAnalysisHandler {
         private PassiveReconService       passiveReconService;
         private SecretsValidationService  secretsValidationService;
         private Supplier<List<LeakInfo>>  leaksSupplier;
+        private Supplier<List<PortScanResult>> scanResultsSupplier;
+        private WafBypassTester           wafBypassTester;
 
         public Builder targetUrlSupplier(Supplier<String> s)      { targetUrlSupplier = s; return this; }
         public Builder targetHostSupplier(Supplier<String> s)     { targetHostSupplier = s; return this; }
@@ -535,6 +617,8 @@ public class SecurityAnalysisHandler {
         public Builder passiveReconService(PassiveReconService p)  { passiveReconService = p; return this; }
         public Builder secretsValidationService(SecretsValidationService s) { secretsValidationService = s; return this; }
         public Builder leaksSupplier(Supplier<List<LeakInfo>> s)  { leaksSupplier = s; return this; }
+        public Builder scanResultsSupplier(Supplier<List<PortScanResult>> s) { scanResultsSupplier = s; return this; }
+        public Builder wafBypassTester(WafBypassTester w) { wafBypassTester = w; return this; }
 
         public SecurityAnalysisHandler build() { return new SecurityAnalysisHandler(this); }
     }

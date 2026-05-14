@@ -131,6 +131,15 @@
                 <version>3.11.0</version>
                 <configuration>
                     <release>${maven.compiler.release}</release>
+                    <showWarnings>true</showWarnings>
+                    <showDeprecation>true</showDeprecation>
+                    <compilerArgs>
+                        <arg>-Xlint:all</arg>
+                        <arg>-Xlint:-serial</arg>
+                        <arg>-Xlint:-processing</arg>
+                        <arg>-Xlint:-exports</arg>
+                        <arg>-Xlint:-missing-explicit-ctor</arg>
+                    </compilerArgs>
                 </configuration>
             </plugin>
             <plugin>
