@@ -26,6 +26,7 @@ import it.r2u.anibus.model.PortScanResult;
 import it.r2u.anibus.network.HostResolver;
 import it.r2u.anibus.network.NetworkStatusMonitor;
 import it.r2u.anibus.service.analysis.ApiSecurityModeService;
+import it.r2u.anibus.service.analysis.AuthCrawler;
 import it.r2u.anibus.service.analysis.CorsChecker;
 import it.r2u.anibus.service.analysis.DirectoryBruteforcer;
 import it.r2u.anibus.service.analysis.GraphqlScanner;
@@ -698,7 +699,8 @@ public class AnibusController {
             createMenuItem("Analyze Source Maps", this::runSourceMapAnalysis),
             createMenuItem("Run Param Miner", this::runParamMiner),
             createMenuItem("Passive Recon Mode", this::runPassiveRecon),
-            createMenuItem("Validate Secrets and JS Leaks", this::runSecretsValidation)
+            createMenuItem("Validate Secrets and JS Leaks", this::runSecretsValidation),
+            createMenuItem("Authenticated Crawl (Basic/Bearer/Digest/Form/OAuth2)", this::runAuthCrawl)
         );
         return menu;
     }
@@ -805,6 +807,135 @@ public class AnibusController {
     private void runUdpScan() { extraScanHandler.runUdpScan(); }
 
     private void runSubdomainEnumeration() { extraScanHandler.runSubdomainEnumeration(); }
+
+    private void runAuthCrawl() {
+        javafx.scene.control.Dialog<java.util.Map<String, String>> dialog = new javafx.scene.control.Dialog<>();
+        dialog.setTitle("Authenticated Crawl");
+        dialog.setHeaderText("Configure authentication and target paths");
+        javafx.scene.control.ButtonType runBtn = new javafx.scene.control.ButtonType("Run", javafx.scene.control.ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(runBtn, javafx.scene.control.ButtonType.CANCEL);
+
+        javafx.scene.layout.GridPane grid = new javafx.scene.layout.GridPane();
+        grid.setHgap(8);
+        grid.setVgap(6);
+        grid.setPadding(new javafx.geometry.Insets(10));
+
+        javafx.scene.control.ComboBox<AuthCrawler.Mode> modeBox = new javafx.scene.control.ComboBox<>();
+        modeBox.getItems().setAll(AuthCrawler.Mode.values());
+        modeBox.getSelectionModel().select(AuthCrawler.Mode.BASIC);
+
+        TextField baseUrlField = new TextField();
+        baseUrlField.setPromptText("https://target.example.com");
+        String currentHost = hostTextField != null ? hostTextField.getText() : "";
+        if (currentHost != null && !currentHost.isBlank()) {
+            baseUrlField.setText(currentHost.startsWith("http") ? currentHost : "http://" + currentHost);
+        }
+
+        TextField userField = new TextField();
+        userField.setPromptText("username / client_id");
+        javafx.scene.control.PasswordField passField = new javafx.scene.control.PasswordField();
+        passField.setPromptText("password / client_secret / bearer token");
+        TextField extraField = new TextField();
+        extraField.setPromptText("OAuth2 token URL  |  Form login URL  |  scope");
+        javafx.scene.control.TextArea pathsArea = new javafx.scene.control.TextArea();
+        pathsArea.setPromptText("Comma- or newline-separated paths to probe, e.g. /admin, /dashboard, /api/me");
+        pathsArea.setPrefRowCount(4);
+        javafx.scene.control.TextArea formFieldsArea = new javafx.scene.control.TextArea();
+        formFieldsArea.setPromptText("Form fields (key=value per line, FORM mode only): username=admin\\npassword=secret");
+        formFieldsArea.setPrefRowCount(3);
+
+        grid.add(new Label("Mode:"), 0, 0);            grid.add(modeBox, 1, 0);
+        grid.add(new Label("Base URL:"), 0, 1);        grid.add(baseUrlField, 1, 1);
+        grid.add(new Label("User / id:"), 0, 2);       grid.add(userField, 1, 2);
+        grid.add(new Label("Password / secret:"), 0, 3); grid.add(passField, 1, 3);
+        grid.add(new Label("Token URL / Login URL / scope:"), 0, 4); grid.add(extraField, 1, 4);
+        grid.add(new Label("Paths:"), 0, 5);           grid.add(pathsArea, 1, 5);
+        grid.add(new Label("Form fields:"), 0, 6);     grid.add(formFieldsArea, 1, 6);
+
+        dialog.getDialogPane().setContent(grid);
+        dialog.setResultConverter(bt -> {
+            if (bt != runBtn) return null;
+            java.util.Map<String, String> m = new java.util.LinkedHashMap<>();
+            m.put("mode", modeBox.getValue() == null ? "BASIC" : modeBox.getValue().name());
+            m.put("baseUrl", baseUrlField.getText());
+            m.put("user", userField.getText());
+            m.put("pass", passField.getText());
+            m.put("extra", extraField.getText());
+            m.put("paths", pathsArea.getText());
+            m.put("form", formFieldsArea.getText());
+            return m;
+        });
+
+        dialog.showAndWait().ifPresent(spec -> launchAuthCrawl(spec));
+    }
+
+    private void launchAuthCrawl(java.util.Map<String, String> spec) {
+        String baseUrl = spec.getOrDefault("baseUrl", "").trim();
+        if (baseUrl.isBlank()) {
+            setStatus("Auth crawl: base URL is required");
+            return;
+        }
+        AuthCrawler.Mode mode;
+        try {
+            mode = AuthCrawler.Mode.valueOf(spec.getOrDefault("mode", "BASIC"));
+        } catch (IllegalArgumentException e) {
+            mode = AuthCrawler.Mode.BASIC;
+        }
+        final AuthCrawler.Mode chosenMode = mode;
+        java.util.List<String> paths = java.util.Arrays.stream(
+                spec.getOrDefault("paths", "").split("[,\\r\\n]+"))
+            .map(String::trim).filter(s -> !s.isBlank()).toList();
+        java.util.Map<String, String> formFields = new java.util.LinkedHashMap<>();
+        for (String line : spec.getOrDefault("form", "").split("\\r?\\n")) {
+            int eq = line.indexOf('=');
+            if (eq > 0) formFields.put(line.substring(0, eq).trim(), line.substring(eq + 1).trim());
+        }
+        String user = spec.getOrDefault("user", "");
+        String pass = spec.getOrDefault("pass", "");
+        String extra = spec.getOrDefault("extra", "");
+
+        Task<AuthCrawler.AuthCrawlReport> task = new Task<>() {
+            @Override
+            protected AuthCrawler.AuthCrawlReport call() {
+                AuthCrawler ac = new AuthCrawler();
+                return switch (chosenMode) {
+                    case BASIC -> ac.crawlWithBasic(baseUrl, user, pass, paths);
+                    case BEARER -> ac.crawlWithBearer(baseUrl, pass, paths);
+                    case OAUTH2_CLIENT_CREDENTIALS ->
+                        ac.crawlWithOAuth2ClientCredentials(baseUrl, extra, user, pass, /* scope */ null, paths);
+                    case DIGEST -> ac.crawlWithDigest(baseUrl, user, pass, paths);
+                    case FORM -> {
+                        if (!user.isBlank()) formFields.putIfAbsent("username", user);
+                        if (!pass.isBlank()) formFields.putIfAbsent("password", pass);
+                        yield ac.crawlWithFormLogin(baseUrl, extra.isBlank() ? baseUrl : extra, formFields, paths);
+                    }
+                };
+            }
+        };
+
+        progressBar.progressProperty().unbind();
+        progressBar.progressProperty().bind(task.progressProperty());
+        progressBar.setVisible(true);
+        setStatus("Authenticated crawl (" + chosenMode + ") starting...");
+
+        task.setOnSucceeded(ev -> {
+            progressBar.progressProperty().unbind();
+            progressBar.setVisible(false);
+            AuthCrawler.AuthCrawlReport report = task.getValue();
+            consoleTextArea.appendText("\n" + AuthCrawler.formatReport(report) + "\n");
+            setStatus("Auth crawl done: " + (report.authSucceeded() ? "auth OK" : "auth failed")
+                + ", " + report.probes().size() + " probe(s)");
+        });
+        task.setOnFailed(ev -> {
+            progressBar.progressProperty().unbind();
+            progressBar.setVisible(false);
+            Throwable ex = task.getException();
+            setStatus("Auth crawl failed: " + (ex != null ? ex.getMessage() : "unknown error"));
+        });
+        Thread t = new Thread(task, "anibus-auth-crawl");
+        t.setDaemon(true);
+        t.start();
+    }
 
     private void runSourceMapAnalysis() { extraScanHandler.runSourceMapAnalysis(); }
 

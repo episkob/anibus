@@ -163,7 +163,9 @@ public class SubdomainTakeoverChecker {
         List<String> chain = new ArrayList<>();
         if (host == null || host.isBlank()) return chain;
         try {
-            java.util.Hashtable<String, String> env = new java.util.Hashtable<>();
+            // Properties is a Hashtable<Object,Object> — JNDI's InitialDirContext
+            // requires a Hashtable, and Properties is the recommended modern carrier.
+            java.util.Properties env = new java.util.Properties();
             env.put("java.naming.factory.initial", "com.sun.jndi.dns.DnsContextFactory");
             env.put("com.sun.jndi.dns.timeout.initial", String.valueOf(timeoutMs));
             env.put("com.sun.jndi.dns.timeout.retries", "1");

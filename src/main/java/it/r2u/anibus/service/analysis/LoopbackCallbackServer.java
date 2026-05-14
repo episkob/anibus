@@ -31,11 +31,23 @@ public final class LoopbackCallbackServer implements AutoCloseable {
     private final List<String> hits = new CopyOnWriteArrayList<>();
     private volatile boolean running = true;
 
-    public LoopbackCallbackServer() throws IOException {
-        this.server = new ServerSocket(0, 16, InetAddress.getLoopbackAddress());
+    private LoopbackCallbackServer(ServerSocket socket) {
+        this.server = socket;
         this.acceptor = new Thread(this::acceptLoop, "anibus-oob-callback");
         this.acceptor.setDaemon(true);
-        this.acceptor.start();
+    }
+
+    /**
+     * Opens a listener on 127.0.0.1 on a random ephemeral port and starts
+     * accepting connections. The accept loop runs in a daemon thread that is
+     * started by this factory (intentionally outside the constructor so that
+     * partial construction never leaks a running thread).
+     */
+    public static LoopbackCallbackServer start() throws IOException {
+        ServerSocket socket = new ServerSocket(0, 16, InetAddress.getLoopbackAddress());
+        LoopbackCallbackServer s = new LoopbackCallbackServer(socket);
+        s.acceptor.start();
+        return s;
     }
 
     public int port() {
