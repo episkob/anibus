@@ -109,6 +109,9 @@ public class ConsoleViewManager {
             } else if (line.startsWith("[KEYCLOAK]")) {
                 currentSection = "KEYCLOAK IAM";
                 line = line.substring(10).trim();
+            } else if (line.startsWith("[IAM]")) {
+                currentSection = "IAM PROVIDER";
+                line = line.substring(5).trim();
             } else if (line.startsWith("[CONTAINER]")) {
                 currentSection = "CONTAINER";
                 line = line.substring(11).trim();
@@ -168,6 +171,7 @@ public class ConsoleViewManager {
                 case "PROXY HEADERS"    -> renderProxyHeadersSection(sb, lines);
                 case "IOT DEVICE" -> renderSimpleSection(sb, "IoT Device", lines);
                 case "KEYCLOAK IAM" -> renderSimpleSection(sb, "Keycloak IAM", lines);
+                case "IAM PROVIDER" -> renderSimpleSection(sb, "Identity Provider (IAM)", lines);
                 case "CONTAINER" -> renderSimpleSection(sb, "Container / Orchestration", lines);
                 case "LEAKS" -> renderLeaksSection(sb, lines);
                 case "CRITICAL WARNINGS" -> renderSimpleSection(sb, "CRITICAL", lines);

@@ -17,6 +17,25 @@ public class KeycloakDetector {
     
     private static final int TIMEOUT = 5000;
     private static final int MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+
+    /** Trust-all SSL factory so internal/self-signed certificates don't block detection. */
+    private static final javax.net.ssl.SSLSocketFactory TRUST_ALL_FACTORY;
+    static {
+        try {
+            javax.net.ssl.TrustManager[] tm = {
+                new javax.net.ssl.X509TrustManager() {
+                    @Override public java.security.cert.X509Certificate[] getAcceptedIssuers() { return new java.security.cert.X509Certificate[0]; }
+                    @Override public void checkClientTrusted(java.security.cert.X509Certificate[] c, String a) {}
+                    @Override public void checkServerTrusted(java.security.cert.X509Certificate[] c, String a) {}
+                }
+            };
+            javax.net.ssl.SSLContext ctx = javax.net.ssl.SSLContext.getInstance("TLS");
+            ctx.init(null, tm, new java.security.SecureRandom());
+            TRUST_ALL_FACTORY = ctx.getSocketFactory();
+        } catch (java.security.NoSuchAlgorithmException | java.security.KeyManagementException ex) {
+            throw new RuntimeException("TrustAllSsl init failed", ex);
+        }
+    }
     
     public static class KeycloakInfo {
         private boolean isKeycloak;
@@ -301,13 +320,13 @@ public class KeycloakDetector {
         java.util.LinkedHashSet<String> realmSet = new java.util.LinkedHashSet<>();
         if (info.getDetectedRealmName() != null) realmSet.add(info.getDetectedRealmName());
         realmSet.addAll(java.util.Arrays.asList("master", "main", "default", "demo", "ready2tools"));
-        String[] realms = realmSet.toArray(new String[0]);
+        String[] realms = realmSet.toArray(String[]::new);
 
         // Build realm base path list: prefer detected Keycloak base, then fallback paths
         java.util.LinkedHashSet<String> basePathSet = new java.util.LinkedHashSet<>();
         if (info.getKeycloakBasePath() != null) basePathSet.add(info.getKeycloakBasePath() + "/realms/");
         basePathSet.addAll(java.util.Arrays.asList("/auth/realms/", "/keycloak/realms/", "/realms/"));
-        String[] realmBasePaths = basePathSet.toArray(new String[0]);
+        String[] realmBasePaths = basePathSet.toArray(String[]::new);
 
         for (String basePath : realmBasePaths) {
             for (String realm : realms) {
@@ -333,12 +352,12 @@ public class KeycloakDetector {
         java.util.LinkedHashSet<String> realmSet = new java.util.LinkedHashSet<>();
         if (info.getDetectedRealmName() != null) realmSet.add(info.getDetectedRealmName());
         realmSet.addAll(java.util.Arrays.asList("master", "main", "default", "demo", "ready2tools"));
-        String[] realms = realmSet.toArray(new String[0]);
+        String[] realms = realmSet.toArray(String[]::new);
 
         java.util.LinkedHashSet<String> basePathSet = new java.util.LinkedHashSet<>();
         if (info.getKeycloakBasePath() != null) basePathSet.add(info.getKeycloakBasePath() + "/realms/");
         basePathSet.addAll(java.util.Arrays.asList("/auth/realms/", "/keycloak/realms/", "/realms/"));
-        String[] realmBasePaths = basePathSet.toArray(new String[0]);
+        String[] realmBasePaths = basePathSet.toArray(String[]::new);
 
         for (String basePath : realmBasePaths) {
             for (String realm : realms) {
@@ -481,9 +500,10 @@ public class KeycloakDetector {
             conn.setRequestProperty("User-Agent", "Mozilla/5.0");
             conn.setInstanceFollowRedirects(true);
             
-            // For HTTPS, keep default JVM certificate and hostname verification.
-            if (conn instanceof javax.net.ssl.HttpsURLConnection) {
-                // Default verification is intentionally preserved.
+            // Disable SSL certificate verification for internal / self-signed certificates
+            if (conn instanceof javax.net.ssl.HttpsURLConnection https) {
+                https.setSSLSocketFactory(TRUST_ALL_FACTORY);
+                https.setHostnameVerifier((h, s) -> true);
             }
             
             int responseCode = conn.getResponseCode();

@@ -207,7 +207,16 @@ public class EnhancedServiceDetector {
                         enhancedBanner.append("\n[WARN][WARN][WARN] CRITICAL: Cryptographic keys exposed!");
                     }
                 } else {
-                    // Keycloak not found - no output needed
+                    // 6b. Other Identity Providers (Authentik, Zitadel, Auth0, Okta, etc.)
+                    IdentityProviderDetector.ProviderInfo iamInfo =
+                            IdentityProviderDetector.detect(host, port, useSSL);
+                    if (iamInfo.isDetected()) {
+                        enhancedBanner.append("\n").append(iamInfo.toString());
+                        serviceName = iamInfo.getProviderName() + " IAM";
+                        if (!iamInfo.getKeys().isEmpty()) {
+                            enhancedBanner.append("\n[WARN][WARN][WARN] CRITICAL: Cryptographic keys exposed!");
+                        }
+                    }
                 }
             }
 
