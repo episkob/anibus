@@ -22,6 +22,8 @@ public class KeycloakDetector {
         private boolean isKeycloak;
         private String version;
         private String realmUrl;
+        private String detectedRealmName; // realm name found dynamically in the page
+        private String keycloakBasePath;  // path prefix where Keycloak was found, e.g. "/keycloak"
         private final List<ExtractedKey> keys;
         private final List<String> exposedEndpoints;
         private boolean hasAdminConsole;
@@ -38,6 +40,10 @@ public class KeycloakDetector {
         public void setVersion(String version) { this.version = version; }
         public String getRealmUrl() { return realmUrl; }
         public void setRealmUrl(String realmUrl) { this.realmUrl = realmUrl; }
+        public String getDetectedRealmName() { return detectedRealmName; }
+        public void setDetectedRealmName(String name) { this.detectedRealmName = name; }
+        public String getKeycloakBasePath() { return keycloakBasePath; }
+        public void setKeycloakBasePath(String path) { this.keycloakBasePath = path; }
         public List<ExtractedKey> getKeys() { return keys; }
         public List<String> getExposedEndpoints() { return exposedEndpoints; }
         public boolean hasAdminConsole() { return hasAdminConsole; }
@@ -201,13 +207,28 @@ public class KeycloakDetector {
                         }
                         
                         info.getExposedEndpoints().add(url);
-                        
-                        // Try to find realm name
+
+                        // Determine the Keycloak base prefix (e.g. "/keycloak", "/auth", "")
+                        String foundPath = path.endsWith("/") ? path.substring(0, path.length() - 1) : path;
+                        // Strip any trailing segment like "/realms" or "/admin"
+                        String kcBase = foundPath;
+                        for (String suffix : new String[]{"/realms", "/admin"}) {
+                            if (kcBase.endsWith(suffix)) {
+                                kcBase = kcBase.substring(0, kcBase.length() - suffix.length());
+                                break;
+                            }
+                        }
+                        info.setKeycloakBasePath(kcBase);
+
+                        // Try to find realm name from embedded JSON (handles both
+                        // Keycloak login-page context and realm endpoint responses)
                         Pattern realmPattern = Pattern.compile("\"realm\"\\s*:\\s*\"([^\"]+)\"");
                         matcher = realmPattern.matcher(response);
                         if (matcher.find()) {
                             String realmName = matcher.group(1);
-                            info.setRealmUrl(baseUrl + "/auth/realms/" + realmName);
+                            info.setDetectedRealmName(realmName);
+                            // Store the canonical realm URL using the actual base path
+                            info.setRealmUrl(baseUrl + kcBase + "/realms/" + realmName);
                         }
                         
                         return true;
@@ -276,10 +297,18 @@ public class KeycloakDetector {
      * Extract keys from realm configuration
      */
     private static void extractKeysFromRealmConfig(String baseUrl, KeycloakInfo info) {
-        // Try to access realm configurations
-        String[] realms = {"master", "main", "default", "demo", "ready2tools"}; // Added ready2tools for r2u
-        String[] realmBasePaths = {"/auth/realms/", "/keycloak/realms/", "/realms/"};
-        
+        // Try to access realm configurations — combine hardcoded list with dynamically discovered realm
+        java.util.LinkedHashSet<String> realmSet = new java.util.LinkedHashSet<>();
+        if (info.getDetectedRealmName() != null) realmSet.add(info.getDetectedRealmName());
+        realmSet.addAll(java.util.Arrays.asList("master", "main", "default", "demo", "ready2tools"));
+        String[] realms = realmSet.toArray(new String[0]);
+
+        // Build realm base path list: prefer detected Keycloak base, then fallback paths
+        java.util.LinkedHashSet<String> basePathSet = new java.util.LinkedHashSet<>();
+        if (info.getKeycloakBasePath() != null) basePathSet.add(info.getKeycloakBasePath() + "/realms/");
+        basePathSet.addAll(java.util.Arrays.asList("/auth/realms/", "/keycloak/realms/", "/realms/"));
+        String[] realmBasePaths = basePathSet.toArray(new String[0]);
+
         for (String basePath : realmBasePaths) {
             for (String realm : realms) {
                 try {
@@ -300,9 +329,17 @@ public class KeycloakDetector {
      * Extract keys from .well-known/openid-configuration
      */
     private static void extractKeysFromWellKnown(String baseUrl, KeycloakInfo info) {
-        String[] realms = {"master", "main", "default", "demo", "ready2tools"}; // Added ready2tools for r2u
-        String[] realmBasePaths = {"/auth/realms/", "/keycloak/realms/", "/realms/"};
-        
+        // Combine dynamically discovered realm with hardcoded fallbacks
+        java.util.LinkedHashSet<String> realmSet = new java.util.LinkedHashSet<>();
+        if (info.getDetectedRealmName() != null) realmSet.add(info.getDetectedRealmName());
+        realmSet.addAll(java.util.Arrays.asList("master", "main", "default", "demo", "ready2tools"));
+        String[] realms = realmSet.toArray(new String[0]);
+
+        java.util.LinkedHashSet<String> basePathSet = new java.util.LinkedHashSet<>();
+        if (info.getKeycloakBasePath() != null) basePathSet.add(info.getKeycloakBasePath() + "/realms/");
+        basePathSet.addAll(java.util.Arrays.asList("/auth/realms/", "/keycloak/realms/", "/realms/"));
+        String[] realmBasePaths = basePathSet.toArray(new String[0]);
+
         for (String basePath : realmBasePaths) {
             for (String realm : realms) {
                 try {
