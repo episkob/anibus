@@ -3,7 +3,6 @@ package it.r2u.anibus.service.detection;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -15,27 +14,7 @@ import java.util.regex.Pattern;
  */
 public class KeycloakDetector {
     
-    private static final int TIMEOUT = 5000;
     private static final int MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
-
-    /** Trust-all SSL factory so internal/self-signed certificates don't block detection. */
-    private static final javax.net.ssl.SSLSocketFactory TRUST_ALL_FACTORY;
-    static {
-        try {
-            javax.net.ssl.TrustManager[] tm = {
-                new javax.net.ssl.X509TrustManager() {
-                    @Override public java.security.cert.X509Certificate[] getAcceptedIssuers() { return new java.security.cert.X509Certificate[0]; }
-                    @Override public void checkClientTrusted(java.security.cert.X509Certificate[] c, String a) {}
-                    @Override public void checkServerTrusted(java.security.cert.X509Certificate[] c, String a) {}
-                }
-            };
-            javax.net.ssl.SSLContext ctx = javax.net.ssl.SSLContext.getInstance("TLS");
-            ctx.init(null, tm, new java.security.SecureRandom());
-            TRUST_ALL_FACTORY = ctx.getSocketFactory();
-        } catch (java.security.NoSuchAlgorithmException | java.security.KeyManagementException ex) {
-            throw new RuntimeException("TrustAllSsl init failed", ex);
-        }
-    }
     
     public static class KeycloakInfo {
         private boolean isKeycloak;
@@ -492,20 +471,10 @@ public class KeycloakDetector {
      */
     private static String fetchUrl(String urlString) {
         try {
-            URI uri = new URI(urlString);
-            HttpURLConnection conn = (HttpURLConnection) uri.toURL().openConnection();
+            HttpURLConnection conn = it.r2u.anibus.util.HttpClientFactory.open(
+                urlString, it.r2u.anibus.util.HttpClientFactory.TimeoutProfile.NORMAL);
             conn.setRequestMethod("GET");
-            conn.setConnectTimeout(TIMEOUT);
-            conn.setReadTimeout(TIMEOUT);
-            conn.setRequestProperty("User-Agent", "Mozilla/5.0");
-            conn.setInstanceFollowRedirects(true);
-            
-            // Disable SSL certificate verification for internal / self-signed certificates
-            if (conn instanceof javax.net.ssl.HttpsURLConnection https) {
-                https.setSSLSocketFactory(TRUST_ALL_FACTORY);
-                https.setHostnameVerifier((h, s) -> true);
-            }
-            
+
             int responseCode = conn.getResponseCode();
             
             if (responseCode == 200) {
@@ -525,7 +494,7 @@ public class KeycloakDetector {
             }
             
             conn.disconnect();
-        } catch (java.io.IOException | java.net.URISyntaxException e) {
+        } catch (java.io.IOException e) {
             // Silently fail
         }
         

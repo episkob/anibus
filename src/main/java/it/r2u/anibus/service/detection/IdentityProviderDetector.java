@@ -23,7 +23,6 @@ import java.util.regex.Pattern;
  */
 public class IdentityProviderDetector {
 
-    private static final int TIMEOUT     = 6_000;
     private static final int MAX_BYTES   = 2 * 1024 * 1024;
 
     // ── Public result types ───────────────────────────────────────────────────
@@ -497,42 +496,9 @@ public class IdentityProviderDetector {
     }
 
     private static HttpURLConnection openConnection(URI uri) throws Exception {
-        HttpURLConnection conn =
-            (HttpURLConnection) uri.toURL().openConnection();
+        HttpURLConnection conn = it.r2u.anibus.util.HttpClientFactory.open(
+            uri.toString(), it.r2u.anibus.util.HttpClientFactory.TimeoutProfile.NORMAL);
         conn.setRequestMethod("GET");
-        conn.setConnectTimeout(TIMEOUT);
-        conn.setReadTimeout(TIMEOUT);
-        conn.setRequestProperty("User-Agent",
-            "Mozilla/5.0 (compatible; security-scanner/1.0)");
-        conn.setInstanceFollowRedirects(true);
-
-        // Disable SSL certificate verification for internal / self-signed certs
-        if (conn instanceof javax.net.ssl.HttpsURLConnection https) {
-            https.setSSLSocketFactory(TrustAllSsl.SOCKET_FACTORY);
-            https.setHostnameVerifier((h, s) -> true);
-        }
         return conn;
-    }
-
-    // ── Trust-all SSL helper (internal / self-signed certs) ──────────────────
-
-    private static final class TrustAllSsl {
-        static final javax.net.ssl.SSLSocketFactory SOCKET_FACTORY;
-        static {
-            try {
-                javax.net.ssl.TrustManager[] tm = {
-                    new javax.net.ssl.X509TrustManager() {
-                        @Override public java.security.cert.X509Certificate[] getAcceptedIssuers() { return new java.security.cert.X509Certificate[0]; }
-                        @Override public void checkClientTrusted(java.security.cert.X509Certificate[] c, String a) {}
-                        @Override public void checkServerTrusted(java.security.cert.X509Certificate[] c, String a) {}
-                    }
-                };
-                javax.net.ssl.SSLContext ctx = javax.net.ssl.SSLContext.getInstance("TLS");
-                ctx.init(null, tm, new java.security.SecureRandom());
-                SOCKET_FACTORY = ctx.getSocketFactory();
-            } catch (java.security.NoSuchAlgorithmException | java.security.KeyManagementException ex) {
-                throw new RuntimeException("TrustAllSsl init failed", ex);
-            }
-        }
     }
 }

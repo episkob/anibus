@@ -10,7 +10,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -26,7 +25,6 @@ import javax.net.ssl.HttpsURLConnection;
  */
 public class SqlMetadataExtractor {
 
-    private static final Logger LOG = Logger.getLogger(SqlMetadataExtractor.class.getName());
     private static final int TIMEOUT = 10_000;
     /** Delimiter we look for in the reflected response. */
     private static final String DELIM = "ANIBUS~";
@@ -239,13 +237,7 @@ public class SqlMetadataExtractor {
         }
 
         if (con instanceof HttpsURLConnection https) {
-            try {
-                javax.net.ssl.SSLContext ctx = buildTrustAll();
-                https.setSSLSocketFactory(ctx.getSocketFactory());
-                https.setHostnameVerifier((h, s) -> true);
-            } catch (Exception e) {
-                LOG.fine(() -> "TLS trust-all setup failed, using default SSL: " + e.getMessage());
-            }
+            it.r2u.anibus.util.InsecureSsl.apply(https);
         }
 
         con.setConnectTimeout(TIMEOUT);
@@ -284,19 +276,6 @@ public class SqlMetadataExtractor {
         } catch (IllegalArgumentException e) {
             throw new IOException("Invalid URL: " + targetUrl, e);
         }
-    }
-
-    private static javax.net.ssl.SSLContext buildTrustAll() throws Exception {
-        javax.net.ssl.TrustManager[] tm = new javax.net.ssl.TrustManager[]{
-            new javax.net.ssl.X509TrustManager() {
-                @Override public java.security.cert.X509Certificate[] getAcceptedIssuers() { return new java.security.cert.X509Certificate[0]; }
-                @Override public void checkClientTrusted(java.security.cert.X509Certificate[] c, String a) {}
-                @Override public void checkServerTrusted(java.security.cert.X509Certificate[] c, String a) {}
-            }
-        };
-        javax.net.ssl.SSLContext ctx = javax.net.ssl.SSLContext.getInstance("TLS");
-        ctx.init(null, tm, null);
-        return ctx;
     }
 
     private static String nvl(String s, String def) { return (s == null || s.isBlank()) ? def : s; }
