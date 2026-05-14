@@ -106,6 +106,14 @@ public class ApiSecurityModeService {
                         probes.add(new EndpointProbe(method + "+FUZZ", fuzzedPath, fuzzStatus,
                                 "ID fuzz probe: " + classify(fuzzStatus)));
                     }
+                    // BOLA / IDOR: compare authenticated access to neighbour id
+                    EndpointProbe bola = runBolaProbe(normalizedBase, path, method);
+                    if (bola != null) probes.add(bola);
+                }
+
+                // Enum-style query parameter fuzz (sort/order/role/status)
+                if ("GET".equals(method)) {
+                    probes.addAll(runEnumQueryFuzz(normalizedBase, path, method));
                 }
             }
         }
@@ -202,6 +210,55 @@ public class ApiSecurityModeService {
         variants.add(normalized);
         variants.add(normalized.replace("/1", "/999999"));
         return variants.stream().distinct().toList();
+    }
+
+    /**
+     * BOLA / IDOR probe: requests two neighbour IDs with the test auth header.
+     * If both return 200 (or the same non-error status), the endpoint likely
+     * does not enforce ownership checks on the {id} parameter.
+     */
+    private EndpointProbe runBolaProbe(String baseUrl, String path, String method) {
+        String pathA = path.replaceAll("\\{[^/}]+}", "1");
+        String pathB = path.replaceAll("\\{[^/}]+}", "2");
+        if (pathA.equals(pathB)) return null;
+        int sa = probe(baseUrl, pathA, method, TEST_AUTH_HEADER);
+        int sb = probe(baseUrl, pathB, method, TEST_AUTH_HEADER);
+        if (sa == 0 || sb == 0) return null;
+        boolean both200 = sa == 200 && sb == 200;
+        boolean sameOK = sa == sb && sa >= 200 && sa < 300;
+        if (both200 || sameOK) {
+            return new EndpointProbe(method + "+BOLA", path, sa,
+                "Possible BOLA/IDOR: id=1 → " + sa + ", id=2 → " + sb
+                + " (ownership not enforced)");
+        }
+        return new EndpointProbe(method + "+BOLA", path, sa,
+            "BOLA probe: id=1 → " + sa + ", id=2 → " + sb + " (different — appears protected)");
+    }
+
+    /**
+     * Enum-style query fuzzing: probes common enum-like parameters with
+     * suspicious values to detect injection / privilege escalation surface.
+     */
+    private List<EndpointProbe> runEnumQueryFuzz(String baseUrl, String path, String method) {
+        List<EndpointProbe> out = new ArrayList<>();
+        String[][] cases = {
+            {"role",   "admin"},
+            {"role",   "superuser"},
+            {"status", "all"},
+            {"sort",   "id;DROP"},
+            {"order",  "desc'"},
+            {"filter", "*"},
+            {"debug",  "true"}
+        };
+        for (String[] kv : cases) {
+            String injected = (path.contains("?") ? path + "&" : path + "?") + kv[0] + "=" + kv[1];
+            int status = probe(baseUrl, injected, method, null);
+            if (status == 200 || status == 500) {
+                out.add(new EndpointProbe(method + "+ENUM", injected, status,
+                    "Enum-fuzz " + kv[0] + "=" + kv[1] + " → " + classify(status)));
+            }
+        }
+        return out;
     }
 
     private boolean requiresBody(String method) {

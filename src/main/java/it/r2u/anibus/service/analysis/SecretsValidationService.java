@@ -90,6 +90,14 @@ public class SecretsValidationService {
             Pattern.compile("\"private_key\"\\s*:\\s*\"-----BEGIN"),
             "Remove from code, rotate key in GCP IAM."),
 
+        new Rule("Google",   "Service Account JSON (full file)",
+            Pattern.compile("\"type\"\\s*:\\s*\"service_account\"[\\s\\S]{0,400}?\"private_key_id\""),
+            "Full GCP service-account JSON detected. Revoke key in IAM → Service Accounts and rotate."),
+
+        new Rule("GCP",      "OAuth Client Secret",
+            Pattern.compile("GOCSPX-[A-Za-z0-9_-]{20,}"),
+            "Revoke at console.cloud.google.com/apis/credentials."),
+
         new Rule("JWT",      "JSON Web Token",
             Pattern.compile("eyJ[A-Za-z0-9_-]+\\.eyJ[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]*"),
             "Tokens should not persist in source code. Check exp and aud claims."),
@@ -142,6 +150,44 @@ public class SecretsValidationService {
                 continue;
             }
             validateValue(candidate, out);
+        }
+        return out;
+    }
+
+    /**
+     * Fuzzy dictionary scan: looks for secret-like assignments
+     * ({@code secret/password/token/apikey = "..."} ) in arbitrary text
+     * (e.g. JS bundles, config blobs) and returns them as candidate findings.
+     *
+     * @param content raw source text to scan
+     * @return list of fuzzy-match candidates (provider="Heuristic")
+     */
+    public List<ValidationResult> scanFuzzy(String content) {
+        List<ValidationResult> out = new ArrayList<>();
+        if (content == null || content.isBlank()) return out;
+        Pattern p = Pattern.compile(
+            "(?i)\\b(secret|password|passwd|pwd|token|api[_-]?key|access[_-]?key|auth|bearer)\\b"
+            + "\\s*[:=]\\s*[\"']([^\"'\\s]{6,256})[\"']");
+        java.util.regex.Matcher m = p.matcher(content);
+        java.util.LinkedHashSet<String> seen = new java.util.LinkedHashSet<>();
+        while (m.find()) {
+            String keyword = m.group(1);
+            String value = m.group(2);
+            // Skip obvious placeholders
+            String low = value.toLowerCase(Locale.ROOT);
+            if (low.contains("your") || low.contains("example") || low.contains("placeholder")
+                || low.contains("xxxx") || low.equals("changeme") || low.startsWith("${")) {
+                continue;
+            }
+            if (!seen.add(keyword + "=" + value)) continue;
+            out.add(new ValidationResult(
+                truncate(value, 80),
+                "Heuristic",
+                "Suspicious " + keyword.toLowerCase(Locale.ROOT) + " assignment",
+                false,
+                "fuzzy:" + keyword,
+                "Manually review: looks like a credential literal embedded in code."
+            ));
         }
         return out;
     }

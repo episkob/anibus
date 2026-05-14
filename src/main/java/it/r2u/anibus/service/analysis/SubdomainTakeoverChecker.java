@@ -50,7 +50,30 @@ public class SubdomainTakeoverChecker {
         Map.entry("The page you're looking for doesn't exist", "Webflow"),
         Map.entry("Sorry, We Couldn\u2019t Find That Page", "Shopify"),
         Map.entry("ghost: Failed to lookup view", "Ghost"),
-        Map.entry("404 Not Found", "Cargo")
+        Map.entry("404 Not Found", "Cargo"),
+        // Modern platforms (v2)
+        Map.entry("The deployment could not be found on Vercel", "Vercel"),
+        Map.entry("DEPLOYMENT_NOT_FOUND", "Vercel"),
+        Map.entry("Not Found - Request ID:", "Render"),
+        Map.entry("404 page not found", "Fly.io"),
+        Map.entry("The site configured at this address does not contain the requested file", "Pantheon"),
+        Map.entry("page not found", "Strikingly"),
+        Map.entry("Whatever you were looking for doesn't currently exist", "Tumblr"),
+        Map.entry("There's nothing here, yet.", "Tumblr"),
+        Map.entry("Trying to access your account?", "Campaign Monitor"),
+        Map.entry("Domain mapping upgrade for this domain not found", "WordPress"),
+        Map.entry("Sorry, this shop is currently unavailable", "Shopify Store"),
+        Map.entry("Unable to satisfy request: host not in domain", "AWS Elastic Beanstalk"),
+        Map.entry("is not a Smartling page", "Smartling"),
+        Map.entry("You may have mistyped the address or the page may have moved", "Acquia"),
+        Map.entry("It looks like you may have taken a wrong turn somewhere", "Ngrok"),
+        Map.entry("Tunnel *.ngrok.io not found", "Ngrok"),
+        Map.entry("This Help Center no longer exists", "Help Scout"),
+        Map.entry("Sorry, this page is no longer available", "Wishpond"),
+        Map.entry("Project doesnt exist... yet!", "Readme.io"),
+        Map.entry("This domain is not configured", "Worksites.net"),
+        Map.entry("\"errorCode\":\"NOT_FOUND\"", "Railway"),
+        Map.entry("LeadPages", "LeadPages")
     );
 
     private final int timeoutMs;

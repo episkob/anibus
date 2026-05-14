@@ -29,7 +29,19 @@ public class SsrfDetector {
         "http://0.0.0.0/",
         "http://localtest.me/",
         "file:///etc/passwd",
-        "dict://localhost:6379/info"
+        "dict://localhost:6379/info",
+        // Bypass variants (v2): SSRF blacklist evasion
+        "http://[::ffff:169.254.169.254]/latest/meta-data/",   // IPv4-mapped IPv6
+        "http://[0:0:0:0:0:ffff:a9fe:a9fe]/latest/meta-data/",  // long-form mapped
+        "http://0177.0.0.1/",                                   // octal 127
+        "http://0x7f.0.0.1/",                                   // hex 127
+        "http://2130706433/",                                   // decimal 127.0.0.1
+        "http://017700000001/",                                 // full-octal 127.0.0.1
+        "http://0x7f000001/",                                   // full-hex 127.0.0.1
+        "http://127.1/",                                        // short-form IP
+        "http://127.0.0.1.nip.io/",                             // DNS rebinding service
+        "gopher://127.0.0.1:6379/_INFO",                        // gopher → Redis SSRF
+        "ftp://127.0.0.1/"
     );
 
     /** Parameter names commonly vulnerable to SSRF. */
