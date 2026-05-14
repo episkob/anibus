@@ -33,7 +33,7 @@ import java.util.regex.Pattern;
 public class AuthCrawler {
 
     /** Supported authentication modes. */
-    public enum Mode { BASIC, BEARER, OAUTH2_CLIENT_CREDENTIALS, DIGEST, FORM }
+    public enum Mode { BASIC, BEARER, OAUTH2_CLIENT_CREDENTIALS, DIGEST, FORM, NTLM }
 
     private static final int TIMEOUT = 8000;
     private static final int MAX_PATHS = 200;
@@ -65,6 +65,7 @@ public class AuthCrawler {
     private String basicCredentials;
     private DigestChallenge digestChallenge;
     private int nonceCount;
+    private String ntlmAuthorization;
 
     /** Performs HTTP Basic authentication then probes each path. */
     public AuthCrawlReport crawlWithBasic(String baseUrl, String username, String password, List<String> paths) {
@@ -285,6 +286,65 @@ public class AuthCrawler {
         if (digestChallenge != null) {
             String header = buildDigestAuthorization(digestChallenge, method, uriPath(url));
             if (header != null) conn.setRequestProperty("Authorization", header);
+            return;
+        }
+        if (ntlmAuthorization != null) {
+            conn.setRequestProperty("Authorization", ntlmAuthorization);
+        }
+    }
+
+    /**
+     * Performs the three-message NTLM handshake (Type-1 negotiate, Type-2
+     * challenge, Type-3 authenticate) against {@code baseUrl} and, when the
+     * handshake succeeds, reuses the negotiated Authorization header on every
+     * probe. NTLMv2 is used; the LM response is intentionally not sent
+     * (NTLM-only response).
+     *
+     * <p>This implementation is sufficient for reconnaissance of corporate
+     * IIS / Sharepoint / Exchange endpoints; it does not negotiate signing
+     * or sealing.
+     */
+    public AuthCrawlReport crawlWithNtlm(String baseUrl, String username, String password,
+            String workstation, String domain, List<String> paths) {
+        if (username == null) username = "";
+        if (password == null) password = "";
+        if (workstation == null) workstation = "";
+        if (domain == null) domain = "";
+        try {
+            // Type 1: Negotiate.
+            byte[] type1 = NtlmMessages.type1(workstation, domain);
+            String type1B64 = java.util.Base64.getEncoder().encodeToString(type1);
+            HttpURLConnection neg = (HttpURLConnection) URI.create(baseUrl).toURL().openConnection();
+            neg.setRequestMethod("GET");
+            neg.setConnectTimeout(TIMEOUT);
+            neg.setReadTimeout(TIMEOUT);
+            neg.setInstanceFollowRedirects(false);
+            neg.setRequestProperty("Authorization", "NTLM " + type1B64);
+            neg.connect();
+            int sc = neg.getResponseCode();
+            String wwwAuth = neg.getHeaderField("WWW-Authenticate");
+            neg.disconnect();
+            if (sc != 401 || wwwAuth == null) {
+                return new AuthCrawlReport(Mode.NTLM, baseUrl, false,
+                    "NTLM negotiate: server returned HTTP " + sc + " (no challenge)", List.of());
+            }
+            String challengeB64 = wwwAuth.replaceFirst("(?i)^NTLM\\s+", "").trim();
+            byte[] type2;
+            try {
+                type2 = java.util.Base64.getDecoder().decode(challengeB64);
+            } catch (IllegalArgumentException e) {
+                return new AuthCrawlReport(Mode.NTLM, baseUrl, false,
+                    "NTLM challenge is not valid base64", List.of());
+            }
+            // Type 3: Authenticate.
+            byte[] type3 = NtlmMessages.type3(type2, username, password, workstation, domain);
+            this.ntlmAuthorization = "NTLM " + java.util.Base64.getEncoder().encodeToString(type3);
+            return new AuthCrawlReport(Mode.NTLM, baseUrl, true,
+                "NTLM Type-3 sent for user '" + (domain.isEmpty() ? username : domain + "\\\\" + username) + "'",
+                probeAll(baseUrl, paths));
+        } catch (IOException | IllegalArgumentException e) {
+            return new AuthCrawlReport(Mode.NTLM, baseUrl, false,
+                "NTLM handshake failed: " + e.getMessage(), List.of());
         }
     }
 

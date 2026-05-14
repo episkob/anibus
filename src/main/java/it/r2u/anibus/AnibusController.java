@@ -36,6 +36,7 @@ import it.r2u.anibus.service.analysis.ParamMinerService;
 import it.r2u.anibus.service.analysis.PassiveReconService;
 import it.r2u.anibus.service.analysis.SQLInjectionAnalyzer;
 import it.r2u.anibus.service.analysis.SecretsValidationService;
+import it.r2u.anibus.service.analysis.ServiceMisconfigurationChecker;
 import it.r2u.anibus.service.analysis.SourceMapAnalyzer;
 import it.r2u.anibus.service.analysis.SsrfDetector;
 import it.r2u.anibus.service.analysis.SubdomainTakeoverChecker;
@@ -700,7 +701,7 @@ public class AnibusController {
             createMenuItem("Run Param Miner", this::runParamMiner),
             createMenuItem("Passive Recon Mode", this::runPassiveRecon),
             createMenuItem("Validate Secrets and JS Leaks", this::runSecretsValidation),
-            createMenuItem("Authenticated Crawl (Basic/Bearer/Digest/Form/OAuth2)", this::runAuthCrawl)
+            createMenuItem("Authenticated Crawl (Basic/Bearer/Digest/Form/OAuth2/NTLM)", this::runAuthCrawl)
         );
         return menu;
     }
@@ -742,7 +743,8 @@ public class AnibusController {
             createMenuItem("DNS Zone Transfer (AXFR)", this::runDnsAxfr),
             createMenuItem("WebSocket Detector", this::runWebSocketDetect),
             createMenuItem("HTTP/2 and HTTP/3 Support", this::runHttpProtocolDetect),
-            createMenuItem("ASN Lookup", this::runAsnLookup)
+            createMenuItem("ASN Lookup", this::runAsnLookup),
+            createMenuItem("Service Misconfiguration Check (Redis/Mongo/ES/Docker/...)", this::runServiceMisconfigCheck)
         );
         return menu;
     }
@@ -909,6 +911,16 @@ public class AnibusController {
                         if (!pass.isBlank()) formFields.putIfAbsent("password", pass);
                         yield ac.crawlWithFormLogin(baseUrl, extra.isBlank() ? baseUrl : extra, formFields, paths);
                     }
+                    case NTLM -> {
+                        // 'user' may be in DOMAIN\\user or user@domain form — split it.
+                        String dom = "";
+                        String u = user;
+                        int slash = user.indexOf('\\');
+                        if (slash > 0) { dom = user.substring(0, slash); u = user.substring(slash + 1); }
+                        int at = u.indexOf('@');
+                        if (at > 0) { dom = u.substring(at + 1); u = u.substring(0, at); }
+                        yield ac.crawlWithNtlm(baseUrl, u, pass, /* workstation */ extra, dom, paths);
+                    }
                 };
             }
         };
@@ -938,6 +950,42 @@ public class AnibusController {
     }
 
     private void runSourceMapAnalysis() { extraScanHandler.runSourceMapAnalysis(); }
+
+    private void runServiceMisconfigCheck() {
+        String host = it.r2u.anibus.handlers.SecurityAnalysisHandler.extractHostOrDomain(
+            hostTextField != null ? hostTextField.getText() : "");
+        if (host == null || host.isBlank()) {
+            setStatus("Service misconfig check: enter a target host");
+            return;
+        }
+        Task<List<ServiceMisconfigurationChecker.MisconfigFinding>> task = new Task<>() {
+            @Override
+            protected List<ServiceMisconfigurationChecker.MisconfigFinding> call() {
+                return new ServiceMisconfigurationChecker().scan(host);
+            }
+        };
+        progressBar.progressProperty().unbind();
+        progressBar.progressProperty().bind(task.progressProperty());
+        progressBar.setVisible(true);
+        setStatus("Service misconfig probe running against " + host + "...");
+        task.setOnSucceeded(ev -> {
+            progressBar.progressProperty().unbind();
+            progressBar.setVisible(false);
+            List<ServiceMisconfigurationChecker.MisconfigFinding> findings = task.getValue();
+            consoleTextArea.appendText("\n"
+                + ServiceMisconfigurationChecker.formatReport(host, findings) + "\n");
+            setStatus("Service misconfig check finished: " + findings.size() + " finding(s)");
+        });
+        task.setOnFailed(ev -> {
+            progressBar.progressProperty().unbind();
+            progressBar.setVisible(false);
+            Throwable ex = task.getException();
+            setStatus("Service misconfig probe failed: " + (ex != null ? ex.getMessage() : "unknown error"));
+        });
+        Thread t = new Thread(task, "anibus-svc-misconfig");
+        t.setDaemon(true);
+        t.start();
+    }
 
     private void runParamMiner() { extraScanHandler.runParamMiner(); }
 

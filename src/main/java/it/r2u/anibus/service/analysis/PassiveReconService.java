@@ -185,7 +185,14 @@ public class PassiveReconService {
             if (response.statusCode() < 200 || response.statusCode() >= 400 || response.body() == null) {
                 return "n/a";
             }
-            return sha256(response.body());
+            byte[] body = response.body();
+            String sha = sha256(body);
+            int mmh3 = FaviconFingerprintDatabase.mmh3FaviconHash(body);
+            FaviconFingerprintDatabase.lookupByMmh3(mmh3).ifPresent(product ->
+                notes.add("Favicon fingerprint match (mmh3=" + mmh3 + "): " + product));
+            FaviconFingerprintDatabase.lookupBySha256(sha).ifPresent(product ->
+                notes.add("Favicon SHA-256 match: " + product));
+            return sha;
         } catch (IOException | InterruptedException | IllegalArgumentException e) {
             if (e instanceof InterruptedException) {
                 Thread.currentThread().interrupt();
