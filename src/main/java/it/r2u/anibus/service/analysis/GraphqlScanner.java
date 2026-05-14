@@ -154,12 +154,11 @@ public class GraphqlScanner {
 
             String response = new String(conn.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
             // Heuristics: server processed the deep query and returned data — no depth-limit error.
-            if (response.contains("\"data\"") && !response.toLowerCase().contains("depth")
-                    && !response.toLowerCase().contains("too deep")
-                    && !response.toLowerCase().contains("complexity")) {
-                return true;
-            }
-            return false;
+            String lower = response.toLowerCase();
+            return response.contains("\"data\"")
+                && !lower.contains("depth")
+                && !lower.contains("too deep")
+                && !lower.contains("complexity");
         } catch (IOException | IllegalArgumentException ignored) {
             return false;
         }
