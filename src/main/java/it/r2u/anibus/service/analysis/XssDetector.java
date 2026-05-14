@@ -31,6 +31,18 @@ public class XssDetector {
         "%3C" + CANARY + "%3E"
     );
 
+    /** Reflection context — where the canary lands in the response. */
+    public enum Context {
+        HTML_TEXT,          // between tags, classic <h1>CANARY</h1>
+        HTML_ATTRIBUTE,     // inside attribute value <input value="CANARY">
+        SCRIPT_BLOCK,       // inside <script>...CANARY...</script>
+        JS_STRING,          // inside a JS string literal var x="CANARY"
+        STYLE_BLOCK,        // inside <style> or style="..."
+        HTML_COMMENT,       // inside <!-- CANARY -->
+        URL_ATTRIBUTE,      // href / src / action containing CANARY
+        UNKNOWN
+    }
+
     /** Result of a single XSS probe. */
     public record XssResult(
         String url,
@@ -38,9 +50,19 @@ public class XssDetector {
         String payload,
         boolean reflected,
         String evidence,
-        String pocCurl
+        String pocCurl,
+        Context context,
+        String escapeHint
     ) {
-        public String risk() { return reflected ? "HIGH" : "NONE"; }
+        public String risk() {
+            if (!reflected) return "NONE";
+            return switch (context) {
+                case SCRIPT_BLOCK, JS_STRING, URL_ATTRIBUTE -> "CRITICAL";
+                case HTML_TEXT, HTML_ATTRIBUTE              -> "HIGH";
+                case STYLE_BLOCK                            -> "MEDIUM";
+                case HTML_COMMENT, UNKNOWN                  -> "LOW";
+            };
+        }
         /** Reproducible PoC URL with payload pre-injected. */
         public String pocUrl() { return url; }
     }
@@ -96,7 +118,9 @@ public class XssDetector {
             if (reflected) {
                 String evidence = extractEvidence(body, CANARY, 80);
                 String curl = "curl -i '" + probeUrl.replace("'", "'\\''") + "'";
-                return new XssResult(probeUrl, param, payload, true, evidence, curl);
+                Context ctx = detectContext(body, CANARY);
+                String hint = escapeHintFor(ctx);
+                return new XssResult(probeUrl, param, payload, true, evidence, curl, ctx, hint);
             }
         } catch (IOException ignored) { }
         return null;
@@ -114,6 +138,83 @@ public class XssDetector {
         return "…" + body.substring(start, end).replaceAll("\\s+", " ").trim() + "…";
     }
 
+    /**
+     * Determines the lexical context where {@code needle} appears in the response body.
+     * Uses lightweight heuristics on a window around the first occurrence.
+     */
+    static Context detectContext(String body, String needle) {
+        int idx = body.indexOf(needle);
+        if (idx < 0) return Context.UNKNOWN;
+        String before = body.substring(Math.max(0, idx - 512), idx);
+        String beforeLower = before.toLowerCase();
+
+        // HTML comment <!-- ... -->
+        int cmtOpen = beforeLower.lastIndexOf("<!--");
+        int cmtClose = beforeLower.lastIndexOf("-->");
+        if (cmtOpen > cmtClose) return Context.HTML_COMMENT;
+
+        // Inside <script>...</script>
+        int scriptOpen = beforeLower.lastIndexOf("<script");
+        int scriptClose = beforeLower.lastIndexOf("</script");
+        if (scriptOpen > scriptClose) {
+            // Inside script — check if inside a quoted string
+            String afterTag = before.substring(beforeLower.indexOf('>', scriptOpen) + 1);
+            if (insideQuotedString(afterTag)) return Context.JS_STRING;
+            return Context.SCRIPT_BLOCK;
+        }
+
+        // Inside <style>...</style>
+        int styleOpen = beforeLower.lastIndexOf("<style");
+        int styleClose = beforeLower.lastIndexOf("</style");
+        if (styleOpen > styleClose) return Context.STYLE_BLOCK;
+
+        // Inside an open tag — attribute context
+        int lastLt = before.lastIndexOf('<');
+        int lastGt = before.lastIndexOf('>');
+        if (lastLt > lastGt) {
+            String tagFragment = beforeLower.substring(lastLt);
+            // URL-bearing attributes
+            if (tagFragment.matches(".*\\b(href|src|action|formaction|xlink:href|data|poster|background)\\s*=\\s*[\"']?[^\"']*$")) {
+                return Context.URL_ATTRIBUTE;
+            }
+            // Inline style attribute
+            if (tagFragment.matches(".*\\bstyle\\s*=\\s*[\"']?[^\"']*$")) {
+                return Context.STYLE_BLOCK;
+            }
+            return Context.HTML_ATTRIBUTE;
+        }
+
+        return Context.HTML_TEXT;
+    }
+
+    /** Checks whether the position at the end of {@code fragment} is inside an unclosed JS string literal. */
+    private static boolean insideQuotedString(String fragment) {
+        boolean inSingle = false, inDouble = false, inBacktick = false;
+        boolean escape = false;
+        for (int i = 0; i < fragment.length(); i++) {
+            char c = fragment.charAt(i);
+            if (escape) { escape = false; continue; }
+            if (c == '\\') { escape = true; continue; }
+            if (!inDouble && !inBacktick && c == '\'') inSingle = !inSingle;
+            else if (!inSingle && !inBacktick && c == '"') inDouble = !inDouble;
+            else if (!inSingle && !inDouble && c == '`') inBacktick = !inBacktick;
+        }
+        return inSingle || inDouble || inBacktick;
+    }
+
+    private static String escapeHintFor(Context ctx) {
+        return switch (ctx) {
+            case HTML_TEXT       -> "HTML-encode (&lt; &gt; &amp; &quot; &#39;) before insertion into element text";
+            case HTML_ATTRIBUTE  -> "HTML-attribute encode and always quote the attribute value";
+            case SCRIPT_BLOCK    -> "Do NOT inject into <script> raw; use JSON.stringify or move data to data-* attributes";
+            case JS_STRING       -> "JavaScript string encode (\\xHH / \\uHHHH) and quote the literal";
+            case STYLE_BLOCK     -> "CSS escape (\\HH) and reject expressions / url() with javascript:";
+            case URL_ATTRIBUTE   -> "Validate scheme (http/https only), reject javascript:/data:/vbscript:, then URL-encode";
+            case HTML_COMMENT    -> "Avoid placing user input in HTML comments — strip '--' sequences at minimum";
+            case UNKNOWN         -> "Apply context-specific encoding once the sink is identified";
+        };
+    }
+
     /** Formats a human-readable report. */
     public static String formatReport(List<XssResult> results, String targetUrl) {
         if (results == null || results.isEmpty()) {
@@ -128,8 +229,11 @@ public class XssDetector {
             for (XssResult r : hits) {
                 sb.append("\n  [").append(r.risk()).append("] param=").append(r.parameter()).append("\n");
                 sb.append("    payload : ").append(r.payload()).append("\n");
+                sb.append("    context : ").append(r.context()).append("\n");
                 sb.append("    PoC URL : ").append(r.pocUrl()).append("\n");
                 sb.append("    PoC curl: ").append(r.pocCurl()).append("\n");
+                if (r.escapeHint() != null && !r.escapeHint().isBlank())
+                    sb.append("    fix     : ").append(r.escapeHint()).append("\n");
                 if (!r.evidence().isBlank())
                     sb.append("    evidence: ").append(r.evidence()).append("\n");
             }

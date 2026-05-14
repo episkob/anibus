@@ -35,6 +35,7 @@ public class PassiveReconService {
         boolean sitemapFound,
         String faviconSha256,
         List<CookieFlagsAuditor.CookieFinding> cookieFindings,
+        CsrfTokenExtractor.CsrfToken csrfToken,
         List<String> notes
     ) {}
 
@@ -54,6 +55,7 @@ public class PassiveReconService {
         List<String> notes = new ArrayList<>();
         Map<String, String> headers = new LinkedHashMap<>();
         List<CookieFlagsAuditor.CookieFinding> cookieFindings = List.of();
+        CsrfTokenExtractor.CsrfToken csrfToken = null;
         int statusCode = -1;
         String finalUrl = targetUrl;
         String title = "n/a";
@@ -78,6 +80,7 @@ public class PassiveReconService {
                 page.headers().allValues("set-cookie"), httpsContext);
 
             title = extractTitle(page.body());
+            csrfToken = CsrfTokenExtractor.extract(page.body());
             robots = exists(buildSiblingUri(baseUri, "/robots.txt"));
             sitemap = exists(buildSiblingUri(baseUri, "/sitemap.xml"));
             faviconHash = fetchFaviconHash(baseUri, notes);
@@ -98,6 +101,7 @@ public class PassiveReconService {
             sitemap,
             faviconHash,
             cookieFindings,
+            csrfToken,
             notes
         );
     }
@@ -230,6 +234,17 @@ public class PassiveReconService {
             }
         }
 
+        if (result.csrfToken() != null) {
+            CsrfTokenExtractor.CsrfToken t = result.csrfToken();
+            sb.append("\n  CSRF token detected:\n");
+            sb.append("    Name   : ").append(t.tokenName()).append("\n");
+            sb.append("    Source : ").append(t.source()).append("\n");
+            if (t.headerName() != null) {
+                sb.append("    Header : ").append(t.headerName()).append("\n");
+            }
+            sb.append("    Value  : ").append(maskToken(t.tokenValue())).append("\n");
+        }
+
         if (!result.notes().isEmpty()) {
             sb.append("\n  Notes:\n");
             for (String note : result.notes()) {
@@ -237,5 +252,12 @@ public class PassiveReconService {
             }
         }
         return sb.toString();
+    }
+
+    private static String maskToken(String value) {
+        if (value == null || value.isBlank()) return "(empty)";
+        if (value.length() <= 8) return "***";
+        return value.substring(0, 4) + "…" + value.substring(value.length() - 4)
+            + " (" + value.length() + " chars)";
     }
 }
