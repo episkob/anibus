@@ -83,6 +83,25 @@ public class EnhancedServiceDetector {
                 }
             }
 
+            // 1c. Anti-spoofing — cross-validate Server header vs. behavioral fingerprint
+            if (fp != null && fp.getServer() != null && !"Unknown".equals(serviceName)) {
+                AntiSpoofingValidator.ValidationResult av =
+                        AntiSpoofingValidator.compareServerClaims(serviceName, fp.getServer(), banner);
+                if (av.hasInconsistencies()) {
+                    enhancedBanner.append("\n").append(av.format());
+                }
+            }
+
+            // 1d. Deep protocol probe — extracts authentic service info via full handshake
+            DeepServiceProber.ProbeResult deepProbe = DeepServiceProber.probe(host, port, banner);
+            if (deepProbe != null) {
+                enhancedBanner.append("\n[DEEP PROBE] ").append(deepProbe.protocol());
+                if (deepProbe.version() != null) {
+                    enhancedBanner.append(" ").append(deepProbe.version());
+                }
+                enhancedBanner.append(deepProbe.format());
+            }
+
             // 2. Vulnerability Scanning
             if (serviceName != null && !serviceName.isEmpty()) {
                 java.util.List<VulnerabilityScanner.Vulnerability> vulns = 
@@ -132,6 +151,29 @@ public class EnhancedServiceDetector {
                     if (!httpInfo.getProxyHeaders().isEmpty()) {
                         httpInfo.getProxyHeaders().forEach((k, v) ->
                                 enhancedBanner.append("\n[PROXY] ").append(k).append(": ").append(v));
+                    }
+                    // HTTP header-evidence anti-spoofing check
+                    java.util.Map<String, String> rawH = httpInfo.getRawHeaders();
+                    AntiSpoofingValidator.ValidationResult httpAv =
+                            AntiSpoofingValidator.validateHttpEvidence(
+                                    rawH.entrySet().stream()
+                                            .filter(e -> e.getKey().equalsIgnoreCase("server"))
+                                            .map(java.util.Map.Entry::getValue)
+                                            .findFirst().orElse(null),
+                                    rawH.entrySet().stream()
+                                            .filter(e -> e.getKey().equalsIgnoreCase("etag"))
+                                            .map(java.util.Map.Entry::getValue)
+                                            .findFirst().orElse(null),
+                                    rawH.entrySet().stream()
+                                            .filter(e -> e.getKey().equalsIgnoreCase("x-powered-by"))
+                                            .map(java.util.Map.Entry::getValue)
+                                            .findFirst().orElse(null),
+                                    rawH.entrySet().stream()
+                                            .filter(e -> e.getKey().equalsIgnoreCase("keep-alive"))
+                                            .map(java.util.Map.Entry::getValue)
+                                            .findFirst().orElse(null));
+                    if (httpAv.hasInconsistencies()) {
+                        enhancedBanner.append("\n").append(httpAv.format());
                     }
                 }
             }
