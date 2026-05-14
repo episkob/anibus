@@ -396,8 +396,12 @@ public class SecurityAnalysisHandler {
 
     public void runSecretsValidation() {
         List<LeakInfo> leaks = leaksSupplier.get();
-        if (leaks == null || leaks.isEmpty()) {
+        if (leaks == null) {
             setStatus.accept("No JS analysis results available. Run JS Security Scan first.");
+            return;
+        }
+        if (leaks.isEmpty()) {
+            setStatus.accept("JS analysis completed — no sensitive leaks detected to validate.");
             return;
         }
         String host = targetHostSupplier.get();
