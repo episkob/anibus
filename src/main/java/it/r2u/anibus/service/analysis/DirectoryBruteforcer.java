@@ -40,7 +40,10 @@ public class DirectoryBruteforcer {
         String url,
         int statusCode,
         int contentLength,
-        String note
+        String note,
+        String contentType,
+        String server,
+        String xPoweredBy
     ) {
         public boolean isInteresting() {
             return statusCode != 404 && statusCode != 0;
@@ -116,20 +119,29 @@ public class DirectoryBruteforcer {
 
             int status = conn.getResponseCode();
             int length = conn.getContentLength();
+            String contentType = headerOrNa(conn, "Content-Type");
+            String server = headerOrNa(conn, "Server");
+            String xPoweredBy = headerOrNa(conn, "X-Powered-By");
+            String redirectLocation = (status >= 300 && status < 400) ? conn.getHeaderField("Location") : null;
             conn.disconnect();
 
             String note = switch (status) {
                 case 200 -> "Accessible";
-                case 301, 302, 307, 308 -> "Redirect → " + conn.getHeaderField("Location");
+                case 301, 302, 307, 308 -> "Redirect → " + redirectLocation;
                 case 401 -> "Unauthorized (exists but protected)";
                 case 403 -> "Forbidden (exists but access denied)";
                 case 500 -> "Server Error (path exists)";
                 default  -> "HTTP " + status;
             };
-            return new PathResult(url, status, length, note);
+            return new PathResult(url, status, length, note, contentType, server, xPoweredBy);
         } catch (IOException | IllegalArgumentException ignored) {
             return null;
         }
+    }
+
+    private static String headerOrNa(HttpURLConnection conn, String name) {
+        String v = conn.getHeaderField(name);
+        return (v == null || v.isBlank()) ? "n/a" : v.trim();
     }
 
     public static String formatReport(List<PathResult> results, String baseUrl) {
@@ -145,19 +157,36 @@ public class DirectoryBruteforcer {
 
         if (!open.isEmpty()) {
             sb.append("\n  ── Accessible (200) ─────────────────────────────────\n");
-            open.forEach(r -> sb.append("    [200] ").append(r.url()).append("\n"));
+            open.forEach(r -> appendWithHeaders(sb, r));
         }
         if (!redirect.isEmpty()) {
             sb.append("\n  ── Redirects ─────────────────────────────────────────\n");
-            redirect.forEach(r -> sb.append("    [").append(r.statusCode()).append("] ")
-                .append(r.url()).append("  → ").append(r.note()).append("\n"));
+            redirect.forEach(r -> {
+                appendWithHeaders(sb, r);
+                sb.append("        → ").append(r.note()).append("\n");
+            });
         }
         if (!other.isEmpty()) {
             sb.append("\n  ── Auth/Errors ────────────────────────────────────────\n");
-            other.forEach(r -> sb.append("    [").append(r.statusCode()).append("] ")
-                .append(r.url()).append("  (").append(r.note()).append(")\n"));
+            other.forEach(r -> {
+                appendWithHeaders(sb, r);
+                sb.append("        (").append(r.note()).append(")\n");
+            });
         }
         sb.append("\n  Total: ").append(results.size()).append(" finding(s)\n");
         return sb.toString();
+    }
+
+    private static void appendWithHeaders(StringBuilder sb, PathResult r) {
+        sb.append("    [").append(r.statusCode()).append("] ").append(r.url()).append("\n");
+        boolean hasHeader = !"n/a".equals(r.contentType())
+                || !"n/a".equals(r.server())
+                || !"n/a".equals(r.xPoweredBy());
+        if (hasHeader) {
+            sb.append("        Content-Type: ").append(r.contentType())
+              .append(" | Server: ").append(r.server())
+              .append(" | X-Powered-By: ").append(r.xPoweredBy())
+              .append("\n");
+        }
     }
 }

@@ -34,6 +34,7 @@ public class PassiveReconService {
         boolean robotsFound,
         boolean sitemapFound,
         String faviconSha256,
+        List<CookieFlagsAuditor.CookieFinding> cookieFindings,
         List<String> notes
     ) {}
 
@@ -52,6 +53,7 @@ public class PassiveReconService {
     public PassiveReconResult scan(String targetUrl) {
         List<String> notes = new ArrayList<>();
         Map<String, String> headers = new LinkedHashMap<>();
+        List<CookieFlagsAuditor.CookieFinding> cookieFindings = List.of();
         int statusCode = -1;
         String finalUrl = targetUrl;
         String title = "n/a";
@@ -70,6 +72,10 @@ public class PassiveReconService {
                     headers.put(k, v.get(0));
                 }
             });
+
+            boolean httpsContext = "https".equalsIgnoreCase(page.uri().getScheme());
+            cookieFindings = CookieFlagsAuditor.audit(
+                page.headers().allValues("set-cookie"), httpsContext);
 
             title = extractTitle(page.body());
             robots = exists(buildSiblingUri(baseUri, "/robots.txt"));
@@ -91,6 +97,7 @@ public class PassiveReconService {
             robots,
             sitemap,
             faviconHash,
+            cookieFindings,
             notes
         );
     }
@@ -207,6 +214,19 @@ public class PassiveReconService {
             sb.append("\n  Headers:\n");
             for (Map.Entry<String, String> entry : result.headers().entrySet()) {
                 sb.append("    • ").append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
+            }
+        }
+
+        if (result.cookieFindings() != null && !result.cookieFindings().isEmpty()) {
+            sb.append("\n  Cookies (").append(result.cookieFindings().size()).append("):\n");
+            for (CookieFlagsAuditor.CookieFinding cf : result.cookieFindings()) {
+                sb.append("    • [").append(cf.severity()).append("] ").append(cf.name())
+                  .append("  Secure=").append(cf.secure())
+                  .append(" HttpOnly=").append(cf.httpOnly())
+                  .append(" SameSite=").append(cf.sameSite()).append("\n");
+                for (String issue : cf.issues()) {
+                    sb.append("        - ").append(issue).append("\n");
+                }
             }
         }
 

@@ -37,9 +37,12 @@ public class XssDetector {
         String parameter,
         String payload,
         boolean reflected,
-        String evidence
+        String evidence,
+        String pocCurl
     ) {
         public String risk() { return reflected ? "HIGH" : "NONE"; }
+        /** Reproducible PoC URL with payload pre-injected. */
+        public String pocUrl() { return url; }
     }
 
     /**
@@ -92,7 +95,8 @@ public class XssDetector {
             boolean reflected = body.contains(payload) || body.contains(CANARY);
             if (reflected) {
                 String evidence = extractEvidence(body, CANARY, 80);
-                return new XssResult(probeUrl, param, payload, true, evidence);
+                String curl = "curl -i '" + probeUrl.replace("'", "'\\''") + "'";
+                return new XssResult(probeUrl, param, payload, true, evidence, curl);
             }
         } catch (IOException ignored) { }
         return null;
@@ -124,7 +128,8 @@ public class XssDetector {
             for (XssResult r : hits) {
                 sb.append("\n  [").append(r.risk()).append("] param=").append(r.parameter()).append("\n");
                 sb.append("    payload : ").append(r.payload()).append("\n");
-                sb.append("    url     : ").append(r.url()).append("\n");
+                sb.append("    PoC URL : ").append(r.pocUrl()).append("\n");
+                sb.append("    PoC curl: ").append(r.pocCurl()).append("\n");
                 if (!r.evidence().isBlank())
                     sb.append("    evidence: ").append(r.evidence()).append("\n");
             }
