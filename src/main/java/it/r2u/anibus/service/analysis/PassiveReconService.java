@@ -269,13 +269,11 @@ public class PassiveReconService {
         List<String> notes = new ArrayList<>();
 
         String tao = ci.get("timing-allow-origin");
-        if (tao == null) {
-            notes.add("[INFO] Timing-Allow-Origin not set — Resource Timing API limited to same-origin (good).");
-        } else if (tao.equals("*")) {
-            notes.add("[MEDIUM] Timing-Allow-Origin: * — any origin can read resource timing info (side-channel risk).");
-        } else {
-            notes.add("[INFO] Timing-Allow-Origin restricted to: " + tao);
-        }
+        notes.add(switch (tao == null ? "<null>" : tao) {
+            case "<null>" -> "[INFO] Timing-Allow-Origin not set — Resource Timing API limited to same-origin (good).";
+            case "*"      -> "[MEDIUM] Timing-Allow-Origin: * — any origin can read resource timing info (side-channel risk).";
+            default       -> "[INFO] Timing-Allow-Origin restricted to: " + tao;
+        });
 
         String corp = ci.get("cross-origin-resource-policy");
         if (corp == null) {
