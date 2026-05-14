@@ -26,7 +26,6 @@ import javax.net.ssl.HttpsURLConnection;
  */
 public class SqlMetadataExtractor {
 
-@SuppressWarnings("unused")
     private static final Logger LOG = Logger.getLogger(SqlMetadataExtractor.class.getName());
     private static final int TIMEOUT = 10_000;
     /** Delimiter we look for in the reflected response. */
@@ -244,7 +243,9 @@ public class SqlMetadataExtractor {
                 javax.net.ssl.SSLContext ctx = buildTrustAll();
                 https.setSSLSocketFactory(ctx.getSocketFactory());
                 https.setHostnameVerifier((h, s) -> true);
-            } catch (Exception ignored) {}
+            } catch (Exception e) {
+                LOG.fine(() -> "TLS trust-all setup failed, using default SSL: " + e.getMessage());
+            }
         }
 
         con.setConnectTimeout(TIMEOUT);

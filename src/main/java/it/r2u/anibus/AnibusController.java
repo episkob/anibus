@@ -5,6 +5,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.logging.Logger;
 
 import it.r2u.anibus.coordinator.ScanCoordinator;
 import it.r2u.anibus.coordinator.ServiceDetectionStrategy;
@@ -108,6 +109,8 @@ import javafx.stage.FileChooser;
  * - Strategy implementations: Scan type logic
  */
 public class AnibusController {
+
+    private static final Logger LOG = Logger.getLogger(AnibusController.class.getName());
 
     /**
      * Manually wired core services passed from application composition root.
@@ -1472,7 +1475,7 @@ public class AnibusController {
         try {
             action.run();
         } catch (Exception e) {
-            System.err.println("[SHUTDOWN] " + name + " failed to stop cleanly: " + e.getMessage());
+            LOG.warning(() -> "[SHUTDOWN] " + name + " failed to stop cleanly: " + e.getMessage());
         }
     }
 

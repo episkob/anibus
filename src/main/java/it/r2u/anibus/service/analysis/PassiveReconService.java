@@ -114,8 +114,8 @@ public class PassiveReconService {
                 .build();
             HttpResponse<Void> response = client.send(head, HttpResponse.BodyHandlers.discarding());
             return response.statusCode() >= 200 && response.statusCode() < 400;
-        } catch (IOException | InterruptedException | IllegalArgumentException ignored) {
-            if (ignored instanceof InterruptedException) {
+        } catch (IOException | InterruptedException | IllegalArgumentException ioe) {
+            if (ioe instanceof InterruptedException) {
                 Thread.currentThread().interrupt();
                 return false;
             }
@@ -127,8 +127,8 @@ public class PassiveReconService {
                     .build();
                 HttpResponse<Void> response = client.send(get, HttpResponse.BodyHandlers.discarding());
                 return response.statusCode() >= 200 && response.statusCode() < 400;
-            } catch (IOException | InterruptedException | IllegalArgumentException ignoredAgain) {
-                if (ignoredAgain instanceof InterruptedException) {
+            } catch (IOException | InterruptedException | IllegalArgumentException retryIoe) {
+                if (retryIoe instanceof InterruptedException) {
                     Thread.currentThread().interrupt();
                 }
                 return false;

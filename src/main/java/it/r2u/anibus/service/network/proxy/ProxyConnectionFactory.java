@@ -27,7 +27,15 @@ public class ProxyConnectionFactory {
 
     private static final int CONNECT_TIMEOUT_MS = 5_000;
 
-    private final ProxyChainService chainService = new ProxyChainService();
+    private final ProxyChainService chainService;
+
+    public ProxyConnectionFactory() {
+        this(new ProxyChainService());
+    }
+
+    public ProxyConnectionFactory(ProxyChainService chainService) {
+        this.chainService = chainService;
+    }
 
     /**
      * Create a connected {@link Socket} to {@code targetHost:targetPort},

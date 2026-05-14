@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -36,6 +37,8 @@ import it.r2u.anibus.model.EndpointInfo;
  * Loads payloads from resource file and iterates through them against each endpoint.
  */
 public class SQLInjectionAnalyzer {
+
+    private static final Logger LOG = Logger.getLogger(SQLInjectionAnalyzer.class.getName());
 
     private static final int TIMEOUT = 8000;
     private static final int MAX_ENDPOINTS_PER_SCAN = 500;
@@ -178,7 +181,9 @@ public class SQLInjectionAnalyzer {
                     payloads.add(line);
                 }
             }
-        } catch (Exception ignored) {}
+        } catch (IOException | NullPointerException e) {
+            LOG.warning(() -> "Failed to load payload file '" + resourcePath + "': " + e.getMessage());
+        }
     }
 
     /**
@@ -220,8 +225,8 @@ public class SQLInjectionAnalyzer {
                         cmsPayloads.add(line);
                     }
                 }
-            } catch (Exception ignored) {
-                // Optional profile, keep fallback behavior.
+            } catch (IOException | NullPointerException ignored) {
+                // Optional CMS payload profile — not required for every CMS entry.
             }
 
             if (!cmsPayloads.isEmpty()) {
@@ -319,7 +324,9 @@ public class SQLInjectionAnalyzer {
                 cmsProfiles.computeIfAbsent(cmsName, k -> new ArrayList<>())
                         .add(new CmsEndpointProfile(method, path, params, description));
             }
-        } catch (Exception ignored) {}
+        } catch (IOException | NullPointerException e) {
+            LOG.warning(() -> "Failed to load CMS profile '" + resourcePath + "': " + e.getMessage());
+        }
     }
 
     /**
@@ -351,7 +358,9 @@ public class SQLInjectionAnalyzer {
                 cmsProfiles.computeIfAbsent(cms, k -> new ArrayList<>())
                         .add(new CmsEndpointProfile(method, path, params, description));
             }
-        } catch (Exception ignored) {}
+        } catch (IOException | NullPointerException e) {
+            LOG.warning(() -> "Failed to load legacy CMS profiles: " + e.getMessage());
+        }
     }
 
     /**
@@ -953,8 +962,8 @@ public class SQLInjectionAnalyzer {
                 );
             }
 
-        } catch (Exception ignored) {
-            // Connection errors are expected for many payloads
+        } catch (RuntimeException ignored) {
+            // Network/connection errors are expected for most payloads during injection testing
         }
         return null;
     }
@@ -1140,7 +1149,9 @@ public class SQLInjectionAnalyzer {
                     responseBody.append(line).append("\n");
                     charsRead += line.length();
                 }
-            } catch (Exception ignored) {}
+            } catch (IOException ignored) {
+                // Partial body already accumulated; proceed with what was read
+            }
 
             conn.disconnect();
             return new HttpResponse(statusCode, responseBody.toString());

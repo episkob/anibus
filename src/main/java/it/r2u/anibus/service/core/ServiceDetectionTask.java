@@ -85,9 +85,11 @@ public class ServiceDetectionTask extends Task<Void> {
             CountDownLatch latch = new CountDownLatch(totalPorts);
             executor = Executors.newVirtualThreadPerTaskExecutor();
 
+            int cancelledPorts = 0;
             for (int port = startPort; port <= endPort; port++) {
                 if (isCancelled()) {
                     latch.countDown();
+                    cancelledPorts++;
                     continue;
                 }
                 final int p = port;
@@ -99,10 +101,10 @@ public class ServiceDetectionTask extends Task<Void> {
                             Platform.runLater(() -> {
                                 callbacks.onResult(result);
                                 String service = result.getService();
-                                if (service.contains("[") && service.contains("]")) {
+                                if (service != null && service.contains("[") && service.contains("]")) {
                                     callbacks.onStatus("[SECURITY] Security detected: " + service + " on port " + p);
                                 } else {
-                                    callbacks.onStatus("Detected: " + service + " on port " + p);
+                                    callbacks.onStatus("Detected: " + (service != null ? service : "Unknown") + " on port " + p);
                                 }
                             });
                         }
@@ -158,7 +160,11 @@ public class ServiceDetectionTask extends Task<Void> {
 
     @Override protected void succeeded() { super.succeeded(); callbacks.onCompleted(); }
     @Override protected void cancelled() { super.cancelled(); callbacks.onCancelled(); }
-    @Override protected void failed()    { super.failed();    callbacks.onFailed(getException().getMessage()); }
+    @Override protected void failed() {
+        super.failed();
+        Throwable ex = getException();
+        callbacks.onFailed(ex != null ? ex.getMessage() : "Unknown error");
+    }
 
     // Explicit wrappers help callers rely on stable API regardless of inherited-method resolution quirks.
     public ReadOnlyDoubleProperty taskProgressProperty() {
