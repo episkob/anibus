@@ -52,19 +52,26 @@ public class XssDetector {
         String evidence,
         String pocCurl,
         Context context,
-        String escapeHint
+        String escapeHint,
+        boolean stored,
+        String verifyUrl
     ) {
         public String risk() {
             if (!reflected) return "NONE";
-            return switch (context) {
+            String base = switch (context) {
                 case SCRIPT_BLOCK, JS_STRING, URL_ATTRIBUTE -> "CRITICAL";
                 case HTML_TEXT, HTML_ATTRIBUTE              -> "HIGH";
                 case STYLE_BLOCK                            -> "MEDIUM";
                 case HTML_COMMENT, UNKNOWN                  -> "LOW";
             };
+            // Stored XSS is always escalated to CRITICAL regardless of context
+            // (persistence drastically raises impact).
+            return stored ? "CRITICAL" : base;
         }
         /** Reproducible PoC URL with payload pre-injected. */
         public String pocUrl() { return url; }
+        /** Kind of XSS: "stored" or "reflected". */
+        public String kind() { return stored ? "stored" : "reflected"; }
     }
 
     /**
@@ -98,6 +105,83 @@ public class XssDetector {
         return findings;
     }
 
+    /**
+     * Probes for stored (persistent) XSS by injecting payloads through {@code injectUrl}
+     * and then re-fetching {@code verifyUrl} to see if the canary appears unescaped.
+     *
+     * <p>Typical pattern: submit a comment / profile bio / message via {@code injectUrl},
+     * then re-fetch the page that displays it. Findings with {@code stored=true} are
+     * automatically escalated to CRITICAL risk.</p>
+     *
+     * @param injectUrl  URL that accepts the user-controlled parameter (e.g. comment endpoint)
+     * @param parameters Parameter names to inject into
+     * @param verifyUrl  URL that should subsequently render the persisted value
+     * @param progress   0.0–1.0 callback (may be null)
+     */
+    public List<XssResult> scanStored(String injectUrl, List<String> parameters,
+                                      String verifyUrl, DoubleConsumer progress) {
+        List<XssResult> findings = new ArrayList<>();
+        if (injectUrl == null || injectUrl.isBlank()
+                || verifyUrl == null || verifyUrl.isBlank()) return findings;
+
+        List<String> params = (parameters == null || parameters.isEmpty())
+            ? List.of("comment", "message", "body", "content", "text", "bio", "name")
+            : parameters;
+
+        int total = params.size() * PAYLOADS.size();
+        int done = 0;
+
+        for (String param : params) {
+            for (String payload : PAYLOADS) {
+                XssResult result = probeStored(injectUrl, param, payload, verifyUrl);
+                if (result != null) findings.add(result);
+                done++;
+                if (progress != null) progress.accept((double) done / total);
+            }
+        }
+        return findings;
+    }
+
+    private XssResult probeStored(String injectUrl, String param, String payload, String verifyUrl) {
+        try {
+            String encoded = URLEncoder.encode(payload, StandardCharsets.UTF_8);
+            String separator = injectUrl.contains("?") ? "&" : "?";
+            String submitUrl = injectUrl + separator + param + "=" + encoded;
+
+            // 1. Inject (GET form-style; sufficient for many guestbook / search-history sinks)
+            HttpURLConnection inj = openConnection(submitUrl);
+            inj.setRequestMethod("GET");
+            inj.setConnectTimeout(TIMEOUT);
+            inj.setReadTimeout(TIMEOUT);
+            inj.setInstanceFollowRedirects(true);
+            inj.connect();
+            inj.getInputStream().readAllBytes();
+            inj.disconnect();
+
+            // 2. Re-fetch verify URL and look for the canary
+            HttpURLConnection ver = openConnection(verifyUrl);
+            ver.setRequestMethod("GET");
+            ver.setConnectTimeout(TIMEOUT);
+            ver.setReadTimeout(TIMEOUT);
+            ver.setInstanceFollowRedirects(true);
+            ver.connect();
+            String body = new String(ver.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+            ver.disconnect();
+
+            boolean reflected = body.contains(payload) || body.contains(CANARY);
+            if (reflected) {
+                String evidence = extractEvidence(body, CANARY, 80);
+                String curl = "curl -i '" + submitUrl.replace("'", "'\\''") + "' && curl -i '"
+                    + verifyUrl.replace("'", "'\\''") + "'";
+                Context ctx = detectContext(body, CANARY);
+                String hint = escapeHintFor(ctx);
+                return new XssResult(submitUrl, param, payload, true, evidence, curl,
+                                     ctx, hint, true, verifyUrl);
+            }
+        } catch (IOException ignored) { }
+        return null;
+    }
+
     private XssResult probe(String targetUrl, String param, String payload) {
         try {
             String encoded = URLEncoder.encode(payload, StandardCharsets.UTF_8);
@@ -120,7 +204,8 @@ public class XssDetector {
                 String curl = "curl -i '" + probeUrl.replace("'", "'\\''") + "'";
                 Context ctx = detectContext(body, CANARY);
                 String hint = escapeHintFor(ctx);
-                return new XssResult(probeUrl, param, payload, true, evidence, curl, ctx, hint);
+                return new XssResult(probeUrl, param, payload, true, evidence, curl,
+                                     ctx, hint, false, null);
             }
         } catch (IOException ignored) { }
         return null;
@@ -227,10 +312,13 @@ public class XssDetector {
         } else {
             sb.append("  ").append(hits.size()).append(" reflected XSS finding(s):\n");
             for (XssResult r : hits) {
-                sb.append("\n  [").append(r.risk()).append("] param=").append(r.parameter()).append("\n");
+                sb.append("\n  [").append(r.risk()).append("] ").append(r.kind())
+                  .append(" · param=").append(r.parameter()).append("\n");
                 sb.append("    payload : ").append(r.payload()).append("\n");
                 sb.append("    context : ").append(r.context()).append("\n");
                 sb.append("    PoC URL : ").append(r.pocUrl()).append("\n");
+                if (r.verifyUrl() != null)
+                    sb.append("    verify  : ").append(r.verifyUrl()).append("\n");
                 sb.append("    PoC curl: ").append(r.pocCurl()).append("\n");
                 if (r.escapeHint() != null && !r.escapeHint().isBlank())
                     sb.append("    fix     : ").append(r.escapeHint()).append("\n");
