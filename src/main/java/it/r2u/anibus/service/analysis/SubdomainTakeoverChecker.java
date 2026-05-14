@@ -146,6 +146,53 @@ public class SubdomainTakeoverChecker {
         }
     }
 
+    /**
+     * Recursively resolves the CNAME chain for {@code host}, following each
+     * canonical pointer until an A/AAAA record terminates the chain, a loop is
+     * detected, or the depth budget (8 hops) is exhausted.
+     *
+     * <p>Used to expose dangling intermediate CNAMEs (e.g. <code>app.example.com →
+     * old-bucket.s3.amazonaws.com</code>) that subdomain-takeover platform
+     * fingerprints would otherwise miss because the final hop hits a generic
+     * platform error page.
+     *
+     * <p>Returns the ordered list of canonical names visited (excluding the
+     * starting host). An empty list means no CNAME chain or resolution failed.
+     */
+    public List<String> resolveCnameChain(String host) {
+        List<String> chain = new ArrayList<>();
+        if (host == null || host.isBlank()) return chain;
+        try {
+            java.util.Hashtable<String, String> env = new java.util.Hashtable<>();
+            env.put("java.naming.factory.initial", "com.sun.jndi.dns.DnsContextFactory");
+            env.put("com.sun.jndi.dns.timeout.initial", String.valueOf(timeoutMs));
+            env.put("com.sun.jndi.dns.timeout.retries", "1");
+            javax.naming.directory.InitialDirContext ctx =
+                new javax.naming.directory.InitialDirContext(env);
+            try {
+                String current = host;
+                for (int i = 0; i < 8; i++) {
+                    javax.naming.directory.Attributes attrs =
+                        ctx.getAttributes("dns:/" + current, new String[]{"CNAME"});
+                    javax.naming.directory.Attribute cname = attrs.get("CNAME");
+                    if (cname == null || cname.size() == 0) break;
+                    String next = cname.get(0).toString().replaceAll("\\.$", "");
+                    if (chain.contains(next)) {
+                        chain.add("LOOP→" + next);
+                        break;
+                    }
+                    chain.add(next);
+                    current = next;
+                }
+            } finally {
+                ctx.close();
+            }
+        } catch (javax.naming.NamingException ignored) {
+            // DNS lookup failed — return whatever partial chain we collected
+        }
+        return chain;
+    }
+
     public static String formatReport(List<TakeoverFinding> findings, String domain) {
         StringBuilder sb = new StringBuilder();
         sb.append("═══════════════════════════════════════════════════════════\n");

@@ -7,6 +7,7 @@ module it.r2u.anibus {
     requires java.desktop;
     requires java.net.http;
     requires jdk.httpserver;
+    requires java.naming;
 
     // Main package: FXML controller lives here
     opens it.r2u.anibus to javafx.fxml;

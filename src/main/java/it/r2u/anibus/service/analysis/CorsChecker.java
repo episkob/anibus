@@ -169,6 +169,35 @@ public class CorsChecker {
 
     private record PreflightOutcome(boolean permissive, boolean allowingCrossOriginAuthHeaders) {}
 
+    /**
+     * Per-endpoint CORS sweep: runs the standard {@link #check(String)} probes
+     * against the base URL, then additionally probes every endpoint in
+     * {@code endpoints} with the attacker origin. Use this when the calling
+     * scanner has already discovered a list of real endpoints (HAR/Postman,
+     * sitemap, swagger) and wants to verify CORS posture for each one
+     * individually rather than guessing common API paths.
+     *
+     * <p>Endpoints may be absolute URLs or paths relative to {@code baseUrl}.
+     * Only non-SAFE results from the extra endpoints are appended to the
+     * report to keep the output focused.
+     */
+    public List<CorsResult> check(String baseUrl, List<String> endpoints) {
+        List<CorsResult> all = new ArrayList<>(check(baseUrl));
+        if (endpoints == null || endpoints.isEmpty()) return all;
+        String base = baseUrl == null ? "" : baseUrl.replaceAll("/$", "");
+        java.util.Set<String> seen = new java.util.LinkedHashSet<>();
+        for (CorsResult r : all) seen.add(r.url());
+        for (String ep : endpoints) {
+            if (ep == null || ep.isBlank()) continue;
+            String url = ep.startsWith("http") ? ep
+                       : base + (ep.startsWith("/") ? ep : "/" + ep);
+            if (!seen.add(url)) continue;
+            CorsResult r = probe(url, EVIL_ORIGIN);
+            if (r != null && r.risk() != CorsRisk.SAFE) all.add(r);
+        }
+        return all;
+    }
+
     /** Formats a human-readable CORS report. */
     public static String formatReport(List<CorsResult> results, String targetUrl) {
         StringBuilder sb = new StringBuilder("=== CORS CHECK: ").append(targetUrl).append(" ===\n");

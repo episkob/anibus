@@ -265,6 +265,54 @@ public class JwtAnalyzer {
         return parts[0] + "." + b64 + "." + sig;
     }
 
+    /**
+     * Analyzes a JWKS (JSON Web Key Set) document for common misconfigurations:
+     * duplicate <code>kid</code> values (kid-injection / key-confusion surface),
+     * advertised <code>alg=none</code>, HMAC keys exposed in a public JWKS
+     * (RS→HS algorithm-confusion risk) and short RSA moduli.
+     *
+     * <p>Returns a list of severity-tagged advisory strings; an empty list means
+     * no obvious issues were detected.
+     */
+    public List<String> analyzeJwks(String jwksJson) {
+        List<String> notes = new ArrayList<>();
+        if (jwksJson == null || jwksJson.isBlank()) return notes;
+        Matcher kids = Pattern.compile("\"kid\"\\s*:\\s*\"([^\"]+)\"").matcher(jwksJson);
+        List<String> seen = new ArrayList<>();
+        while (kids.find()) {
+            String kid = kids.group(1);
+            if (seen.contains(kid)) {
+                notes.add("[HIGH] Duplicate kid in JWKS: " + kid
+                        + " — enables kid-confusion / key-pinning bypass.");
+            } else {
+                seen.add(kid);
+            }
+            if (isSuspiciousKid(kid)) {
+                notes.add("[HIGH] Suspicious kid value in JWKS (possible injection): " + kid);
+            }
+        }
+        Matcher algs = Pattern.compile("\"alg\"\\s*:\\s*\"([^\"]+)\"").matcher(jwksJson);
+        while (algs.find()) {
+            String a = algs.group(1);
+            if (a.equalsIgnoreCase("none")) {
+                notes.add("[CRITICAL] JWKS advertises alg=none — server should never accept unsigned JWTs.");
+            } else if (a.equalsIgnoreCase("HS256") || a.equalsIgnoreCase("HS384")
+                    || a.equalsIgnoreCase("HS512")) {
+                notes.add("[MEDIUM] JWKS exposes HMAC key (alg=" + a
+                        + ") — algorithm-confusion (RS→HS) possible if the server doesn't pin alg.");
+            }
+        }
+        Matcher ns = Pattern.compile("\"n\"\\s*:\\s*\"([^\"]+)\"").matcher(jwksJson);
+        while (ns.find()) {
+            int approxBits = ns.group(1).length() * 6; // base64url → ~6 bits per char
+            if (approxBits > 0 && approxBits < 2048) {
+                notes.add("[HIGH] RSA modulus in JWKS appears < 2048 bits (~"
+                        + approxBits + " bits) — factorable in practice.");
+            }
+        }
+        return notes;
+    }
+
     /** Formats a human-readable JWT report. */
     public static String formatReport(List<JwtFinding> findings, String source) {
         StringBuilder sb = new StringBuilder("=== JWT ANALYSIS");

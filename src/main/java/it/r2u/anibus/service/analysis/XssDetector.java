@@ -312,6 +312,56 @@ public class XssDetector {
         };
     }
 
+    /** A DOM-based XSS sink-paired-with-source candidate found in JS/HTML source. */
+    public record DomSinkFinding(String sink, String source, int line, String snippet) {}
+
+    private static final java.util.regex.Pattern DOM_SINK_PATTERN = java.util.regex.Pattern.compile(
+        "(\\.innerHTML|\\.outerHTML|document\\.write|document\\.writeln"
+        + "|\\.insertAdjacentHTML|\\beval\\b|\\bsetTimeout\\b|\\bsetInterval\\b"
+        + "|\\bFunction\\s*\\(|\\.src\\s*=|location\\s*=|location\\.href|\\bopen\\s*\\()",
+        java.util.regex.Pattern.CASE_INSENSITIVE);
+
+    private static final java.util.regex.Pattern DOM_SOURCE_PATTERN = java.util.regex.Pattern.compile(
+        "(location\\.search|location\\.hash|location\\.href|document\\.URL"
+        + "|document\\.documentURI|document\\.referrer|window\\.name"
+        + "|postMessage|localStorage\\.getItem|sessionStorage\\.getItem"
+        + "|URLSearchParams)",
+        java.util.regex.Pattern.CASE_INSENSITIVE);
+
+    /**
+     * DOM-based XSS heuristic: scans JS/HTML source for dangerous sinks
+     * (innerHTML, document.write, eval, setTimeout(string), ...) that have a
+     * tainted source (location.*, document.referrer, postMessage, ...) within
+     * a small surrounding window. Pairs are reported in
+     * {@link DomSinkFinding} entries; an empty list means no flow was found.
+     *
+     * <p>Heuristic only — no static dataflow is performed; the window-based
+     * source/sink pairing yields false positives in obfuscated bundles, but
+     * gives high-signal hits in human-readable code.
+     */
+    public List<DomSinkFinding> analyzeDomSinks(String src) {
+        List<DomSinkFinding> out = new ArrayList<>();
+        if (src == null || src.isBlank()) return out;
+        String[] lines = src.split("\\r?\\n");
+        for (int i = 0; i < lines.length; i++) {
+            java.util.regex.Matcher sinkMatch = DOM_SINK_PATTERN.matcher(lines[i]);
+            if (!sinkMatch.find()) continue;
+            int from = Math.max(0, i - 3);
+            int to = Math.min(lines.length, i + 4);
+            StringBuilder window = new StringBuilder();
+            for (int j = from; j < to; j++) {
+                window.append(lines[j]).append('\n');
+            }
+            java.util.regex.Matcher srcMatch = DOM_SOURCE_PATTERN.matcher(window);
+            if (srcMatch.find()) {
+                String snippet = lines[i].trim();
+                if (snippet.length() > 240) snippet = snippet.substring(0, 240) + "…";
+                out.add(new DomSinkFinding(sinkMatch.group(1), srcMatch.group(1), i + 1, snippet));
+            }
+        }
+        return out;
+    }
+
     /** Formats a human-readable report. */
     public static String formatReport(List<XssResult> results, String targetUrl) {
         if (results == null || results.isEmpty()) {

@@ -1,6 +1,7 @@
 package it.r2u.anibus.service.analysis;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
@@ -157,6 +158,70 @@ public class XxeDetector {
     private String abbreviate(String s, int max) {
         if (s == null || s.length() <= max) return s;
         return s.substring(0, max) + "…";
+    }
+
+    /**
+     * Variant of {@link #scan(String, DoubleConsumer)} that establishes a
+     * baseline body length per endpoint by first sending a benign empty XML
+     * document, then only reports an XXE finding when the payloaded response
+     * either contains a known indicator OR differs from the baseline by more
+     * than a small fraction (≥20% length delta). This significantly reduces
+     * false positives on endpoints that echo any XML body back verbatim.
+     */
+    public List<XxeResult> scanWithBaseline(String baseUrl, DoubleConsumer progress) {
+        List<XxeResult> findings = new ArrayList<>();
+        if (baseUrl == null || baseUrl.isBlank()) return findings;
+        String base = baseUrl.replaceAll("/$", "");
+        int total = XML_PATHS.size() * (PAYLOADS.size() + 1);
+        int done = 0;
+        String benign = "<?xml version=\"1.0\"?><root>anibus-baseline</root>";
+        for (String path : XML_PATHS) {
+            String url = base + path;
+            int baselineLen = bodyLength(url, benign);
+            done++;
+            if (progress != null) progress.accept((double) done / total);
+            for (String payload : PAYLOADS) {
+                XxeResult r = probe(url, payload);
+                if (r != null && r.vulnerable()) {
+                    findings.add(r);
+                } else if (baselineLen >= 0) {
+                    int len = bodyLength(url, payload);
+                    if (len >= 0 && baselineLen > 0
+                            && Math.abs(len - baselineLen) > Math.max(64, baselineLen / 5)) {
+                        findings.add(new XxeResult(url, abbreviate(payload, 80), true,
+                            "Response size diverges from baseline (" + baselineLen + " → " + len
+                            + " bytes) — possible blind XXE / SSRF."));
+                    }
+                }
+                done++;
+                if (progress != null) progress.accept((double) done / total);
+            }
+        }
+        return findings;
+    }
+
+    private int bodyLength(String url, String payload) {
+        try {
+            HttpURLConnection conn = (HttpURLConnection) URI.create(url).toURL().openConnection();
+            conn.setRequestMethod("POST");
+            conn.setDoOutput(true);
+            conn.setConnectTimeout(TIMEOUT);
+            conn.setReadTimeout(TIMEOUT);
+            conn.setRequestProperty("Content-Type", "application/xml");
+            byte[] bytes = payload.getBytes(StandardCharsets.UTF_8);
+            try (OutputStream os = conn.getOutputStream()) { os.write(bytes); }
+            byte[] body;
+            try {
+                body = conn.getInputStream().readAllBytes();
+            } catch (IOException e) {
+                InputStream err = conn.getErrorStream();
+                body = err == null ? new byte[0] : err.readAllBytes();
+            }
+            conn.disconnect();
+            return body.length;
+        } catch (IOException | IllegalArgumentException e) {
+            return -1;
+        }
     }
 
     public static String formatReport(List<XxeResult> results, String baseUrl) {

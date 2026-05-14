@@ -96,6 +96,97 @@ public class DirectoryBruteforcer {
         return findings;
     }
 
+    /**
+     * Scans the target with a caller-supplied wordlist, optional extra extensions,
+     * and bounded recursion depth. When a finding is interesting and recursion
+     * depth allows, the same wordlist is re-applied beneath that path (limited
+     * by {@code recursionDepth}). Pass {@code null}/empty for {@code customWordlist}
+     * to fall back to the built-in list; {@code recursionDepth=0} disables recursion.
+     */
+    public List<PathResult> scan(String baseUrl, List<String> customWordlist,
+                                 List<String> extraExtensions, int recursionDepth,
+                                 DoubleConsumer progress) {
+        List<PathResult> findings = new ArrayList<>();
+        if (baseUrl == null || baseUrl.isBlank()) return findings;
+        String base = baseUrl.replaceAll("/$", "");
+        List<String> words = (customWordlist == null || customWordlist.isEmpty())
+                ? WORDLIST : customWordlist;
+        List<String> exts = extraExtensions == null ? List.of() : extraExtensions;
+        List<String> queue = new ArrayList<>();
+        java.util.Map<String, Integer> depthOf = new java.util.HashMap<>();
+        Set<String> seen = new LinkedHashSet<>();
+        for (String w : words) {
+            String c = base + "/" + w;
+            if (seen.add(c)) { queue.add(c); depthOf.put(c, 0); }
+            for (String ext : exts) {
+                String suffix = ext.startsWith(".") ? ext : "." + ext;
+                String ce = c + suffix;
+                if (seen.add(ce)) { queue.add(ce); depthOf.put(ce, 0); }
+            }
+        }
+        int done = 0;
+        while (done < queue.size()) {
+            String candidate = queue.get(done);
+            int d = depthOf.getOrDefault(candidate, 0);
+            PathResult r = probe(candidate);
+            if (r != null && r.isInteresting()) {
+                findings.add(r);
+                for (String backup : buildBackupCandidates(r.url())) {
+                    if (seen.add(backup)) { queue.add(backup); depthOf.put(backup, d); }
+                }
+                if (d < Math.max(0, recursionDepth)) {
+                    for (String w : words) {
+                        String c = candidate + "/" + w;
+                        if (seen.add(c)) { queue.add(c); depthOf.put(c, d + 1); }
+                    }
+                }
+            }
+            done++;
+            if (progress != null) progress.accept((double) done / Math.max(done, queue.size()));
+        }
+        return findings;
+    }
+
+    /**
+     * IIS short-name (8.3) enumeration probe.
+     *
+     * <p>Older IIS versions leak short-name information through differing HTTP
+     * status codes for paths containing {@code *~1*} — a 404 indicates the
+     * pattern matched at least one file, while a 400 indicates a syntactically
+     * invalid match. Iterates the alphabet and returns leading letters whose
+     * probe returned 404 (i.e. files starting with that letter likely exist).
+     *
+     * <p>Heuristic only — used as a starting point for manual short-name
+     * brute-forcing on Windows targets.
+     */
+    public List<String> probeIisShortNames(String baseUrl) {
+        List<String> hits = new ArrayList<>();
+        if (baseUrl == null || baseUrl.isBlank()) return hits;
+        String base = baseUrl.replaceAll("/$", "");
+        String alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        for (int i = 0; i < alphabet.length(); i++) {
+            char letter = alphabet.charAt(i);
+            // %2A == '*' — handcoded so URI.create accepts the path.
+            String probe = base + "/" + letter + "%2A~1%2A/.aspx";
+            try {
+                HttpURLConnection c = (HttpURLConnection) URI.create(probe).toURL().openConnection();
+                c.setRequestMethod("GET");
+                c.setConnectTimeout(TIMEOUT);
+                c.setReadTimeout(TIMEOUT);
+                c.setInstanceFollowRedirects(false);
+                c.connect();
+                int sc = c.getResponseCode();
+                c.disconnect();
+                // 404 (path-matches-pattern) is the leak indicator on vulnerable IIS;
+                // 400 means the pattern matched no name.
+                if (sc == 404) hits.add(String.valueOf(letter));
+            } catch (IOException | IllegalArgumentException ignored) {
+                // network / parsing failure — skip this letter
+            }
+        }
+        return hits;
+    }
+
     private List<String> buildBackupCandidates(String url) {
         List<String> variants = new ArrayList<>();
         if (url == null || url.isBlank() || hasBackupSuffix(url)) {
