@@ -31,7 +31,7 @@ class XssDetectorTest {
 
             List<XssDetector.XssResult> results = detector.scan(targetUrl, List.of("q"), null);
 
-            assertEquals(7, results.size());
+            assertEquals(17, results.size());
             assertTrue(results.stream().allMatch(XssDetector.XssResult::reflected));
 
             String report = XssDetector.formatReport(results, targetUrl);

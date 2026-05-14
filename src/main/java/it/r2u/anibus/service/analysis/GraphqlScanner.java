@@ -27,6 +27,10 @@ public class GraphqlScanner {
         [{"query":"{__typename}"},{"query":"{__typename}"}]
         """.strip();
 
+    /** Deeply nested introspection query (depth = 12) used to detect missing depth-limit. */
+    private static final String DEPTH_PROBE_QUERY =
+        "{\"query\":\"{__schema{types{fields{type{ofType{ofType{ofType{ofType{ofType{ofType{ofType{ofType{ofType{name}}}}}}}}}}}}}}\"}";
+
     private static final List<String> GRAPHQL_PATHS = List.of(
         "/graphql", "/graphql/v1", "/graphql/v2",
         "/api/graphql", "/api/v1/graphql", "/api/v2/graphql",
@@ -42,6 +46,7 @@ public class GraphqlScanner {
         boolean batchQueryEnabled,
         boolean minimalQueryAccepted,
         boolean minimalMutationAccepted,
+        boolean depthLimitMissing,
         List<String> typeNames,
         List<GraphqlField> queryFields,
         List<GraphqlField> mutationFields,
@@ -90,6 +95,7 @@ public class GraphqlScanner {
 
             boolean introspectionEnabled = response.contains("__schema") || response.contains("queryType");
             boolean batchQueryEnabled = supportsBatchQuery(url);
+            boolean depthLimitMissing = probeDepthLimit(url);
             List<String>        typeNames     = extractTypeNames(response);
             List<GraphqlField>  queryFields   = extractFields(response, "Query");
             List<GraphqlField>  mutationFields = extractFields(response, "Mutation");
@@ -105,6 +111,9 @@ public class GraphqlScanner {
             if (batchQueryEnabled) {
                 finding += " [MEDIUM] Batch GraphQL queries are accepted.";
             }
+            if (depthLimitMissing) {
+                finding += " [HIGH] No depth-limit detected — nested query at depth 12 accepted (DoS surface).";
+            }
             if (minimalQueryAccepted) {
                 finding += " [INFO] Minimal query generated from schema was accepted.";
             }
@@ -113,11 +122,46 @@ public class GraphqlScanner {
             }
 
             return new GraphqlEndpoint(url, introspectionEnabled, batchQueryEnabled,
-                minimalQueryAccepted, minimalMutationAccepted, typeNames,
-                queryFields, mutationFields, finding);
+                minimalQueryAccepted, minimalMutationAccepted, depthLimitMissing,
+                typeNames, queryFields, mutationFields, finding);
 
         } catch (IOException | IllegalArgumentException ignored) {
             return null;
+        }
+    }
+
+    /**
+     * Sends a deeply nested introspection query (depth = 12).
+     * If the server accepts it with HTTP 200 and returns data (no "errors"),
+     * it lacks a depth limit and is susceptible to query-complexity DoS.
+     */
+    private boolean probeDepthLimit(String url) {
+        try {
+            HttpURLConnection conn = (HttpURLConnection) URI.create(url).toURL().openConnection();
+            conn.setRequestMethod("POST");
+            conn.setDoOutput(true);
+            conn.setConnectTimeout(TIMEOUT);
+            conn.setReadTimeout(TIMEOUT);
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setRequestProperty("Accept", "application/json");
+
+            byte[] body = DEPTH_PROBE_QUERY.getBytes(StandardCharsets.UTF_8);
+            conn.setRequestProperty("Content-Length", String.valueOf(body.length));
+            conn.getOutputStream().write(body);
+
+            int status = conn.getResponseCode();
+            if (status < 200 || status >= 300) return false;
+
+            String response = new String(conn.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+            // Heuristics: server processed the deep query and returned data — no depth-limit error.
+            if (response.contains("\"data\"") && !response.toLowerCase().contains("depth")
+                    && !response.toLowerCase().contains("too deep")
+                    && !response.toLowerCase().contains("complexity")) {
+                return true;
+            }
+            return false;
+        } catch (IOException | IllegalArgumentException ignored) {
+            return false;
         }
     }
 

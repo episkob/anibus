@@ -28,7 +28,19 @@ public class XssDetector {
         "<img src=x on" + "error=" + CANARY + ">",
         "javascript:" + CANARY,
         "<script>" + CANARY + "</script>",
-        "%3C" + CANARY + "%3E"
+        "%3C" + CANARY + "%3E",
+        // Polyglot payloads (v2): bypass single-context filters by
+        // exploding into HTML+JS+attribute context simultaneously.
+        "jaVasCript:/*-/*`/*\\`/*'/*\"/**/(/* */oNcliCk=" + CANARY + " )//",
+        "<svg/onload=" + CANARY + ">",
+        "<svg><script>" + CANARY + "</script></svg>",
+        "<iframe srcdoc=\"<svg onload=" + CANARY + ">\">",
+        "<body onpageshow=" + CANARY + ">",
+        "<details open ontoggle=" + CANARY + ">",
+        "<input autofocus onfocus=" + CANARY + ">",
+        "<math><mtext><table><mglyph><style><!--</style><img title=\"--></mglyph><img src=x onerror=" + CANARY + ">\">",
+        "`}}${" + CANARY + "}//",
+        "</style><svg onload=" + CANARY + ">"
     );
 
     /** Reflection context — where the canary lands in the response. */

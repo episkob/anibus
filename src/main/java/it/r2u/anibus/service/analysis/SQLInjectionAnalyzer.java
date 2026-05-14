@@ -166,6 +166,22 @@ public class SQLInjectionAnalyzer {
             payloads.add("' AND SLEEP(3)--");
         }
 
+        // Ensure time-based blind payloads for each major DB are present even if
+        // the resource file omits them. They drive the response-time delta check.
+        List<String> timeBasedExtra = List.of(
+            "' AND SLEEP(5)--",
+            "\" AND SLEEP(5)--",
+            "1' AND SLEEP(5)#",
+            "' OR pg_sleep(5)--",
+            "1; WAITFOR DELAY '0:0:5'--",
+            "' AND BENCHMARK(5000000,MD5(1))--",
+            "0 OR SLEEP(5)",
+            "'; SELECT SLEEP(5)--"
+        );
+        for (String p : timeBasedExtra) {
+            if (!payloads.contains(p)) payloads.add(p);
+        }
+
         // Keep payload corpus deterministic and compact.
         dedupeInPlace(payloads);
     }

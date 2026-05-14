@@ -39,6 +39,7 @@ public class PassiveReconService {
         String metaGenerator,
         List<String> cspOrigins,
         List<String> emails,
+        List<String> crossOriginAdvisories,
         List<String> notes
     ) {}
 
@@ -72,6 +73,7 @@ public class PassiveReconService {
         String metaGenerator = null;
         List<String> cspOrigins = List.of();
         List<String> emails = List.of();
+        List<String> crossOriginAdvisories = List.of();
         int statusCode = -1;
         String finalUrl = targetUrl;
         String title = "n/a";
@@ -100,6 +102,7 @@ public class PassiveReconService {
             metaGenerator = extractMetaGenerator(page.body());
             cspOrigins = extractCspOrigins(headers);
             emails = extractEmails(page.body());
+            crossOriginAdvisories = analyzeCrossOriginHeaders(headers);
             robots = exists(buildSiblingUri(baseUri, "/robots.txt"));
             sitemap = exists(buildSiblingUri(baseUri, "/sitemap.xml"));
             faviconHash = fetchFaviconHash(baseUri, notes);
@@ -124,6 +127,7 @@ public class PassiveReconService {
             metaGenerator,
             cspOrigins,
             emails,
+            crossOriginAdvisories,
             notes
         );
     }
@@ -250,6 +254,71 @@ public class PassiveReconService {
         return new ArrayList<>(set);
     }
 
+    /**
+     * Analyzes Cross-Origin-* response headers (TAO, CORP, COOP, CORS catch-all)
+     * and produces human-readable advisories. Missing security headers are flagged
+     * because they expose the app to side-channel, Spectre, popup and resource
+     * cross-context attacks.
+     */
+    private List<String> analyzeCrossOriginHeaders(Map<String, String> headers) {
+        if (headers == null || headers.isEmpty()) return List.of();
+        java.util.LinkedHashMap<String, String> ci = new java.util.LinkedHashMap<>();
+        for (Map.Entry<String, String> e : headers.entrySet()) {
+            if (e.getKey() != null) ci.put(e.getKey().toLowerCase(Locale.ROOT), e.getValue() == null ? "" : e.getValue().trim());
+        }
+        List<String> notes = new ArrayList<>();
+
+        String tao = ci.get("timing-allow-origin");
+        if (tao == null) {
+            notes.add("[INFO] Timing-Allow-Origin not set — Resource Timing API limited to same-origin (good).");
+        } else if (tao.equals("*")) {
+            notes.add("[MEDIUM] Timing-Allow-Origin: * — any origin can read resource timing info (side-channel risk).");
+        } else {
+            notes.add("[INFO] Timing-Allow-Origin restricted to: " + tao);
+        }
+
+        String corp = ci.get("cross-origin-resource-policy");
+        if (corp == null) {
+            notes.add("[LOW] Cross-Origin-Resource-Policy header missing — resource may be embedded by other origins (no Spectre isolation).");
+        } else if (corp.equalsIgnoreCase("cross-origin")) {
+            notes.add("[LOW] Cross-Origin-Resource-Policy: cross-origin — explicitly allows other origins.");
+        } else {
+            notes.add("[INFO] Cross-Origin-Resource-Policy: " + corp);
+        }
+
+        String coop = ci.get("cross-origin-opener-policy");
+        if (coop == null) {
+            notes.add("[LOW] Cross-Origin-Opener-Policy missing — popups may share browsing context with this page (window.opener attack surface).");
+        } else if (coop.equalsIgnoreCase("unsafe-none")) {
+            notes.add("[MEDIUM] Cross-Origin-Opener-Policy: unsafe-none — opener stays connected.");
+        } else {
+            notes.add("[INFO] Cross-Origin-Opener-Policy: " + coop);
+        }
+
+        String coep = ci.get("cross-origin-embedder-policy");
+        if (coep == null) {
+            notes.add("[LOW] Cross-Origin-Embedder-Policy missing — cannot use cross-origin isolation features.");
+        }
+
+        String acao = ci.get("access-control-allow-origin");
+        if (acao != null) {
+            if (acao.equals("*")) {
+                String acac = ci.get("access-control-allow-credentials");
+                if (acac != null && acac.equalsIgnoreCase("true")) {
+                    notes.add("[CRITICAL] CORS misconfig: Access-Control-Allow-Origin=* with Allow-Credentials=true (impossible per spec, browsers reject — but server intent is dangerous).");
+                } else {
+                    notes.add("[INFO] CORS: Access-Control-Allow-Origin=* (public resource).");
+                }
+            } else if (acao.equalsIgnoreCase("null")) {
+                notes.add("[HIGH] CORS: Access-Control-Allow-Origin=null — sandboxed iframes / file:// origins accepted, common pitfall.");
+            } else {
+                notes.add("[INFO] CORS: Access-Control-Allow-Origin=" + acao);
+            }
+        }
+
+        return notes;
+    }
+
     private String sha256(byte[] bytes) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -322,6 +391,13 @@ public class PassiveReconService {
             sb.append("\n  Emails found in HTML (").append(result.emails().size()).append("):\n");
             for (String e : result.emails()) {
                 sb.append("    • ").append(e).append("\n");
+            }
+        }
+
+        if (result.crossOriginAdvisories() != null && !result.crossOriginAdvisories().isEmpty()) {
+            sb.append("\n  Cross-origin header advisories (").append(result.crossOriginAdvisories().size()).append("):\n");
+            for (String a : result.crossOriginAdvisories()) {
+                sb.append("    • ").append(a).append("\n");
             }
         }
 

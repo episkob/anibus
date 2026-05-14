@@ -88,6 +88,20 @@ public class SubdomainTakeoverChecker {
 
     public List<TakeoverFinding> check(String domain) {
         List<TakeoverFinding> results = new ArrayList<>();
+        // DNS wildcard baseline: probe a clearly non-existent subdomain.
+        // If the wildcard responds with a non-error fingerprint-matching body,
+        // we mark the entire domain as wildcard and skip per-prefix probes
+        // to avoid an avalanche of false positives.
+        String wildcardProbe = "anibus-wildcard-" + Long.toHexString(System.nanoTime()) + "." + domain;
+        TakeoverFinding baseline = probe(wildcardProbe);
+        if (baseline != null) {
+            results.add(new TakeoverFinding(
+                "*." + domain,
+                baseline.platform(),
+                "DNS wildcard — random subdomain resolves to known platform fingerprint",
+                false));
+            return results;
+        }
         for (String prefix : SUBDOMAIN_PREFIXES) {
             TakeoverFinding finding = probe(prefix + "." + domain);
             if (finding != null) results.add(finding);

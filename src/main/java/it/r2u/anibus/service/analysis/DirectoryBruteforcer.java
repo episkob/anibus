@@ -81,6 +81,14 @@ public class DirectoryBruteforcer {
                         queue.add(backupUrl);
                     }
                 }
+                // Tech-specific extension auto-add: if the server clearly hosts PHP/ASP.NET/Java,
+                // re-probe the same candidate with the matching extension so we catch e.g. /admin.php
+                // when the wordlist only contains "admin".
+                for (String extUrl : buildExtensionCandidates(candidate, r)) {
+                    if (seen.add(extUrl)) {
+                        queue.add(extUrl);
+                    }
+                }
             }
             done++;
             if (progress != null) progress.accept((double) done / Math.max(done, queue.size()));
@@ -95,6 +103,34 @@ public class DirectoryBruteforcer {
         }
         for (String suffix : BACKUP_SUFFIXES) {
             variants.add(url + suffix);
+        }
+        return variants;
+    }
+
+    /**
+     * If the discovered path returns hints of a specific server stack
+     * (PHP, ASP.NET, Java/Tomcat), suggest the same path with the matching
+     * file extension so we can catch /admin.php, /admin.aspx, /admin.jsp etc.
+     */
+    private List<String> buildExtensionCandidates(String url, PathResult r) {
+        List<String> variants = new ArrayList<>();
+        if (url == null || url.isBlank() || r == null) return variants;
+        if (url.matches(".*\\.[a-zA-Z0-9]{2,6}$")) return variants; // already has an extension
+        String hay = ((r.contentType() == null ? "" : r.contentType()) + " "
+                    + (r.server()      == null ? "" : r.server())      + " "
+                    + (r.xPoweredBy() == null ? "" : r.xPoweredBy())).toLowerCase();
+        if (hay.contains("php")) {
+            variants.add(url + ".php");
+            variants.add(url + ".phtml");
+        }
+        if (hay.contains("asp.net") || hay.contains("iis") || hay.contains("microsoft-")) {
+            variants.add(url + ".aspx");
+            variants.add(url + ".asp");
+        }
+        if (hay.contains("tomcat") || hay.contains("jetty") || hay.contains("jsp") || hay.contains("coyote")) {
+            variants.add(url + ".jsp");
+            variants.add(url + ".do");
+            variants.add(url + ".action");
         }
         return variants;
     }
