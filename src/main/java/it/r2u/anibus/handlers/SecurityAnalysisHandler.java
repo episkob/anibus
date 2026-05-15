@@ -270,8 +270,10 @@ public class SecurityAnalysisHandler {
         };
         setStatus.accept("WHOIS lookup for " + host + "\u2026");
         task.setOnSucceeded(ev -> {
-            console.appendRawText("\n" + WhoisService.formatReport(task.getValue()) + "\n");
-            setStatus.accept("WHOIS lookup complete for " + host);
+            WhoisService.WhoisResult r = task.getValue();
+            console.appendRawText("\n" + WhoisService.formatReport(r) + "\n");
+            String via = r.rdapUsed() ? " (via RDAP)" : "";
+            setStatus.accept("WHOIS lookup complete for " + host + via);
         });
         task.setOnFailed(ev -> setStatus.accept("WHOIS error: " + msg(task)));
         daemon(task, "whois-lookup");
@@ -317,11 +319,11 @@ public class SecurityAnalysisHandler {
         if (target.isBlank()) { setStatus.accept("Enter a target URL first"); return; }
         Task<List<XxeDetector.XxeResult>> task = new Task<>() {
             @Override protected List<XxeDetector.XxeResult> call() {
-                return xxeDetector.scan(target, p -> updateProgress(p, 1.0));
+                return xxeDetector.scanWithOob(target, p -> updateProgress(p, 1.0));
             }
         };
         bindProgress(task);
-        setStatus.accept("XXE scan running against " + target + "\u2026");
+        setStatus.accept("XXE scan (indicator + OOB loopback) running against " + target + "\u2026");
         task.setOnSucceeded(ev -> {
             unbindProgress();
             List<XxeDetector.XxeResult> r = task.getValue();
@@ -415,20 +417,20 @@ public class SecurityAnalysisHandler {
     public void runAsnLookup() {
         String host = targetHostSupplier.get();
         if (host.isBlank()) { setStatus.accept("Enter a target IP or host first"); return; }
-        Task<AsnLookupService.AsnInfo> task = new Task<>() {
-            @Override protected AsnLookupService.AsnInfo call() {
+        Task<String> task = new Task<>() {
+            @Override protected String call() {
                 String ip = host;
                 try { ip = java.net.InetAddress.getByName(host).getHostAddress(); }
                 catch (java.net.UnknownHostException | SecurityException ignored) {}
-                return asnLookupService.lookup(ip);
+                AsnLookupService.AsnInfo info = asnLookupService.lookup(ip);
+                AsnLookupService.BgpInfo bgp  = asnLookupService.bgpLookup(ip);
+                return AsnLookupService.formatReport(info, bgp);
             }
         };
-        setStatus.accept("ASN lookup for " + host + "\u2026");
+        setStatus.accept("ASN/BGP lookup for " + host + "\u2026");
         task.setOnSucceeded(ev -> {
-            AsnLookupService.AsnInfo info = task.getValue();
-            console.appendRawText("\n" + AsnLookupService.formatReport(info) + "\n");
-            String asn = info.asn() != null ? "AS" + info.asn() : "unknown";
-            setStatus.accept("ASN lookup done: " + asn + (info.asnName() != null ? " \u2014 " + info.asnName() : ""));
+            console.appendRawText("\n" + task.getValue() + "\n");
+            setStatus.accept("ASN/BGP lookup done for " + host);
         });
         task.setOnFailed(ev -> setStatus.accept("ASN lookup error: " + msg(task)));
         daemon(task, "asn-lookup");

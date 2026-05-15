@@ -1,7 +1,9 @@
 package it.r2u.anibus.service.network;
 
 import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
+import java.net.URI;
 import java.security.GeneralSecurityException;
 import java.security.cert.X509Certificate;
 import java.time.ZoneId;
@@ -67,13 +69,21 @@ public class SslTlsAuditor {
         boolean insecureProtocol,
         List<String> supportedProtocols,
         @SuppressWarnings("MismatchedQueryAndUpdateOfCollection") List<CertInfo> chain,
-        List<String> findings
+        List<String> findings,
+        // Extended fields
+        boolean hstsPresent,
+        String  hstsHeader,
+        String  alpnProtocol,
+        boolean chainTrusted,
+        String  ocspUrl
     ) {
         public String overallRisk() {
             if (!connected) return "UNKNOWN";
             if (chain.stream().anyMatch(c -> c.risk() == CertRisk.CRITICAL)) return "CRITICAL";
             if (chain.stream().anyMatch(c -> c.risk() == CertRisk.HIGH)) return "HIGH";
             if (insecureProtocol || weakCipher) return "HIGH";
+            if (!chainTrusted) return "HIGH";
+            if (!hstsPresent) return "MEDIUM";
             if (chain.stream().anyMatch(c -> c.risk() == CertRisk.MEDIUM)) return "MEDIUM";
             return "OK";
         }
@@ -108,6 +118,7 @@ public class SslTlsAuditor {
             String negotiatedCipher;
             boolean weakCipher;
             boolean insecureProto;
+            String  alpnProtocol;    // assigned in all branches of inner try/catch
             X509Certificate[] certs;
 
             try (SSLSocket ssl = (SSLSocket) factory.createSocket()) {
@@ -119,6 +130,14 @@ public class SslTlsAuditor {
                 negotiatedProto  = session.getProtocol();
                 negotiatedCipher = session.getCipherSuite();
 
+                // ALPN: Java 9+ SSLSocket.getApplicationProtocol()
+                try {
+                    String ap = ssl.getApplicationProtocol();
+                    alpnProtocol = (ap != null) ? ap : "";
+                } catch (UnsupportedOperationException ignored) {
+                    alpnProtocol = "";
+                }
+
                 final String finalCipher = negotiatedCipher;
                 weakCipher    = WEAK_CIPHERS.stream()
                     .anyMatch(w -> finalCipher.toUpperCase().contains(w.toUpperCase()));
@@ -128,14 +147,39 @@ public class SslTlsAuditor {
             }
 
             // Analyse certificate chain
+            String ocspUrl = "";
             for (X509Certificate cert : certs) {
-                chain.add(analyseCert(cert));
+                CertInfo ci = analyseCert(cert);
+                chain.add(ci);
+                if (ocspUrl.isEmpty()) ocspUrl = extractOcspUrl(cert);
             }
 
             // Probe which protocol versions the server accepts
             for (String proto : new String[]{"TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"}) {
                 if (probeProtocol(host, port, proto)) supportedProtos.add(proto);
             }
+
+            // HSTS check via plain HTTP GET
+            boolean hstsPresent = false;
+            String  hstsHeader  = "";
+            try {
+                HttpURLConnection http = (HttpURLConnection)
+                    URI.create("https://" + host + ":" + port + "/").toURL().openConnection();
+                http.setConnectTimeout(TIMEOUT_MS);
+                http.setReadTimeout(TIMEOUT_MS);
+                http.setInstanceFollowRedirects(false);
+                http.setRequestProperty("User-Agent", "Anibus-SSLAudit/1.0");
+                http.connect();
+                String hsts = http.getHeaderField("Strict-Transport-Security");
+                if (hsts != null && !hsts.isBlank()) {
+                    hstsPresent = true;
+                    hstsHeader  = hsts;
+                }
+                http.disconnect();
+            } catch (IOException | IllegalArgumentException ignored) { }
+
+            // Chain trust: attempt with system default TrustManager
+            boolean chainTrusted = probeChainTrust(host, port);
 
             // Build findings list
             if (insecureProto)
@@ -146,11 +190,18 @@ public class SslTlsAuditor {
                 if (INSECURE_PROTOCOLS.contains(p))
                     findings.add("[MEDIUM] Server accepts deprecated protocol: " + p);
             }
+            if (!hstsPresent)
+                findings.add("[MEDIUM] HSTS header missing (Strict-Transport-Security)");
+            if (!chainTrusted)
+                findings.add("[HIGH] Certificate chain NOT trusted by default JVM trust store");
+            if (!ocspUrl.isEmpty())
+                findings.add("[INFO] OCSP Responder URL: " + ocspUrl);
             chain.forEach(c -> { if (!c.finding().isEmpty()) findings.add(c.finding()); });
 
             return new AuditResult(host, port, true,
                 negotiatedProto, negotiatedCipher, weakCipher, insecureProto,
-                List.copyOf(supportedProtos), List.copyOf(chain), List.copyOf(findings));
+                List.copyOf(supportedProtos), List.copyOf(chain), List.copyOf(findings),
+                hstsPresent, hstsHeader, alpnProtocol, chainTrusted, ocspUrl);
 
         } catch (IOException | GeneralSecurityException e) {
             return errorResult(host, port, "Connection failed: " + e.getMessage());
@@ -229,10 +280,38 @@ public class SslTlsAuditor {
         return ctx;
     }
 
+    private boolean probeChainTrust(String host, int port) {
+        try (SSLSocket ssl = (SSLSocket) SSLSocketFactory.getDefault().createSocket()) {
+            ssl.connect(new InetSocketAddress(host, port), TIMEOUT_MS);
+            ssl.setSoTimeout(TIMEOUT_MS);
+            ssl.startHandshake();
+            return true;
+        } catch (IOException ignored) {
+            return false;
+        }
+    }
+
+    /** Extracts the OCSP Responder URL from the certificate's AIA extension (OID 1.3.6.1.5.5.7.48.1). */
+    private String extractOcspUrl(X509Certificate cert) {
+        try {
+            byte[] aia = cert.getExtensionValue("1.3.6.1.5.5.7.1.1"); // id-pe-authorityInfoAccess
+            if (aia == null) return "";
+            // Simple heuristic: look for "http" in the extension bytes
+            String raw = new String(aia, java.nio.charset.StandardCharsets.ISO_8859_1);
+            int idx = raw.indexOf("http");
+            if (idx < 0) return "";
+            int end = raw.indexOf('\0', idx);
+            return end < 0 ? raw.substring(idx) : raw.substring(idx, end);
+        } catch (Exception ignored) {
+            return "";
+        }
+    }
+
     private AuditResult errorResult(String host, int port, String msg) {
         return new AuditResult(host, port <= 0 ? DEFAULT_PORT : port, false,
             "N/A", "N/A", false, false, List.of(), List.of(),
-            List.of("[ERROR] " + msg));
+            List.of("[ERROR] " + msg),
+            false, "", "", false, "");
     }
 
     public static String formatReport(AuditResult r) {
@@ -250,6 +329,19 @@ public class SslTlsAuditor {
           .append(r.insecureProtocol() ? "  ⚠ INSECURE" : "  ✓").append("\n");
         sb.append("  Cipher   : ").append(r.negotiatedCipher())
           .append(r.weakCipher() ? "  ⚠ WEAK" : "  ✓").append("\n");
+
+        if (!r.alpnProtocol().isBlank()) {
+            sb.append("  ALPN     : ").append(r.alpnProtocol()).append("\n");
+        }
+        sb.append("  HSTS     : ").append(r.hstsPresent()
+            ? "✓ present  (" + r.hstsHeader() + ")"
+            : "✗ missing").append("\n");
+        sb.append("  Chain    : ").append(r.chainTrusted()
+            ? "✓ trusted by JVM trust store"
+            : "✗ NOT trusted (self-signed or unknown CA)").append("\n");
+        if (!r.ocspUrl().isBlank()) {
+            sb.append("  OCSP URL : ").append(r.ocspUrl()).append("\n");
+        }
 
         if (!r.supportedProtocols().isEmpty()) {
             sb.append("  Accepts  : ").append(String.join(", ", r.supportedProtocols())).append("\n");

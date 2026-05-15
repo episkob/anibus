@@ -17,7 +17,8 @@ import java.util.regex.Pattern;
  *
  * Queries the IANA/RIR WHOIS chain (whois.iana.org → RIPE/ARIN/APNIC/LACNIC/AFRINIC)
  * via raw TCP/43 to resolve AS number, ASN name, network prefix and country.
- * No external APIs required.
+ * Also enriches with BGP data from Team Cymru (whois.cymru.com) for prefix,
+ * allocated date, and registry info — all offline, no external APIs.
  */
 public class AsnLookupService {
 
@@ -30,6 +31,25 @@ public class AsnLookupService {
         String country,
         String rir,
         String description
+    ) {}
+
+    /**
+     * BGP-layer enrichment from Team Cymru: prefix, origin ASN, org, allocated date.
+     *
+     * @param prefix     CIDR prefix the IP belongs to (e.g. "203.0.113.0/24")
+     * @param asn        origin ASN (numeric string)
+     * @param org        organisation name from BGP registry
+     * @param country    2-letter country code
+     * @param registry   registry name (arin/ripe/apnic/…)
+     * @param allocated  allocation date (may be empty)
+     */
+    public record BgpInfo(
+        String prefix,
+        String asn,
+        String org,
+        String country,
+        String registry,
+        String allocated
     ) {}
 
     private static final int WHOIS_PORT    = 43;
@@ -171,25 +191,74 @@ public class AsnLookupService {
         return meaningful == 0;
     }
 
+    /**
+     * Queries Team Cymru's WHOIS service (whois.cymru.com) for BGP prefix and
+     * origin ASN data. Uses the verbose origin query format:
+     * {@code -v -f AS{asn}}.
+     *
+     * @param ip resolved IP address
+     * @return BgpInfo, never null (fields may be empty on failure)
+     */
+    public BgpInfo bgpLookup(String ip) {
+        if (ip == null || ip.isBlank()) return emptyBgp(ip);
+        // Cymru bulk query: "begin\nnotruncate\nverbose\n{ip}\nend\n"
+        String query = "begin\nnotruncate\nverbose\n" + ip.trim() + "\nend\n";
+        String resp = whoisQuery("whois.cymru.com", query);
+        if (resp == null || resp.isBlank()) return emptyBgp(ip);
+        // Response header: "AS  | IP | BGP Prefix | CC | Registry | Allocated | AS Name"
+        // Then a data line like: "15169 | 8.8.8.8 | 8.8.8.0/24 | US | ARIN | 1992-12-01 | GOOGLE, US"
+        for (String line : resp.split("\n")) {
+            if (line.startsWith("AS") || line.startsWith("Bulk") || line.isBlank()) continue;
+            String[] parts = line.split("\\|");
+            if (parts.length < 5) continue;
+            String asn       = parts[0].trim().replaceFirst("^AS", "");
+            String prefix    = parts.length > 2 ? parts[2].trim() : "";
+            String cc        = parts.length > 3 ? parts[3].trim() : "";
+            String registry  = parts.length > 4 ? parts[4].trim() : "";
+            String allocated = parts.length > 5 ? parts[5].trim() : "";
+            String org       = parts.length > 6 ? parts[6].trim() : "";
+            return new BgpInfo(prefix, asn, org, cc, registry, allocated);
+        }
+        return emptyBgp(ip);
+    }
+
+    private BgpInfo emptyBgp(String ip) {
+        return new BgpInfo("", ip != null ? "" : "", "", "", "", "");
+    }
+
     public static String formatReport(AsnInfo info) {
+        return formatReport(info, null);
+    }
+
+    public static String formatReport(AsnInfo info, BgpInfo bgp) {
         StringBuilder sb = new StringBuilder();
         sb.append("═══════════════════════════════════════════════════════════\n");
-        sb.append("              ASN LOOKUP — ").append(info.ip()).append("\n");
+        sb.append("              ASN/BGP LOOKUP — ").append(info.ip()).append("\n");
         sb.append("═══════════════════════════════════════════════════════════\n\n");
 
         if (info.asn() == null && info.netName() == null) {
             sb.append("  No ASN data found");
             if (info.description() != null) sb.append(": ").append(info.description());
             sb.append("\n");
-            return sb.toString();
+        } else {
+            if (info.asn()         != null) sb.append(String.format("  ASN        : AS%s\n", info.asn()));
+            if (info.asnName()     != null) sb.append(String.format("  AS Name    : %s\n", info.asnName()));
+            if (info.netName()     != null) sb.append(String.format("  Network    : %s\n", info.netName()));
+            if (info.route()       != null) sb.append(String.format("  Route      : %s\n", info.route()));
+            if (info.country()     != null) sb.append(String.format("  Country    : %s\n", info.country()));
+            if (info.description() != null) sb.append(String.format("  Org/Descr  : %s\n", info.description()));
+            if (info.rir()         != null) sb.append(String.format("  RIR Server : %s\n", info.rir()));
         }
-        if (info.asn()         != null) sb.append(String.format("  ASN        : AS%s\n", info.asn()));
-        if (info.asnName()     != null) sb.append(String.format("  AS Name    : %s\n", info.asnName()));
-        if (info.netName()     != null) sb.append(String.format("  Network    : %s\n", info.netName()));
-        if (info.route()       != null) sb.append(String.format("  Route      : %s\n", info.route()));
-        if (info.country()     != null) sb.append(String.format("  Country    : %s\n", info.country()));
-        if (info.description() != null) sb.append(String.format("  Org/Descr  : %s\n", info.description()));
-        if (info.rir()         != null) sb.append(String.format("  RIR Server : %s\n", info.rir()));
+
+        if (bgp != null && (!bgp.prefix().isBlank() || !bgp.org().isBlank())) {
+            sb.append("\n  ── BGP Enrichment (Team Cymru) ─────────────────────────\n");
+            if (!bgp.prefix().isBlank())    sb.append(String.format("  BGP Prefix : %s\n", bgp.prefix()));
+            if (!bgp.asn().isBlank())       sb.append(String.format("  Origin ASN : AS%s\n", bgp.asn()));
+            if (!bgp.org().isBlank())       sb.append(String.format("  Org (BGP)  : %s\n", bgp.org()));
+            if (!bgp.country().isBlank())   sb.append(String.format("  Country    : %s\n", bgp.country()));
+            if (!bgp.registry().isBlank())  sb.append(String.format("  Registry   : %s\n", bgp.registry()));
+            if (!bgp.allocated().isBlank()) sb.append(String.format("  Allocated  : %s\n", bgp.allocated()));
+        }
         return sb.toString();
     }
 }

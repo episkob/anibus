@@ -6,8 +6,10 @@ import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
@@ -29,7 +31,21 @@ public final class LoopbackCallbackServer implements AutoCloseable {
     private final ServerSocket server;
     private final Thread acceptor;
     private final List<String> hits = new CopyOnWriteArrayList<>();
+    private final ConcurrentHashMap<String, RegisteredResponse> responseRegistry = new ConcurrentHashMap<>();
     private volatile boolean running = true;
+
+    /** A static response served at a specific path. */
+    private record RegisteredResponse(String contentType, byte[] body) {}
+
+    /**
+     * Register a static response body to be served at a specific URL path.
+     * Used to serve a malicious DTD at e.g. {@code /oob.dtd} so that
+     * parameter-entity XXE payloads can fetch and execute it for data exfiltration.
+     */
+    public void registerResponse(String path, String contentType, String body) {
+        responseRegistry.put(path, new RegisteredResponse(contentType,
+                body.getBytes(StandardCharsets.UTF_8)));
+    }
 
     private LoopbackCallbackServer(ServerSocket socket) {
         this.server = socket;
@@ -72,17 +88,34 @@ public final class LoopbackCallbackServer implements AutoCloseable {
         while (running && !server.isClosed()) {
             try (Socket s = server.accept()) {
                 s.setSoTimeout(1500);
-                byte[] buf = new byte[2048];
+                byte[] buf = new byte[4096];
                 try (InputStream in = s.getInputStream();
                      OutputStream out = s.getOutputStream()) {
                     int n = in.read(buf);
                     if (n > 0) {
-                        String firstLine = new String(buf, 0, n).split("\\r?\\n", 2)[0];
+                        String raw = new String(buf, 0, n, StandardCharsets.UTF_8);
+                        String firstLine = raw.split("\\r?\\n", 2)[0];
                         hits.add(firstLine);
+
+                        // Parse request path to serve registered responses (e.g. malicious DTDs)
+                        String requestPath = "/";
+                        String[] lineParts = firstLine.split(" ");
+                        if (lineParts.length >= 2) {
+                            requestPath = lineParts[1].split("\\?")[0];
+                        }
+                        RegisteredResponse registered = responseRegistry.get(requestPath);
+                        if (registered != null) {
+                            String header = "HTTP/1.1 200 OK\r\nContent-Type: " + registered.contentType()
+                                    + "\r\nContent-Length: " + registered.body().length
+                                    + "\r\nConnection: close\r\n\r\n";
+                            out.write(header.getBytes(StandardCharsets.UTF_8));
+                            out.write(registered.body());
+                        } else {
+                            out.write("HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+                                    .getBytes(StandardCharsets.UTF_8));
+                        }
+                        out.flush();
                     }
-                    out.write("HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
-                            .getBytes());
-                    out.flush();
                 }
             } catch (IOException ignored) {
                 // Socket closed by close() or peer reset — exit loop on next iteration check.

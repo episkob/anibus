@@ -35,7 +35,11 @@ public class ContainerExposureChecker {
                                   Severity severity, String evidence) {}
 
     /** Aggregated report. */
-    public record ContainerExposureReport(String target, List<ExposureFinding> findings) {
+    public record ContainerExposureReport(String target,
+                                           List<ExposureFinding> findings) {
+        public ContainerExposureReport {
+            findings = List.copyOf(findings);
+        }
         public long countSeverity(Severity s) {
             return findings.stream().filter(f -> f.severity() == s).count();
         }

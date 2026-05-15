@@ -17,7 +17,6 @@ import java.util.regex.Pattern;
 public class TracerouteService {
     
     private static final int MAX_HOPS = 30;
-    private static final int TIMEOUT_MS = 5000;
     private static final int PROCESS_TIMEOUT_MS = 120000;
     
     public static class Hop {
@@ -311,20 +310,124 @@ public class TracerouteService {
     }
     
     /**
-     * Perform quick ICMP ping to estimate RTT
+     * Probe mode for traceroute.
+     *
+     * <ul>
+     *   <li>{@link #ICMP} — default OS traceroute (ICMP Echo)</li>
+     *   <li>{@link #TCP}  — SYN-based TCP traceroute (traceroute -T / tracert)</li>
+     *   <li>{@link #UDP}  — UDP probe traceroute (traceroute -U)</li>
+     * </ul>
      */
-    public static Long quickPing(String host) {
-        try {
-            long start = System.currentTimeMillis();
-            InetAddress address = InetAddress.getByName(host);
-            
-            if (address.isReachable(TIMEOUT_MS)) {
-                return System.currentTimeMillis() - start;
-            }
-        } catch (IOException | SecurityException e) {
-            // Silently fail
+    public enum Mode { ICMP, TCP, UDP }
+
+    /**
+     * Runs traceroute using the specified mode.
+     *
+     * @param host target hostname or IP
+     * @param mode probe mode (ICMP/TCP/UDP)
+     * @return TraceRoute result with per-hop RTTs and packet-loss metrics
+     */
+    public static TraceRoute traceroute(String host, Mode mode) {
+        if (mode == null || mode == Mode.ICMP) {
+            return traceroute(host);
         }
-        
-        return null;
+        TraceRoute result = new TraceRoute(host);
+        try {
+            InetAddress target = InetAddress.getByName(host);
+            result.setTargetIP(target.getHostAddress());
+
+            String os = System.getProperty("os.name").toLowerCase();
+            ProcessBuilder pb = buildProcessBuilder(host, mode, os);
+            pb.redirectErrorStream(true);
+            Process process = pb.start();
+
+            boolean isWindows = os.contains("win");
+            int hopCount = 0;
+
+            try (java.io.BufferedReader reader = new java.io.BufferedReader(
+                    new java.io.InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    Hop hop = parseTracerouteLine(line, isWindows);
+                    if (hop != null) {
+                        result.getHops().add(hop);
+                        hopCount++;
+                        if (hop.getIpAddress() != null
+                                && hop.getIpAddress().equals(result.getTargetIP())) {
+                            result.setReachedTarget(true);
+                            result.setTotalHops(hopCount);
+                            break;
+                        }
+                    }
+                }
+            }
+            if (!process.waitFor(PROCESS_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
+                process.destroyForcibly();
+            }
+            if (!result.isReachedTarget()) result.setTotalHops(hopCount);
+        } catch (IOException | RuntimeException ignored) {
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        return result;
+    }
+
+    private static ProcessBuilder buildProcessBuilder(String host, Mode mode, String os) {
+        boolean isWindows = os.contains("win");
+        if (isWindows) {
+            // Windows only supports ICMP (tracert); TCP/UDP = same command
+            return new ProcessBuilder("tracert", "-d", "-h", String.valueOf(MAX_HOPS), host);
+        }
+        return switch (mode) {
+            case TCP  -> new ProcessBuilder("traceroute", "-T", "-m", String.valueOf(MAX_HOPS),
+                             "-w", "3", host);
+            case UDP  -> new ProcessBuilder("traceroute", "-U", "-m", String.valueOf(MAX_HOPS),
+                             "-w", "3", host);
+            default   -> new ProcessBuilder("traceroute", "-m",  String.valueOf(MAX_HOPS),
+                             "-w", "3", host);
+        };
+    }
+
+    /**
+     * Calculates packet-loss percentage for a hop based on its RTT values
+     * (-1 means timeout / no response).
+     *
+     * @param hop the hop to evaluate
+     * @return packet-loss in 0–100 %
+     */
+    public static int packetLossPercent(Hop hop) {
+        if (hop == null) return 100;
+        int probes  = 3;
+        int timeouts = 0;
+        if (hop.getRtt1() < 0) timeouts++;
+        if (hop.getRtt2() < 0) timeouts++;
+        if (hop.getRtt3() < 0) timeouts++;
+        return (timeouts * 100) / probes;
+    }
+
+    /**
+     * Appends a packet-loss column to the default {@link TraceRoute#toString()}
+     * output, showing {@code [N% loss]} next to each hop with partial or total loss.
+     */
+    public static String formatWithPacketLoss(TraceRoute trace) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("[TRACEROUTE] Traceroute to ").append(trace.getTargetHost());
+        if (trace.getTargetIP() != null)
+            sb.append(" (").append(trace.getTargetIP()).append(")");
+        sb.append(", ").append(MAX_HOPS).append(" hops max:\n\n");
+
+        for (Hop hop : trace.getHops()) {
+            int loss = packetLossPercent(hop);
+            sb.append(hop);
+            if (loss > 0 && loss < 100) sb.append("  [").append(loss).append("% loss]");
+            else if (loss == 100 && !hop.isTimeout()) sb.append("  [100% loss]");
+            sb.append("\n");
+        }
+
+        if (trace.isReachedTarget())
+            sb.append("\n✅ Reached target in ").append(trace.getTotalHops()).append(" hops");
+        else
+            sb.append("\n[WARN] Did not reach target within ").append(MAX_HOPS).append(" hops");
+        return sb.toString();
     }
 }

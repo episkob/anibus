@@ -3,7 +3,12 @@ package it.r2u.anibus.service.core;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -162,11 +167,146 @@ public class ScanSchedulerService {
 
     public record ScanResults(
             List<PortScanResult> results,
-            LocalDateTime        timestamp
+            LocalDateTime        timestamp,
+            List<DriftAlert>     driftAlerts
     ) {
+        /** Backward-compatible constructor without drift alerts. */
+        public ScanResults(List<PortScanResult> results, LocalDateTime timestamp) {
+            this(results, timestamp, List.of());
+        }
         /** Format timestamp for display. */
         public String formattedTimestamp() {
             return timestamp.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         }
+    }
+
+    // ── Baseline & Drift (defined after ScanResults to allow cross-referencing) ──
+
+    /** Alert severity for a drift event. */
+    public enum DriftSeverity { CRITICAL, HIGH, MEDIUM, INFO }
+
+    /** Describes a single change detected against the baseline. */
+    public record DriftAlert(
+        int           port,
+        String        service,
+        String        alertType,   // NEW / REMOVED / SERVICE_CHANGED
+        DriftSeverity severity,
+        String        description
+    ) {}
+
+    /**
+     * Baseline profile for drift comparison.
+     */
+    public record BaselineProfile(
+        String              name,
+        Map<Integer, String> expectedPorts,
+        Set<Integer>        suppressedPorts,
+        DriftSeverity       minSeverity
+    ) {
+        public static BaselineProfile of(String name, Map<Integer, String> ports) {
+            return new BaselineProfile(name, Map.copyOf(ports), Set.of(), DriftSeverity.INFO);
+        }
+
+        public static BaselineProfile snapshot(String name, List<PortScanResult> results) {
+            Map<Integer, String> ports = new HashMap<>();
+            for (PortScanResult r : results) {
+                if (r == null) continue;
+                String state = r.getState();
+                if (state != null && state.toLowerCase().contains("open")) {
+                    ports.put(r.getPort(), r.getService() != null ? r.getService() : "");
+                }
+            }
+            return new BaselineProfile(name, Map.copyOf(ports), Set.of(), DriftSeverity.INFO);
+        }
+    }
+
+    public static List<DriftAlert> compareWithBaseline(List<PortScanResult> results,
+                                                        BaselineProfile baseline) {
+        if (results == null || baseline == null) return List.of();
+
+        Set<Integer> currentOpen = new HashSet<>();
+        Map<Integer, String> currentService = new HashMap<>();
+        for (PortScanResult r : results) {
+            if (r == null) continue;
+            String state = r.getState();
+            if (state != null && state.toLowerCase().contains("open")) {
+                currentOpen.add(r.getPort());
+                currentService.put(r.getPort(), r.getService() != null ? r.getService() : "");
+            }
+        }
+
+        List<DriftAlert> alerts = new ArrayList<>();
+
+        for (int port : currentOpen) {
+            if (baseline.suppressedPorts().contains(port)) continue;
+            if (!baseline.expectedPorts().containsKey(port)) {
+                String svc = currentService.getOrDefault(port, "");
+                DriftSeverity sev = wellKnownSeverity(port, svc);
+                if (sev.ordinal() >= baseline.minSeverity().ordinal()) {
+                    alerts.add(new DriftAlert(port, svc, "NEW", sev,
+                        "New open port detected: " + port + "/" + svc));
+                }
+            }
+        }
+
+        for (int port : baseline.expectedPorts().keySet()) {
+            if (baseline.suppressedPorts().contains(port)) continue;
+            if (!currentOpen.contains(port)) {
+                String svc = baseline.expectedPorts().get(port);
+                if (DriftSeverity.MEDIUM.ordinal() >= baseline.minSeverity().ordinal()) {
+                    alerts.add(new DriftAlert(port, svc, "REMOVED", DriftSeverity.MEDIUM,
+                        "Previously open port no longer responding: " + port + "/" + svc));
+                }
+            }
+        }
+
+        for (int port : currentOpen) {
+            if (baseline.suppressedPorts().contains(port)) continue;
+            String expected = baseline.expectedPorts().get(port);
+            String actual   = currentService.getOrDefault(port, "");
+            if (expected != null && !expected.isBlank() && !actual.isBlank()
+                    && !expected.equalsIgnoreCase(actual)) {
+                if (DriftSeverity.HIGH.ordinal() >= baseline.minSeverity().ordinal()) {
+                    alerts.add(new DriftAlert(port, actual, "SERVICE_CHANGED", DriftSeverity.HIGH,
+                        "Service changed on port " + port + ": was '" + expected + "', now '" + actual + "'"));
+                }
+            }
+        }
+
+        return List.copyOf(alerts);
+    }
+
+    private static DriftSeverity wellKnownSeverity(int port, String service) {
+        String svc = service.toLowerCase();
+        if (port == 3306 || port == 5432 || port == 27017 || port == 6379
+                || svc.contains("mysql") || svc.contains("postgres")
+                || svc.contains("mongo") || svc.contains("redis")) {
+            return DriftSeverity.CRITICAL;
+        }
+        if (port == 3389 || port == 23 || port == 445 || port == 8080
+                || port == 8443 || port == 9200 || port == 2375) {
+            return DriftSeverity.HIGH;
+        }
+        if (port == 22 || port == 21 || port == 25 || port == 53 || port == 9092) {
+            return DriftSeverity.MEDIUM;
+        }
+        return DriftSeverity.INFO;
+    }
+
+    public static String formatDriftReport(List<DriftAlert> alerts, String host, BaselineProfile baseline) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("=== SECURITY DRIFT REPORT: ").append(host).append(" ===\n");
+        sb.append("  Baseline: ").append(baseline.name())
+          .append(" (").append(baseline.expectedPorts().size()).append(" expected port(s))\n\n");
+        if (alerts.isEmpty()) {
+            sb.append("  \u2713 No drift detected \u2014 scan matches baseline.\n");
+            return sb.toString();
+        }
+        sb.append("  ").append(alerts.size()).append(" drift event(s):\n\n");
+        for (DriftAlert a : alerts) {
+            sb.append(String.format("  [%-8s] [%-16s] port %-5d  %s%n",
+                a.severity(), a.alertType(), a.port(), a.description()));
+        }
+        return sb.toString();
     }
 }
