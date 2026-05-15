@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Anibus Wiki — Home</title>
+<link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+<div class="wiki-shell">
+  <aside class="sidebar">
+    <div class="brand">Anibus Wiki<small>version 2.2.0 · network security scanner</small></div>
+    <div class="lang-switch">
+      <a href="../en/index.html" class="active">EN</a>
+      <a href="../it/index.html">IT</a>
+      <a href="../ru/index.html">RU</a>
+    </div>
+    <nav>
+      <div class="section-label">Getting started</div>
+      <a href="index.html" class="active">Home</a>
+      <a href="getting-started.html">Install &amp; run</a>
+      <div class="section-label">Scanning</div>
+      <a href="scanning.html">Basic scans</a>
+      <a href="web-security.html">Web vulnerabilities</a>
+      <a href="auth-and-recon.html">Auth &amp; Recon</a>
+      <div class="section-label">Analysis</div>
+      <a href="cve-and-vulns.html">CVE &amp; vulnerabilities</a>
+      <a href="network.html">Network &amp; infrastructure</a>
+      <a href="proxy.html">Proxy &amp; chains</a>
+      <div class="section-label">Reports</div>
+      <a href="reports.html">Export &amp; history</a>
+      <div class="section-label">Operations</div>
+      <a href="admin.html">Administration</a>
+    </nav>
+  </aside>
+
+  <main class="content">
+    <h1>Anibus Wiki</h1>
+    <p class="subtitle">Complete user guide for the <strong>Anibus Desktop 2.2.0</strong> security scanner. This wiki documents workflows, UI screens and every built-in module — from passive recon to SourceMap exploitation and AI summary.</p>
+
+    <div class="callout">
+      <strong>Where to start</strong>
+      First time with Anibus? Read <a href="getting-started.html">Install &amp; run</a>, then <a href="scanning.html">Basic scans</a>. After that, explore modules as needed — each page is self-contained.
+    </div>
+
+    <h2>What is Anibus</h2>
+    <p>Anibus is a desktop scanner built on Java 21 (JavaFX 21.0.5, JPMS module <code>it.r2u.anibus</code>) for penetration testing, perimeter audit and continuous security monitoring. All blocking IO runs on virtual threads (JEP 444), network requests go through a unified <code>HttpClientFactory</code> facade with TLS, retries and timeout profiles.</p>
+
+    <h3>Highlights</h3>
+    <ul>
+      <li>Runs locally with no cloud — all data stays on your machine.</li>
+      <li><strong>EN / IT / RU</strong> locales and dark/light themes.</li>
+      <li>Visual Proxy Chain Builder with drag-and-drop, ACTIVE CHAIN indicator, rotation and chain mode.</li>
+      <li>Virtual threads for mass HTTP probes and parallel detectors.</li>
+      <li>Offline CVE/EPSS/KEV cache with scheduled refresh.</li>
+    </ul>
+
+    <h2>Functionality map</h2>
+    <div class="card-grid">
+      <div class="card"><h4>Basic scans</h4><p>TCP/UDP, IPv6, service detection, banners, single-port mode, batch.</p></div>
+      <div class="card"><h4>Web vulnerabilities</h4><p>XSS (DOM + Stored + polyglot), SSRF, XXE (OOB), CORS, JWT, GraphQL, SQLi (boolean+time+OOB).</p></div>
+      <div class="card"><h4>Auth Crawling</h4><p>5 modes: Basic / Bearer / OAuth2 client_credentials / Digest RFC 7616 / Form + NTLMv2.</p></div>
+      <div class="card"><h4>Passive Recon</h4><p>Title, headers, robots, sitemap, favicon MD5, CSP origin, meta-generator, email OSINT, cross-origin policy.</p></div>
+      <div class="card"><h4>Tech Stack 2.0</h4><p>40+ signatures: servers, CMS, JS frameworks, CDN, analytics, cookie runtimes.</p></div>
+      <div class="card"><h4>CVE Intelligence</h4><p>Offline NVD cache, EPSS exploitation probability, CISA KEV flag, exploit maturity.</p></div>
+      <div class="card"><h4>Network &amp; Infra</h4><p>ASN/BGP, GeoIP map, AXFR, HTTP/2/3 ALPN, IPv6, Traceroute TCP/UDP/ICMP, RDAP fallback.</p></div>
+      <div class="card"><h4>Container &amp; TLS</h4><p>Docker/K8s/etcd exposure, Weak TLS Policy, Auth Surface Audit, Heartbleed with false-positive guard.</p></div>
+      <div class="card"><h4>Proxy subsystem</h4><p>Visual Chain Builder, rotation, ACTIVE CHAIN card, multi-protocol chain.</p></div>
+      <div class="card"><h4>Drift Scheduler</h4><p>Schedules, baseline profiles, severity, suppression rules, alerts on new ports.</p></div>
+      <div class="card"><h4>Reports</h4><p>PDF (PrinterJob), styled HTML with JS filter, history under <code>~/.anibus/history/</code>, diff mode.</p></div>
+      <div class="card"><h4>AI Summary</h4><p>Heuristic EN/RU executive summary on top of JS Analysis without external LLMs.</p></div>
+    </div>
+
+    <h2>Wiki structure</h2>
+    <table>
+      <thead><tr><th>Section</th><th>Contents</th></tr></thead>
+      <tbody>
+        <tr><td><a href="getting-started.html">Install &amp; run</a></td><td>System requirements, building from source, first launch, UI overview.</td></tr>
+        <tr><td><a href="scanning.html">Basic scans</a></td><td>Scan Target, Service Detection, UDP scan, IPv6, batch mode.</td></tr>
+        <tr><td><a href="web-security.html">Web vulnerabilities</a></td><td>All web detectors: XSS/SSRF/XXE/CORS/JWT/GraphQL/SQLi/Directory bruteforce.</td></tr>
+        <tr><td><a href="auth-and-recon.html">Auth &amp; Recon</a></td><td>Auth Crawler, Passive Recon, Secrets Validation, Tech Stack Fingerprint 2.0.</td></tr>
+        <tr><td><a href="cve-and-vulns.html">CVE &amp; vulnerabilities</a></td><td>CVE cache, EPSS, KEV, Heartbleed, Auth Surface, Container Exposure, Weak TLS.</td></tr>
+        <tr><td><a href="network.html">Network &amp; infrastructure</a></td><td>ASN/BGP, GeoIP, AXFR, HTTP/2/3, Traceroute modes, WHOIS+RDAP.</td></tr>
+        <tr><td><a href="proxy.html">Proxy &amp; chains</a></td><td>Visual Chain Builder, rotation, dialogs, ACTIVE CHAIN.</td></tr>
+        <tr><td><a href="reports.html">Export &amp; history</a></td><td>PDF/HTML export, ScanHistoryService, ScanDiffService, AI Summary, SourceMap Exploit Context.</td></tr>
+        <tr><td><a href="admin.html">Administration</a></td><td>Drift Scheduler, hardening, troubleshooting, hotkeys, themes.</td></tr>
+      </tbody>
+    </table>
+
+    <h2>What's new in 2.2.0</h2>
+    <p>Summary of key updates compared to the 2.0.x branch. Details on the respective section pages.</p>
+    <ul>
+      <li><span class="tag new">NEW</span> Authenticated Crawling (5 modes + NTLMv2 with no external libraries).</li>
+      <li><span class="tag new">NEW</span> CVE Offline DB + EPSS + CISA KEV + exploit maturity.</li>
+      <li><span class="tag new">NEW</span> Container Exposure Checks (Docker API / K8s / etcd).</li>
+      <li><span class="tag new">NEW</span> Weak TLS Policy + Auth Surface + Heartbleed with false-positive guard.</li>
+      <li><span class="tag new">NEW</span> Tech Stack Fingerprint 2.0, Passive Recon (favicon MD5, CSP, meta-generator, email OSINT, cross-origin).</li>
+      <li><span class="tag new">NEW</span> XSS context-aware + Stored + polyglot, SQLi boolean-blind + OOB, GraphQL depth-limit, XXE error-based.</li>
+      <li><span class="tag new">NEW</span> AI Summary, SourceMap Exploit Context, JS Endpoint Reachability.</li>
+      <li><span class="tag new">NEW</span> Visual Proxy Chain Manager, ACTIVE CHAIN, extended scheduler.</li>
+    </ul>
+
+    <div class="callout warn">
+      <strong>Legal notice</strong>
+      Anibus is an audit tool. Use only on systems for which you have written authorization. See <a href="admin.html#legal">Administration → Legal boundaries</a>.
+    </div>
+
+    <footer class="page-footer">
+      <span>Anibus Desktop 2.2.0 · MIT License</span>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

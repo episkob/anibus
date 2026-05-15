@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Anibus Wiki — Vulnerabilità web</title>
+<link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+<div class="wiki-shell">
+  <aside class="sidebar">
+    <div class="brand">Anibus Wiki<small>versione 2.2.0 · scanner di sicurezza di rete</small></div>
+    <div class="lang-switch">
+      <a href="../en/web-security.html">EN</a>
+      <a href="../it/web-security.html" class="active">IT</a>
+      <a href="../ru/web-security.html">RU</a>
+    </div>
+    <nav>
+      <div class="section-label">Inizio</div>
+      <a href="index.html">Home</a>
+      <a href="getting-started.html">Installazione e avvio</a>
+      <div class="section-label">Scansione</div>
+      <a href="scanning.html">Scansioni di base</a>
+      <a href="web-security.html" class="active">Vulnerabilità web</a>
+      <a href="auth-and-recon.html">Auth &amp; Recon</a>
+      <div class="section-label">Analisi</div>
+      <a href="cve-and-vulns.html">CVE e vulnerabilità</a>
+      <a href="network.html">Rete e infrastruttura</a>
+      <a href="proxy.html">Proxy e catene</a>
+      <div class="section-label">Report</div>
+      <a href="reports.html">Esportazione e cronologia</a>
+      <div class="section-label">Operazioni</div>
+      <a href="admin.html">Amministrazione</a>
+    </nav>
+  </aside>
+
+  <main class="content">
+    <h1>Vulnerabilità web</h1>
+    <p class="subtitle">Tutti i detector per le scansioni web: XSS, SSRF, XXE, CORS, JWT, GraphQL, SQL Injection, Directory Bruteforce, JS Analysis. In 2.2.0 ogni analyzer è stato esteso con nuove tecniche.</p>
+
+    <h2 id="xss">XSS Detector</h2>
+    <p>Classe <code>XssDetector</code>. Copre XSS reflected, DOM-based e stored.</p>
+    <h3>Reflected (canary-based)</h3>
+    <p>Per ogni parametro di query viene generata una stringa canary del tipo <code>anibus-xss-7f2a</code>, iniettata e cercata nella risposta insieme ai contesti tipici.</p>
+    <h3>Escaping context-aware <span class="tag new">NEW 2.2</span></h3>
+    <p>La riflessione viene classificata per contesto tramite l'enum <code>XssDetector.Context</code>:</p>
+    <ul>
+      <li><strong>SCRIPT_BLOCK / JS_STRING / URL_ATTRIBUTE</strong> — severity <span class="tag crit">CRITICAL</span>.</li>
+      <li><strong>HTML_TEXT / HTML_ATTRIBUTE</strong> — severity <span class="tag warn">HIGH</span>.</li>
+      <li><strong>STYLE_BLOCK / HTML_COMMENT</strong> — severity <span class="tag">MEDIUM</span>.</li>
+    </ul>
+    <p>In <code>XssResult</code> è stato aggiunto un campo con la raccomandazione di escaping specifica per il contesto.</p>
+
+    <h3>Mappatura DOM-based sink/source <span class="tag new">NEW</span></h3>
+    <p><code>XssDetector.analyzeDomSinks()</code> esamina gli script inline alla ricerca di coppie source→sink: <code>location.hash</code> → <code>innerHTML</code>, <code>document.referrer</code> → <code>eval</code> ecc. Il risultato è mostrato in una tabella separata in JS Analysis.</p>
+
+    <h3>Stored XSS <span class="tag new">NEW</span></h3>
+    <p><code>XssDetector.scanStored(injectUrl, params, verifyUrl)</code>: viene iniettato un canary tramite <code>injectUrl</code>, poi viene eseguita una GET su <code>verifyUrl</code> e si verifica la riflessione. Se rilevata — <code>XssResult.stored=true</code>, il rischio sale a CRITICAL.</p>
+
+    <h3>Set di payload polyglot <span class="tag new">NEW</span></h3>
+    <p>10 tecniche: SVG/onload, iframe srcdoc, math/mglyph break-out, body onpageshow, details ontoggle, input autofocus, template literal <code>${...}</code>, style break-out, polyglot dello schema jaVasCript:.</p>
+
+    <h3>Generazione PoC</h3>
+    <p>Per ogni risultato — <code>XssResult.pocCurl()</code> costruisce uno snippet <code>curl</code> pronto con payload e header, disponibile tramite tasto destro → Copy PoC.</p>
+
+    <h2 id="ssrf">SSRF Detector</h2>
+    <ul>
+      <li>Parametri URL per SSRF + check dei metadata cloud (AWS <code>169.254.169.254</code>, GCP, Azure IMDS).</li>
+      <li><span class="tag new">NEW</span> Supporto per gli schemi <code>file://</code>, <code>dict://</code>, <code>gopher://</code>, <code>ftp://</code>.</li>
+      <li><span class="tag new">NEW</span> Bypass IPv6/IPv4-mapped (<code>::ffff:169.254.169.254</code>), formati IP ottali/hex/decimali, short-form (<code>127.1</code>), DNS rebinding tramite nip.io.</li>
+    </ul>
+
+    <h2 id="xxe">XXE Detector</h2>
+    <ul>
+      <li>5 payload di base + rilevamento tramite signature nella risposta.</li>
+      <li><span class="tag new">NEW</span> <strong>OOB XXE</strong> tramite <code>LoopbackCallbackServer</code> integrato su <code>127.0.0.1:random</code> — non serve un server esterno.</li>
+      <li><span class="tag new">NEW</span> <strong>scanWithBaseline()</strong> — blind XXE/SSRF tramite diff della lunghezza della risposta.</li>
+      <li><span class="tag new">NEW</span> Payload error-based (percorso inesistente / porta chiusa) con indicatori <code>Connection refused</code>, <code>failed to open stream</code>, <code>DOCTYPE is disallowed</code>.</li>
+    </ul>
+
+    <h2 id="cors">CORS Misconfiguration Checker</h2>
+    <ul>
+      <li>Verifica di <code>Access-Control-Allow-Origin</code> + combinazioni con credentials.</li>
+      <li><span class="tag new">NEW</span> Rilevamento di <code>credentials + *</code> (violazione della specifica).</li>
+      <li><span class="tag new">NEW</span> Sweep per-endpoint — <code>check(baseUrl, endpoints)</code>.</li>
+      <li><span class="tag new">NEW</span> Probe di null origin (<code>Origin: null</code>) e header di pre-flight.</li>
+    </ul>
+
+    <h2 id="jwt">JWT Analyzer</h2>
+    <ul>
+      <li>Decodifica, <code>alg:none</code>, expired, segreti HMAC deboli.</li>
+      <li><span class="tag new">NEW</span> Check <strong>JWK/JWKS</strong> (<code>analyzeJwks</code>), kid injection, alg-confusion.</li>
+      <li><span class="tag new">NEW</span> Kid path traversal (<code>kid: "../../etc/passwd"</code>) + SQLi nel kid.</li>
+      <li><span class="tag new">NEW</span> Storage non sicuro del token — ricerca di chiavi <code>localStorage</code> nei bundle JS.</li>
+      <li><span class="tag new">NEW</span> <code>compareTokenPair(access, refresh)</code> — advisory su diff di TTL.</li>
+      <li><span class="tag new">NEW</span> <code>cloneWithClaim(token, claim, value)</code> — tamper di sub/role per il probing.</li>
+    </ul>
+
+    <h2 id="graphql">GraphQL Introspection</h2>
+    <ul>
+      <li>10 path, <code>__schema</code>, estrazione di tipi/query/mutation.</li>
+      <li><span class="tag new">NEW</span> Batch query abuse — array di query in un'unica chiamata HTTP.</li>
+      <li><span class="tag new">NEW</span> Auto-generazione di query/mutation minime a partire dallo schema.</li>
+      <li><span class="tag new">NEW</span> Probe di depth-limit (profondità 12) → flag <code>depthLimitMissing</code>.</li>
+    </ul>
+
+    <h2 id="sqli">SQL Injection Analyzer</h2>
+    <ul>
+      <li>Caricamento di file di payload + profili CMS.</li>
+      <li><span class="tag new">NEW</span> <strong>Boolean-based blind</strong> tramite diff sulla lunghezza della risposta e sullo status code.</li>
+      <li><span class="tag new">NEW</span> 8 payload time-based espliciti (SLEEP/WAITFOR/pg_sleep/BENCHMARK).</li>
+      <li><span class="tag new">NEW</span> <strong>OOB payload generator</strong> <code>buildOobPayloads(callbackUrl)</code> — primitive outbound MSSQL/Oracle/PostgreSQL/MySQL tramite <code>LoopbackCallbackServer</code>.</li>
+      <li><strong>SQL-to-DB Extraction</strong>: menu contestuale → <code>SqlMetadataExtractor</code> (UNION-based version/columns/tables, probe ORDER BY).</li>
+    </ul>
+
+    <h2 id="dirbruteforce">Directory Bruteforce</h2>
+    <ul>
+      <li>Wordlist di default da 60 voci, richieste HEAD, raggruppamento per status.</li>
+      <li><span class="tag new">NEW</span> Wordlist/estensioni personalizzate + recursion depth — <code>scan(url, words, exts, depth, progress)</code>.</li>
+      <li><span class="tag new">NEW</span> Enumerazione di IIS short-name (<code>probeIisShortNames()</code>).</li>
+      <li><span class="tag new">NEW</span> Rilevamento di file di backup (<code>.bak</code>, <code>.old</code>, <code>.orig</code>, <code>~</code>, <code>.swp</code>).</li>
+      <li><span class="tag new">NEW</span> Estensioni automatiche in base a Content-Type/Server (PHP → <code>.php/.phtml</code>, IIS → <code>.aspx</code>, Tomcat → <code>.jsp</code>).</li>
+      <li><span class="tag new">NEW</span> Visualizzazione degli header HTTP (Content-Type, X-Powered-By, Server).</li>
+    </ul>
+
+    <h2 id="subdomain">Subdomain Enumeration &amp; Takeover</h2>
+    <ul>
+      <li>30+ sottodomini su dangling DNS, fingerprint HTTP.</li>
+      <li><span class="tag new">NEW</span> Ricorsione sulla catena CNAME tramite JNDI DNS (<code>resolveCnameChain</code>).</li>
+      <li><span class="tag new">NEW</span> +24 fingerprint: Vercel, Render, Fly.io, Pantheon, Strikingly, Tumblr, Campaign Monitor, WordPress, Ngrok, Help Scout, Wishpond, Readme.io, AWS EB, Smartling, Acquia, LeadPages, Railway.</li>
+      <li><span class="tag new">NEW</span> Baseline DNS wildcard — sottodominio casuale; in caso di match viene emesso un singolo avviso <code>*.domain</code> invece di falsi positivi.</li>
+    </ul>
+
+    <h2 id="api">API Security Mode</h2>
+    <ul>
+      <li>Auto-detect di OpenAPI/Swagger, test di tutti gli endpoint.</li>
+      <li><span class="tag new">NEW</span> Supporto agli schemi GraphQL/gRPC/OpenRPC (report unificato).</li>
+      <li><span class="tag new">NEW</span> Diff fra risposte autenticate e anonime.</li>
+      <li><span class="tag new">NEW</span> Probe di rate-limit — serie di 20 richieste, attesa di 429.</li>
+      <li><span class="tag new">NEW</span> Parsing automatico di HAR / Postman v2.x tramite <code>HarPostmanParser</code>.</li>
+      <li><span class="tag new">NEW</span> Enum-fuzzing dei parametri di query (<code>role/status/sort/order/filter/debug</code>).</li>
+      <li><span class="tag new">NEW</span> Probe BOLA/IDOR — <code>runBolaProbe()</code> confronta <code>{id}=1</code> vs <code>{id}=2</code>.</li>
+    </ul>
+
+    <h2 id="js">JavaScript Security Analyzer</h2>
+    <p>Analyzer universale di bundle JS: parsing dei sorgenti, ricerca di segreti, schemi DB, endpoint. Ogni scoperta è un <code>LeakInfo</code> con i campi:</p>
+    <ul>
+      <li><strong>priority</strong> — 1..3, vedi <code>inferPriority()</code>.</li>
+      <li><strong>confidence</strong> — HIGH / MEDIUM / LOW.</li>
+      <li><strong>placeholder</strong> — flag che indica se il valore sembra un placeholder demo.</li>
+      <li><strong>risk score</strong> — Severity × Exploitability × Exposure.</li>
+    </ul>
+    <h3>JS Endpoint Reachability <span class="tag new">NEW</span></h3>
+    <p>Gli endpoint trovati nel JS vengono verificati per liveness, status e metodo. Il risultato è una tabella <em>Reachable / 401 / 403 / 404 / 5xx</em> con uno snippet <code>curl</code> per ogni URL attivo.</p>
+
+    <h3>AI Summary <span class="tag new">NEW</span></h3>
+    <p><code>AiSummaryGenerator</code> produce un riepilogo executive EN/RU: severity buckets, top-5 categorie, top-3 scoperte per risk score, raccomandazioni type-aware. Completamente offline, senza API LLM.</p>
+
+    <h2 id="oob">Infrastruttura OOB</h2>
+    <p><code>LoopbackCallbackServer</code> — listener HTTP integrato su <code>127.0.0.1:random</code>. Usato nei payload SSRF/XXE/SQLi/Blind XSS per confermare l'out-of-band senza infrastruttura Internet esterna.</p>
+
+    <div class="callout danger">
+      <strong>Attenzione</strong>
+      Tutti i detector di vulnerabilità web eseguono richieste <em>attive</em>. Usali solo su target autorizzati. Per audit passivo — <a href="auth-and-recon.html#passive">Passive Recon</a>.
+    </div>
+
+    <footer class="page-footer">
+      <a href="scanning.html">← Scansioni di base</a>
+      <a href="auth-and-recon.html">Avanti: Auth &amp; Recon →</a>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

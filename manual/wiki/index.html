@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Anibus Wiki</title>
+<script>
+  (function () {
+    var supported = { en: 1, it: 1, ru: 1 };
+    var saved = null;
+    try { saved = localStorage.getItem("anibus.wiki.lang"); } catch (e) {}
+    var lang = saved && supported[saved] ? saved : "en";
+    location.replace(lang + "/index.html");
+  })();
+</script>
+<meta http-equiv="refresh" content="0; url=en/index.html" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div style="max-width:560px;margin:80px auto;padding:24px;font-family:system-ui,sans-serif;color:#eaf0f7;background:#161d25;border:1px solid #2c3948;border-radius:8px;">
+  <h1 style="margin-top:0;">Anibus Wiki</h1>
+  <p>Choose a language / Scegli una lingua / Выберите язык:</p>
+  <p style="display:flex;gap:12px;">
+    <a href="en/index.html" style="flex:1;padding:10px;text-align:center;background:#2f86ff;color:#fff;border-radius:4px;text-decoration:none;">English</a>
+    <a href="it/index.html" style="flex:1;padding:10px;text-align:center;background:#2f86ff;color:#fff;border-radius:4px;text-decoration:none;">Italiano</a>
+    <a href="ru/index.html" style="flex:1;padding:10px;text-align:center;background:#2f86ff;color:#fff;border-radius:4px;text-decoration:none;">Русский</a>
+  </p>
+</div>
+</body>
+</html>

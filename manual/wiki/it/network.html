@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Anibus Wiki — Rete e infrastruttura</title>
+<link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+<div class="wiki-shell">
+  <aside class="sidebar">
+    <div class="brand">Anibus Wiki<small>versione 2.2.0 · scanner di sicurezza di rete</small></div>
+    <div class="lang-switch">
+      <a href="../en/network.html">EN</a>
+      <a href="../it/network.html" class="active">IT</a>
+      <a href="../ru/network.html">RU</a>
+    </div>
+    <nav>
+      <div class="section-label">Inizio</div>
+      <a href="index.html">Home</a>
+      <a href="getting-started.html">Installazione e avvio</a>
+      <div class="section-label">Scansione</div>
+      <a href="scanning.html">Scansioni di base</a>
+      <a href="web-security.html">Vulnerabilità web</a>
+      <a href="auth-and-recon.html">Auth &amp; Recon</a>
+      <div class="section-label">Analisi</div>
+      <a href="cve-and-vulns.html">CVE e vulnerabilità</a>
+      <a href="network.html" class="active">Rete e infrastruttura</a>
+      <a href="proxy.html">Proxy e catene</a>
+      <div class="section-label">Report</div>
+      <a href="reports.html">Esportazione e cronologia</a>
+      <div class="section-label">Operazioni</div>
+      <a href="admin.html">Amministrazione</a>
+    </nav>
+  </aside>
+
+  <main class="content">
+    <h1>Rete e infrastruttura</h1>
+    <p class="subtitle">Arricchimento ASN/BGP, mappa GeoIP, AXFR, ALPN HTTP/2 e HTTP/3, IPv6, traceroute in tre modalità, WHOIS con fallback RDAP.</p>
+
+    <h2 id="asn">ASN / BGP Enrichment <span class="tag new">NEW</span></h2>
+    <p>Record <code>BgpInfo</code> + bulk whois Team Cymru:</p>
+    <ul>
+      <li>ASN, owner, country, prefix, route age.</li>
+      <li>ASN adiacenti.</li>
+      <li>Query in batch tramite whois TCP (senza API HTTP).</li>
+    </ul>
+    <p>Usato nella Topology Map (clustering degli hop per /24 + ASN) e in JS Analysis per classificare provider CDN/cloud.</p>
+
+    <h3>ASN Lookup standalone</h3>
+    <p><code>AsnLookupService</code> — determinazione dell'AS da IP tramite parsing whois/IANA senza API esterne. Menu <strong>Discovery → ASN Lookup</strong>.</p>
+
+    <h2 id="geoip">GeoIP Map View <span class="tag new">NEW</span></h2>
+    <p><code>GeoIpService</code> + bar-chart ASCII per paese. Mostra:</p>
+    <pre><code>US ████████████████████  42
+DE ███████              14
+NL ████                  9
+RU ██                    4
+CN █                     2</code></pre>
+    <p>Sorgente GeoIP locale (senza chiamate a MaxMind in runtime).</p>
+
+    <h2 id="topology">Network Topology Map</h2>
+    <p>Una scheda dedicata visualizza il <code>traceroute</code> come grafo hop→hop:</p>
+    <ul>
+      <li><span class="tag new">NEW</span> Clustering degli hop per prefisso <code>/24</code> + ASN.</li>
+      <li><span class="tag new">NEW</span> Zoom-to-fit, zoom manuale con la rotella, drag-pan con il mouse.</li>
+      <li>Evidenziazione dei punti di failure (alto ICMP loss).</li>
+    </ul>
+
+    <h2 id="traceroute">Traceroute (3 modalità)</h2>
+    <p>Enum <code>TracerouteService.Mode</code>:</p>
+    <table>
+      <thead><tr><th>Modalità</th><th>Quando usarla</th></tr></thead>
+      <tbody>
+        <tr><td><strong>ICMP</strong></td><td>Classico <code>traceroute</code> Linux, può essere filtrato dal firewall.</td></tr>
+        <tr><td><strong>UDP</strong></td><td>Pacchetto UDP su porta alta; aggira parte dei filtri ICMP.</td></tr>
+        <tr><td><strong>TCP</strong></td><td>SYN su una porta specifica (80/443) — passa attraverso la maggior parte dei NAT/SPI.</td></tr>
+      </tbody>
+    </table>
+    <p>Metriche: hop, ASN, RTT min/avg/max, packet loss %, owner.</p>
+
+    <h2 id="whois">WHOIS Lookup + RDAP</h2>
+    <p><code>WhoisService</code>:</p>
+    <ul>
+      <li>Query a due passi: root IANA → server autoritativo.</li>
+      <li><span class="tag new">NEW</span> Fallback RDAP per i registry moderni (.io, .dev, .app).</li>
+      <li><span class="tag new">NEW</span> Normalizzazione dei campi <code>registrar</code> / <code>abuse contact</code> tra formati diversi.</li>
+    </ul>
+
+    <h2 id="dns">DNS Zone Transfer (AXFR)</h2>
+    <p>Raw TCP/53 AXFR senza librerie esterne. Vengono parsati i record <strong>A / AAAA / NS / MX / CNAME</strong> e visualizzati come albero. Se AXFR è proibito — fallback graceful senza rumore in console.</p>
+
+    <h2 id="http">Detector HTTP/2 + HTTP/3</h2>
+    <ul>
+      <li><strong>HTTP/2</strong> — negoziazione ALPN (<code>h2</code>) su 443/TLS.</li>
+      <li><strong>HTTP/3</strong> — header <code>Alt-Svc: h3=":443"</code> + probe UDP/443.</li>
+    </ul>
+
+    <h2 id="websocket">WebSocket Detector</h2>
+    <p>Probe HTTP <code>Upgrade: websocket</code> su 17 path tipici (<code>/ws</code>, <code>/socket.io/</code>, <code>/cable</code>, <code>/api/ws</code>, ...). In caso di successo viene registrato il protocollo (Sec-WebSocket-Protocol).</p>
+
+    <h2 id="ipv6">IPv6</h2>
+    <p><code>HostResolver</code> supporta IPv6:</p>
+    <ul>
+      <li>Rimozione delle parentesi quadre: <code>[::1]</code> → <code>::1</code>.</li>
+      <li>Skip IDN su IPv6 raw.</li>
+      <li>Multi-resolution: A + AAAA in contemporanea.</li>
+      <li>Zone-ID per link-local: <code>fe80::1%eth0</code>.</li>
+    </ul>
+
+    <h2 id="ssl">SSL/TLS Deep Audit</h2>
+    <p><code>SslTlsAuditor</code> produce <code>AuditResult</code>:</p>
+    <ul>
+      <li>Protocollo, cipher suite, catena di certificati, lista SAN, scadenza.</li>
+      <li><span class="tag new">NEW</span> URL OCSP, header HSTS, lista ALPN.</li>
+      <li><span class="tag new">NEW</span> Chain trust tramite il TrustManager JVM di default.</li>
+    </ul>
+    <p>Il risultato confluisce in <a href="cve-and-vulns.html#weaktls">Weak TLS Policy Alerts</a>.</p>
+
+    <h2 id="banner">Port Banner Timeline <span class="tag new">NEW</span></h2>
+    <p><code>BannerTimelineService</code> conserva uno store TSV in <code>~/.anibus/banner-timeline/</code>. Per ogni porta viene tenuta una cronologia (timestamp + banner). Il diff tra due punti mostra l'aggiornamento del servizio (per esempio OpenSSH 9.0p1 → 9.6p1).</p>
+
+    <h2 id="reversedns">Reverse DNS Expander</h2>
+    <p><code>ReverseDnsExpander</code> — per un blocco CIDR espande i record PTR tramite virtual thread. Utile per l'inventario di un range aziendale.</p>
+
+    <footer class="page-footer">
+      <a href="cve-and-vulns.html">← CVE e vulnerabilità</a>
+      <a href="proxy.html">Avanti: Proxy e catene →</a>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

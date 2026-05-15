@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Anibus Wiki — Главная</title>
+<link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+<div class="wiki-shell">
+  <aside class="sidebar">
+    <div class="brand">Anibus Wiki<small>версия 2.2.0 · сетевой security-сканер</small></div>
+    <div class="lang-switch">
+      <a href="../en/index.html">EN</a>
+      <a href="../it/index.html">IT</a>
+      <a href="../ru/index.html" class="active">RU</a>
+    </div>
+    <nav>
+      <div class="section-label">Начало</div>
+      <a href="index.html" class="active">Главная</a>
+      <a href="getting-started.html">Установка и запуск</a>
+      <div class="section-label">Сканирование</div>
+      <a href="scanning.html">Базовые сканы</a>
+      <a href="web-security.html">Web-уязвимости</a>
+      <a href="auth-and-recon.html">Auth &amp; Recon</a>
+      <div class="section-label">Анализ</div>
+      <a href="cve-and-vulns.html">CVE и уязвимости</a>
+      <a href="network.html">Сеть и инфраструктура</a>
+      <a href="proxy.html">Прокси и цепочки</a>
+      <div class="section-label">Отчёты</div>
+      <a href="reports.html">Экспорт и история</a>
+      <div class="section-label">Эксплуатация</div>
+      <a href="admin.html">Администрирование</a>
+    </nav>
+  </aside>
+
+  <main class="content">
+    <h1>Anibus Wiki</h1>
+    <p class="subtitle">Полное руководство пользователя по сканеру безопасности <strong>Anibus Desktop 2.2.0</strong>. Wiki описывает рабочие процессы, окна интерфейса и каждый встроенный модуль — от пассивной разведки до анализа SourceMap и AI-сводки.</p>
+
+    <div class="callout">
+      <strong>С чего начать</strong>
+      Если вы впервые открыли Anibus — пройдите <a href="getting-started.html">«Установка и запуск»</a>, затем <a href="scanning.html">«Базовые сканы»</a>. После этого изучайте модули по мере необходимости: каждая страница самодостаточна.
+    </div>
+
+    <h2>Что такое Anibus</h2>
+    <p>Anibus — десктопный сканер на Java 21 (JavaFX 21.0.5, JPMS-модуль <code>it.r2u.anibus</code>) для пентеста, аудита периметра и непрерывного контроля безопасности. Все блокирующие IO-операции выполняются на virtual threads (JEP 444), сетевые запросы проходят через единый фасад <code>HttpClientFactory</code> с TLS, ретраями и таймаут-профилями.</p>
+
+    <h3>Особенности</h3>
+    <ul>
+      <li>Локальный запуск без облака — все данные остаются на машине.</li>
+      <li>Поддержка <strong>EN / IT / RU</strong> локалей и тёмная/светлая темы.</li>
+      <li>Visual Proxy Chain Builder с drag-and-drop, ACTIVE CHAIN индикатор, ротация и chain-режим.</li>
+      <li>Виртуальные потоки для массовых HTTP-проб и параллельных детекторов.</li>
+      <li>Офлайн-кэш CVE/EPSS/KEV с обновлением по расписанию.</li>
+    </ul>
+
+    <h2>Карта функциональности</h2>
+    <div class="card-grid">
+      <div class="card">
+        <h4>Базовые сканы</h4>
+        <p>TCP/UDP, IPv6, service detection, баннеры, single-port mode, batch.</p>
+      </div>
+      <div class="card">
+        <h4>Web-уязвимости</h4>
+        <p>XSS (DOM + Stored + polyglot), SSRF, XXE (OOB), CORS, JWT, GraphQL, SQLi (boolean+time+OOB).</p>
+      </div>
+      <div class="card">
+        <h4>Auth Crawling</h4>
+        <p>5 режимов: Basic / Bearer / OAuth2 client_credentials / Digest RFC 7616 / Form + NTLMv2.</p>
+      </div>
+      <div class="card">
+        <h4>Passive Recon</h4>
+        <p>Title, headers, robots, sitemap, favicon MD5, CSP-origin, meta-generator, email-OSINT, cross-origin policy.</p>
+      </div>
+      <div class="card">
+        <h4>Tech Stack 2.0</h4>
+        <p>40+ сигнатур: серверы, CMS, JS-фреймворки, CDN, аналитика, cookie-runtimes.</p>
+      </div>
+      <div class="card">
+        <h4>CVE Intelligence</h4>
+        <p>Офлайн NVD-кэш, EPSS-вероятность эксплуатации, флаг CISA KEV, exploit-maturity.</p>
+      </div>
+      <div class="card">
+        <h4>Network &amp; Infra</h4>
+        <p>ASN/BGP, GeoIP map, AXFR, HTTP/2/3 ALPN, IPv6, Traceroute TCP/UDP/ICMP, RDAP-fallback.</p>
+      </div>
+      <div class="card">
+        <h4>Container &amp; TLS</h4>
+        <p>Docker/K8s/etcd exposure, Weak TLS Policy, Auth Surface Audit, Heartbleed с false-positive guard.</p>
+      </div>
+      <div class="card">
+        <h4>Прокси-подсистема</h4>
+        <p>Visual Chain Builder, ротация, ACTIVE CHAIN карта, multi-protocol chain.</p>
+      </div>
+      <div class="card">
+        <h4>Drift Scheduler</h4>
+        <p>Расписания, baseline-профили, severity, suppression rules, алерты на новые порты.</p>
+      </div>
+      <div class="card">
+        <h4>Отчёты</h4>
+        <p>PDF (PrinterJob), стилизованный HTML с JS-фильтром, история <code>~/.anibus/history/</code>, diff-режим.</p>
+      </div>
+      <div class="card">
+        <h4>AI Summary</h4>
+        <p>Эвристическая EN/RU executive-сводка по JS Analysis без внешних LLM.</p>
+      </div>
+    </div>
+
+    <h2>Структура Wiki</h2>
+    <table>
+      <thead><tr><th>Раздел</th><th>Что внутри</th></tr></thead>
+      <tbody>
+        <tr><td><a href="getting-started.html">Установка и запуск</a></td><td>Системные требования, сборка из исходников, первый запуск, обзор интерфейса.</td></tr>
+        <tr><td><a href="scanning.html">Базовые сканы</a></td><td>Scan Target, Service Detection, UDP-скан, IPv6, batch-режим.</td></tr>
+        <tr><td><a href="web-security.html">Web-уязвимости</a></td><td>Все web-детекторы: XSS/SSRF/XXE/CORS/JWT/GraphQL/SQLi/Directory bruteforce.</td></tr>
+        <tr><td><a href="auth-and-recon.html">Auth &amp; Recon</a></td><td>Auth Crawler, Passive Recon, Secrets Validation, Tech Stack Fingerprint 2.0.</td></tr>
+        <tr><td><a href="cve-and-vulns.html">CVE и уязвимости</a></td><td>CVE кэш, EPSS, KEV, Heartbleed, Auth Surface, Container Exposure, Weak TLS.</td></tr>
+        <tr><td><a href="network.html">Сеть и инфраструктура</a></td><td>ASN/BGP, GeoIP, AXFR, HTTP/2/3, Traceroute modes, WHOIS+RDAP.</td></tr>
+        <tr><td><a href="proxy.html">Прокси и цепочки</a></td><td>Visual Chain Builder, ротация, диалоги, ACTIVE CHAIN.</td></tr>
+        <tr><td><a href="reports.html">Экспорт и история</a></td><td>PDF/HTML экспорт, ScanHistoryService, ScanDiffService, AI Summary, SourceMap Exploit Context.</td></tr>
+        <tr><td><a href="admin.html">Администрирование</a></td><td>Drift Scheduler, hardening, troubleshooting, hotkeys, темы.</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Что нового в 2.2.0</h2>
+    <p>Сводка ключевых обновлений по сравнению с веткой 2.0.x. Подробности — на страницах разделов.</p>
+    <ul>
+      <li><span class="tag new">NEW</span> Authenticated Crawling (5 режимов + NTLMv2 без внешних библиотек).</li>
+      <li><span class="tag new">NEW</span> CVE Offline DB + EPSS + CISA KEV + exploit-maturity.</li>
+      <li><span class="tag new">NEW</span> Container Exposure Checks (Docker API / K8s / etcd).</li>
+      <li><span class="tag new">NEW</span> Weak TLS Policy + Auth Surface + Heartbleed с false-positive guard.</li>
+      <li><span class="tag new">NEW</span> Tech Stack Fingerprint 2.0, Passive Recon (favicon MD5, CSP, meta-generator, email-OSINT, cross-origin).</li>
+      <li><span class="tag new">NEW</span> XSS context-aware + Stored + polyglot, SQLi boolean-blind + OOB, GraphQL depth-limit, XXE error-based.</li>
+      <li><span class="tag new">NEW</span> AI Summary, SourceMap Exploit Context, JS Endpoint Reachability.</li>
+      <li><span class="tag new">NEW</span> Visual Proxy Chain Manager, ACTIVE CHAIN, расширенный scheduler.</li>
+    </ul>
+
+    <div class="callout warn">
+      <strong>Юридическое уведомление</strong>
+      Anibus — инструмент аудита. Используйте только на тех системах, на которые у вас есть письменное разрешение. См. <a href="admin.html#legal">Администрирование → Юридические границы</a>.
+    </div>
+
+    <footer class="page-footer">
+      <span>Anibus Desktop 2.2.0 · MIT License</span>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Anibus Wiki — Auth &amp; Recon</title>
+<link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+<div class="wiki-shell">
+  <aside class="sidebar">
+    <div class="brand">Anibus Wiki<small>versione 2.2.0 · scanner di sicurezza di rete</small></div>
+    <div class="lang-switch">
+      <a href="../en/auth-and-recon.html">EN</a>
+      <a href="../it/auth-and-recon.html" class="active">IT</a>
+      <a href="../ru/auth-and-recon.html">RU</a>
+    </div>
+    <nav>
+      <div class="section-label">Inizio</div>
+      <a href="index.html">Home</a>
+      <a href="getting-started.html">Installazione e avvio</a>
+      <div class="section-label">Scansione</div>
+      <a href="scanning.html">Scansioni di base</a>
+      <a href="web-security.html">Vulnerabilità web</a>
+      <a href="auth-and-recon.html" class="active">Auth &amp; Recon</a>
+      <div class="section-label">Analisi</div>
+      <a href="cve-and-vulns.html">CVE e vulnerabilità</a>
+      <a href="network.html">Rete e infrastruttura</a>
+      <a href="proxy.html">Proxy e catene</a>
+      <div class="section-label">Report</div>
+      <a href="reports.html">Esportazione e cronologia</a>
+      <div class="section-label">Operazioni</div>
+      <a href="admin.html">Amministrazione</a>
+    </nav>
+  </aside>
+
+  <main class="content">
+    <h1>Authenticated Crawling &amp; Recon</h1>
+    <p class="subtitle">Crawling autenticato, ricognizione passiva e validazione di segreti — per audit silenziosi senza carico attivo.</p>
+
+    <h2 id="authcrawler">Auth Crawler</h2>
+    <p>Modulo <code>AuthCrawler</code> + dialogo UI <strong>Discovery → Auth Crawl</strong>. Supporta cinque modalità di autenticazione senza librerie esterne.</p>
+
+    <h3>Modalità</h3>
+    <table>
+      <thead><tr><th>Modalità</th><th>Cosa fa</th><th>Campi del dialogo</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Basic</strong></td><td>HTTP Basic <code>Authorization: Basic base64(user:pass)</code></td><td>Username, Password</td></tr>
+        <tr><td><strong>Bearer</strong></td><td>Token JWT/OAuth già pronto in <code>Authorization: Bearer …</code></td><td>Token</td></tr>
+        <tr><td><strong>OAuth2 client_credentials</strong></td><td>Flusso grant completo con refresh automatico del token</td><td>Token URL, client_id, client_secret, scope</td></tr>
+        <tr><td><strong>Digest RFC 7616</strong></td><td>Challenge WWW-Authenticate, MD5/SHA-256, qop=auth</td><td>Username, Password (cnonce/nc — automatici)</td></tr>
+        <tr><td><strong>Form login</strong></td><td>POST del form + auto-estrazione del CSRF</td><td>Login URL, campi username/password, nome del campo CSRF (opz.)</td></tr>
+      </tbody>
+    </table>
+
+    <h3>NTLMv2 <span class="tag new">NEW</span></h3>
+    <p><code>NtlmMessages</code> integrato implementa NTLMv2 Type-1 / Type-3 con <strong>MD4 + HMAC-MD5</strong> propri — nessun provider JCE esterno. Si attiva tramite il dialogo «NTLM credentials» in Auth Crawl.</p>
+
+    <h3>Auto-estrazione CSRF <span class="tag new">NEW</span></h3>
+    <p><code>CsrfTokenExtractor</code> legge il token da:</p>
+    <ul>
+      <li><code>&lt;meta name="csrf-token"&gt;</code> (Rails, Laravel, Spring).</li>
+      <li><code>&lt;input type="hidden"&gt;</code> con i nomi tipici: <code>_token</code>, <code>__RequestVerificationToken</code>, <code>authenticity_token</code>, <code>csrfmiddlewaretoken</code>.</li>
+    </ul>
+    <p>Il valore viene mascherato nel report (si vedono prefisso/suffisso, il centro con asterischi).</p>
+
+    <h3>Cookie Flags Auditor</h3>
+    <p><code>CookieFlagsAuditor</code> esegue il parsing di <code>Set-Cookie</code> e verifica:</p>
+    <ul>
+      <li><code>Secure</code> su HTTPS.</li>
+      <li><code>HttpOnly</code> per cookie session/auth/jwt/token → severity aumentata.</li>
+      <li><code>SameSite</code> (Strict/Lax/None+Secure).</li>
+    </ul>
+    <p>Integrato in <code>PassiveReconService</code>.</p>
+
+    <h2 id="passive">Passive Recon Mode</h2>
+    <p>Il servizio <code>PassiveReconService</code> raccoglie dati senza payload attivi — adatto a ricognizione senza allarmi WAF/IDS.</p>
+
+    <h3>Cosa viene raccolto</h3>
+    <ul>
+      <li><code>&lt;title&gt;</code> HTML, header di sicurezza, <code>robots.txt</code>, <code>sitemap.xml</code>.</li>
+      <li><strong>Favicon MD5</strong> + confronto con <code>FaviconFingerprintDatabase</code> (Jenkins, GitLab, Confluence, JIRA, Grafana, ecc.).</li>
+      <li><span class="tag new">NEW</span> Tutte le origin esterne dall'header CSP (<code>connect-src</code>, <code>script-src</code>, <code>img-src</code>).</li>
+      <li><span class="tag new">NEW</span> <code>&lt;meta name="generator"&gt;</code> — rilevamento di CMS/framework e versione.</li>
+      <li><span class="tag new">NEW</span> Indirizzi email dall'HTML (con filtro dei falsi positivi per estensione file).</li>
+      <li><span class="tag new">NEW</span> Header Cross-Origin (TAO, CORP, COOP, COEP, ACAO + wildcard/credentials/null-origin).</li>
+    </ul>
+
+    <h2 id="techstack">Tech Stack Fingerprint 2.0 <span class="tag new">NEW</span></h2>
+    <p><code>TechStackFingerprinter</code> — 40+ signature in 6 categorie:</p>
+    <table>
+      <thead><tr><th>Categoria</th><th>Esempi</th></tr></thead>
+      <tbody>
+        <tr><td>Web server</td><td>nginx, Apache, IIS, Caddy, OpenResty, Lighttpd</td></tr>
+        <tr><td>CMS</td><td>WordPress, Drupal, Joomla, Ghost, Magento</td></tr>
+        <tr><td>Framework JS</td><td>React, Vue, Angular, Next.js, Nuxt, Svelte</td></tr>
+        <tr><td>CDN</td><td>Cloudflare, Akamai, Fastly, CloudFront, BunnyCDN</td></tr>
+        <tr><td>Analytics</td><td>GA4, GTM, Matomo, Plausible, Yandex.Metrika</td></tr>
+        <tr><td>Cookie runtime</td><td>PHP, ASP.NET, JSP/Tomcat, Rails, Django, Express</td></tr>
+      </tbody>
+    </table>
+    <p>La versione viene estratta da un gruppo regex. Il report è categorizzato e visualizzato in JS Analysis come «Tech Stack».</p>
+
+    <h2 id="secrets">Secrets Validation</h2>
+    <p>Verifica dei leak di chiavi <strong>senza</strong> invii esterni. <code>SecretsValidator</code> convalida il formato:</p>
+    <ul>
+      <li>AWS (<code>AKIA…</code>, <code>ASIA…</code>), GitHub PAT (<code>ghp_*</code>, <code>github_pat_*</code>), Stripe, Telegram, Slack (<code>xox*</code>), Google API.</li>
+      <li><span class="tag new">NEW</span> Token NPM (<code>npm_*</code>), Docker Hub PAT (<code>dckr_pat_*</code>).</li>
+      <li><span class="tag new">NEW</span> Blocchi PEM di chiave privata (<code>BEGIN PRIVATE KEY</code>, <code>BEGIN RSA PRIVATE KEY</code>).</li>
+      <li><span class="tag new">NEW</span> GCP Service Account JSON, Google OAuth Client Secret (<code>GOCSPX-</code>).</li>
+      <li><span class="tag new">NEW</span> Dizionario fuzzy (<code>secret/password/token/apikey/access_key/auth/bearer</code>) con filtro per i valori placeholder (<code>scanFuzzy()</code>).</li>
+    </ul>
+
+    <h2 id="confidence">Confidence &amp; Risk Score</h2>
+    <p>Ogni <code>LeakInfo</code> è esteso con:</p>
+    <ul>
+      <li><strong>confidence</strong> — HIGH / MEDIUM / LOW.</li>
+      <li><strong>priority</strong> 1..3 — <code>inferPriority()</code>.</li>
+      <li><strong>placeholder</strong> — <code>isPlaceholderValue()</code> esclude <code>XXXXXX</code>, <code>your-key-here</code> ecc.</li>
+      <li><strong>risk score</strong> = Severity × Exploitability × Exposure.</li>
+    </ul>
+
+    <h2 id="curl">Snippet curl</h2>
+    <p><code>EndpointInfo.toCurl()</code> compone un comando pronto:</p>
+    <pre><code>curl -X POST 'https://api.example.com/v1/users' \
+  -H 'Authorization: Bearer eyJhbG...' \
+  -H 'Content-Type: application/json' \
+  --data-raw '{"role":"admin"}'</code></pre>
+    <p>Disponibile tramite tasto destro → Copy as curl su qualsiasi endpoint in JS Analysis.</p>
+
+    <footer class="page-footer">
+      <a href="web-security.html">← Vulnerabilità web</a>
+      <a href="cve-and-vulns.html">Avanti: CVE e vulnerabilità →</a>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

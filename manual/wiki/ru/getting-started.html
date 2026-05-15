@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Anibus Wiki — Установка и запуск</title>
+<link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+<div class="wiki-shell">
+  <aside class="sidebar">
+    <div class="brand">Anibus Wiki<small>версия 2.2.0 · сетевой security-сканер</small></div>
+    <div class="lang-switch">
+      <a href="../en/getting-started.html">EN</a>
+      <a href="../it/getting-started.html">IT</a>
+      <a href="../ru/getting-started.html" class="active">RU</a>
+    </div>
+    <nav>
+      <div class="section-label">Начало</div>
+      <a href="index.html">Главная</a>
+      <a href="getting-started.html" class="active">Установка и запуск</a>
+      <div class="section-label">Сканирование</div>
+      <a href="scanning.html">Базовые сканы</a>
+      <a href="web-security.html">Web-уязвимости</a>
+      <a href="auth-and-recon.html">Auth &amp; Recon</a>
+      <div class="section-label">Анализ</div>
+      <a href="cve-and-vulns.html">CVE и уязвимости</a>
+      <a href="network.html">Сеть и инфраструктура</a>
+      <a href="proxy.html">Прокси и цепочки</a>
+      <div class="section-label">Отчёты</div>
+      <a href="reports.html">Экспорт и история</a>
+      <div class="section-label">Эксплуатация</div>
+      <a href="admin.html">Администрирование</a>
+    </nav>
+  </aside>
+
+  <main class="content">
+    <h1>Установка и запуск</h1>
+    <p class="subtitle">Минимальный путь от чистой системы до первого скана в Anibus 2.2.0.</p>
+
+    <h2>Системные требования</h2>
+    <table>
+      <thead><tr><th>Компонент</th><th>Минимум</th><th>Комментарий</th></tr></thead>
+      <tbody>
+        <tr><td>ОС</td><td>Linux x64 / macOS / Windows 10+</td><td>Тестируется на Linux (Fedora/Ubuntu). На Wayland — без особенностей.</td></tr>
+        <tr><td>JDK</td><td>Java 21 (LTS)</td><td>Требуется поддержка virtual threads (JEP 444), preview-флаги не нужны.</td></tr>
+        <tr><td>JavaFX</td><td>21.0.5</td><td>Подтягивается Maven-зависимостью, отдельная установка не требуется.</td></tr>
+        <tr><td>Maven</td><td>3.9+</td><td>В проекте есть <code>./mvnw</code>, можно использовать его.</td></tr>
+        <tr><td>RAM</td><td>1 GB</td><td>Для batch-сканов 100+ целей рекомендуется 2 GB и выше.</td></tr>
+        <tr><td>Права</td><td>Обычный пользователь</td><td>Для UDP-скана некоторых служб может понадобиться root/CAP_NET_RAW.</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Сборка из исходников</h2>
+    <pre><code>git clone &lt;repo&gt; anibus-desktop
+cd anibus-desktop
+./mvnw -B -DskipTests package
+./mvnw -B -Pjavafx javafx:run</code></pre>
+    <p>Артефакты после сборки лежат в <code>target/</code>. Тесты (162 шт., 50+ классов) запускаются командой:</p>
+    <pre><code>./mvnw -B test</code></pre>
+    <p>Запуск конкретного теста:</p>
+    <pre><code>./mvnw -B test -Dtest=SQLInjectionAnalyzerTest</code></pre>
+
+    <h2>Первый запуск</h2>
+    <ol>
+      <li>Окно открывается в тёмной теме (Bootstrap 5 Dark, кастомный CSS).</li>
+      <li>В заголовке окна — версия <strong>Anibus Desktop 2.2.0</strong>.</li>
+      <li>Левая часть — поле <code>Target</code> и группа кнопок сканирования.</li>
+      <li>Центр — консоль <strong>Scan Results</strong> с realtime-таймстампом и фильтром (<kbd>Ctrl</kbd>+<kbd>F</kbd>).</li>
+      <li>Верхнее меню — конфигурация, тема, словари, прокси, scheduler, экспорт.</li>
+    </ol>
+
+    <div class="callout">
+      <strong>Совет</strong>
+      На первом запуске откройте <code>Config → Тема</code> и выберите <em>Тёмная</em> или <em>Светлая</em>. Светлая тема — это override-CSS <code>anibus-style-light.css</code>.
+    </div>
+
+    <h2>Структура каталогов пользователя</h2>
+    <table>
+      <thead><tr><th>Путь</th><th>Назначение</th></tr></thead>
+      <tbody>
+        <tr><td><code>~/.anibus/history/</code></td><td>Автосохранение результатов сканов (см. <a href="reports.html#history">История сканов</a>).</td></tr>
+        <tr><td><code>~/.anibus/cve-cache/</code></td><td>Офлайн-кэш CVE/EPSS/KEV (см. <a href="cve-and-vulns.html#cache">CVE Offline DB</a>).</td></tr>
+        <tr><td><code>~/.anibus/wordlists/</code></td><td>Пользовательские словари (Subdomain / SQLi payloads / Endpoints).</td></tr>
+        <tr><td><code>~/.anibus/banner-timeline/</code></td><td>TSV-store для Port Banner Timeline.</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Обзор интерфейса</h2>
+    <h3>Главное окно</h3>
+    <ul>
+      <li><strong>Target</strong> — IPv4/IPv6/hostname/URL; квадратные скобки в IPv6 раскрываются автоматически.</li>
+      <li><strong>Scan Results</strong> — консоль с группами CRITICAL/HIGH/MEDIUM/LOW. Контекстное меню → история, diff, SQL-extraction.</li>
+      <li><strong>Кнопки слева</strong> — Scan, UDP, Subdomain, Source Map, ParamMiner, Diff Mode, Scheduler Start/Stop и т.д. Подробно — в <a href="scanning.html">Базовых сканах</a>.</li>
+      <li><strong>Status bar</strong> — индикаторы активных словарей, прокси-чейна, scheduler-состояния.</li>
+    </ul>
+
+    <h3>Меню</h3>
+    <ul>
+      <li><strong>Config</strong> — тема, язык, словари, профили таймаутов.</li>
+      <li><strong>Discovery</strong> — Auth Crawling, Passive Recon, GraphQL/JWT/CORS-диалоги, batch-импорт.</li>
+      <li><strong>Proxy</strong> — Build Chain, ACTIVE CHAIN, ротация.</li>
+      <li><strong>Scheduler</strong> — расписания, drift-baseline.</li>
+      <li><strong>Export</strong> — PDF, HTML, JSON, TXT.</li>
+    </ul>
+
+    <h2>Локализация</h2>
+    <p>Все строки UI собраны в три bundle: <code>Messages_en</code>, <code>Messages_it</code>, <code>Messages_ru</code>. Синхронность ключей проверяется JUnit-тестом <code>ResourceBundleValidationTest</code>. Локаль определяется системной, явно переключается в <code>Config → Язык</code>.</p>
+
+    <h2>Что дальше</h2>
+    <ul>
+      <li><a href="scanning.html">Запустите первый скан</a> по любой публично разрешённой цели (<code>scanme.nmap.org</code> или собственный лаб).</li>
+      <li>Изучите <a href="proxy.html">прокси-цепочки</a>, если сканируете через корпоративный шлюз.</li>
+      <li>Включите <a href="cve-and-vulns.html#cache">офлайн-кэш CVE</a>, если работаете в air-gapped окружении.</li>
+    </ul>
+
+    <footer class="page-footer">
+      <span>Anibus Desktop 2.2.0</span>
+      <a href="scanning.html">Дальше: Базовые сканы →</a>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

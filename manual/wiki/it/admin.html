@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Anibus Wiki — Amministrazione</title>
+<link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+<div class="wiki-shell">
+  <aside class="sidebar">
+    <div class="brand">Anibus Wiki<small>versione 2.2.0 · scanner di sicurezza di rete</small></div>
+    <div class="lang-switch">
+      <a href="../en/admin.html">EN</a>
+      <a href="../it/admin.html" class="active">IT</a>
+      <a href="../ru/admin.html">RU</a>
+    </div>
+    <nav>
+      <div class="section-label">Inizio</div>
+      <a href="index.html">Home</a>
+      <a href="getting-started.html">Installazione e avvio</a>
+      <div class="section-label">Scansione</div>
+      <a href="scanning.html">Scansioni di base</a>
+      <a href="web-security.html">Vulnerabilità web</a>
+      <a href="auth-and-recon.html">Auth &amp; Recon</a>
+      <div class="section-label">Analisi</div>
+      <a href="cve-and-vulns.html">CVE e vulnerabilità</a>
+      <a href="network.html">Rete e infrastruttura</a>
+      <a href="proxy.html">Proxy e catene</a>
+      <div class="section-label">Report</div>
+      <a href="reports.html">Esportazione e cronologia</a>
+      <div class="section-label">Operazioni</div>
+      <a href="admin.html" class="active">Amministrazione</a>
+    </nav>
+  </aside>
+
+  <main class="content">
+    <h1>Amministrazione e risoluzione dei problemi</h1>
+    <p class="subtitle">Hotkey, temi, dizionari, checklist di hardening, errori tipici e limiti legali di utilizzo di Anibus.</p>
+
+    <h2 id="shortcuts">Hotkey</h2>
+    <table>
+      <thead><tr><th>Tasto</th><th>Azione</th></tr></thead>
+      <tbody>
+        <tr><td><kbd>F5</kbd></td><td>Avvia la scansione standard del Target corrente</td></tr>
+        <tr><td><kbd>Escape</kbd></td><td>Interrompe l'operazione attiva</td></tr>
+        <tr><td><kbd>Ctrl</kbd>+<kbd>S</kbd></td><td>Salva il log di Scan Results in TXT</td></tr>
+        <tr><td><kbd>Ctrl</kbd>+<kbd>L</kbd></td><td>Pulisce la console</td></tr>
+        <tr><td><kbd>Ctrl</kbd>+<kbd>F</kbd></td><td>Filtro inline della console</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="themes">Temi</h2>
+    <p>Menu <strong>Config → Tema</strong>:</p>
+    <ul>
+      <li><strong>Scuro</strong> (predefinito) — Bootstrap 5 Dark con CSS personalizzato.</li>
+      <li><strong>Chiaro</strong> — override <code>anibus-style-light.css</code>, commutazione tramite RadioMenuItem.</li>
+    </ul>
+
+    <h2 id="wordlists">Dizionari</h2>
+    <p>File sotto <code>~/.anibus/wordlists/</code>:</p>
+    <ul>
+      <li><code>subdomains.txt</code> — per <code>SubdomainEnumerationService</code>.</li>
+      <li><code>sqli-payloads.txt</code> — per SQL Injection Analyzer (se non si usa il profilo CMS integrato).</li>
+      <li><code>endpoints.txt</code> — per ParamMiner / Directory Bruteforce.</li>
+    </ul>
+    <p>Lo stato dei dizionari attivi è mostrato nella UI di Scan Target.</p>
+
+    <h2 id="config-files">Configurazione</h2>
+    <p>Le impostazioni utente sono conservate in <code>~/.anibus/config.properties</code>:</p>
+    <pre><code>theme=dark
+locale=ru
+default.timeout.profile=NORMAL
+proxy.chain.policy=strict
+scheduler.enabled=true
+cve.cache.refresh.hours=24</code></pre>
+
+    <h2 id="hardening">Checklist di hardening</h2>
+    <ol>
+      <li>Avvia Anibus in un segmento di rete isolato (VLAN di test).</li>
+      <li>Usa un account utente dedicato senza sudo, eccetto per le scansioni UDP.</li>
+      <li>Abilita la catena proxy per tutte le scansioni esterne — nessuna richiesta diretta.</li>
+      <li>Pulisci <code>~/.anibus/history/</code> secondo policy (i log CRITICAL contengono potenziali segreti).</li>
+      <li>Aggiorna regolarmente la CVE Offline DB tramite lo Scheduler.</li>
+      <li>Non avviare mai Anibus con certificati radice fidati nel TrustStore di sistema — <code>InsecureSsl</code> è usato solo all'interno dei detector.</li>
+    </ol>
+
+    <h2 id="troubleshooting">Troubleshooting</h2>
+
+    <h3>JavaFX non si avvia</h3>
+    <p>Verifica JDK 21 e la presenza di <code>javafx-controls/fxml/graphics/base</code> nel classpath:</p>
+    <pre><code>./mvnw -B -Pjavafx javafx:run</code></pre>
+    <p>Su Wayland con finestra vuota prova <code>GDK_BACKEND=x11 ./mvnw …</code>.</p>
+
+    <h3>Timeout HTTP su target lenti</h3>
+    <p><code>Config → Network → Default Timeout Profile</code> → <strong>SLOW</strong> o <strong>VERY_SLOW</strong>.</p>
+
+    <h3>L'autenticazione NTLM non funziona</h3>
+    <ul>
+      <li>Verifica che il dominio sia indicato nel formato <code>DOMAIN\\user</code> e non come UPN.</li>
+      <li>Controlla la versione: NTLMv1 non è supportato, solo NTLMv2.</li>
+      <li>Log: <code>Discovery → Auth Crawl → Show Wire Trace</code>.</li>
+    </ul>
+
+    <h3>La catena proxy fallisce</h3>
+    <ul>
+      <li>In Build Chain → <strong>Test Chain</strong>: osserva quale nodo è caduto.</li>
+      <li>Catene SOCKS lunghe richiedono il profilo <strong>SLOW</strong>.</li>
+      <li>Per TOR verifica che il demone sia in ascolto sulla 9050.</li>
+    </ul>
+
+    <h3>Cache CVE vuota</h3>
+    <ul>
+      <li>Controlla l'accesso di rete a <code>services.nvd.nist.gov</code> (tramite chain se necessario).</li>
+      <li>Avvia l'aggiornamento manuale: <code>Scheduler → Update CVE DB now</code>.</li>
+      <li>Per ambienti air-gapped — copia <code>~/.anibus/cve-cache/</code> da una macchina connessa.</li>
+    </ul>
+
+    <h3>I test falliscono</h3>
+    <pre><code>./mvnw -B test
+./mvnw -B test -Dtest=SQLInjectionAnalyzerTest</code></pre>
+    <p>Se fallisce ArchUnit significa che sono violati i confini modulari (service→handler, util→handler, coordinator→JavaFX, model→coordinator).</p>
+
+    <h2 id="logging">Log</h2>
+    <p>File <code>target/classes/logging.properties</code> + console runtime con timestamp realtime. Livelli: <code>INFO / WARN / ERROR / DEBUG</code>. Il livello si modifica tramite <code>Config → Logging</code>.</p>
+
+    <h2 id="shutdown">Graceful shutdown</h2>
+    <p><code>shutdownExecutor()</code> invoca <code>schedulerService.shutdown()</code> e isola gli errori di ciascun servizio tramite <code>shutdownSafe()</code>. I pool daemon nominati (<code>NamedThreadFactory.of()</code>) — <code>network-monitor</code>, <code>scan-scheduler</code> — terminano correttamente alla chiusura della finestra.</p>
+
+    <h2 id="legal">Limiti legali</h2>
+    <div class="callout danger">
+      <strong>Solo utilizzo autorizzato</strong>
+      Anibus esegue probe attive (XSS, SSRF, SQLi, Heartbleed, operazioni ausiliarie di brute NTLMv2). Queste azioni nella maggior parte delle giurisdizioni richiedono un'autorizzazione scritta del proprietario della risorsa.
+    </div>
+    <ul>
+      <li>Usalo solo sulla tua infrastruttura o con rules-of-engagement firmate.</li>
+      <li>Per i bug bounty pubblici verifica lo scope del programma specifico.</li>
+      <li>Non avviarlo mai su un target senza consenso — è penalmente perseguibile in Russia (CP 272/273), nell'UE (Computer Misuse Act / Direttiva 2013/40) e negli USA (CFAA).</li>
+    </ul>
+
+    <footer class="page-footer">
+      <a href="reports.html">← Esportazione</a>
+      <a href="index.html">↑ Alla home</a>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

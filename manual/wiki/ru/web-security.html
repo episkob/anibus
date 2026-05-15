@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Anibus Wiki — Web-уязвимости</title>
+<link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+<div class="wiki-shell">
+  <aside class="sidebar">
+    <div class="brand">Anibus Wiki<small>версия 2.2.0 · сетевой security-сканер</small></div>
+    <div class="lang-switch">
+      <a href="../en/web-security.html">EN</a>
+      <a href="../it/web-security.html">IT</a>
+      <a href="../ru/web-security.html" class="active">RU</a>
+    </div>
+    <nav>
+      <div class="section-label">Начало</div>
+      <a href="index.html">Главная</a>
+      <a href="getting-started.html">Установка и запуск</a>
+      <div class="section-label">Сканирование</div>
+      <a href="scanning.html">Базовые сканы</a>
+      <a href="web-security.html" class="active">Web-уязвимости</a>
+      <a href="auth-and-recon.html">Auth &amp; Recon</a>
+      <div class="section-label">Анализ</div>
+      <a href="cve-and-vulns.html">CVE и уязвимости</a>
+      <a href="network.html">Сеть и инфраструктура</a>
+      <a href="proxy.html">Прокси и цепочки</a>
+      <div class="section-label">Отчёты</div>
+      <a href="reports.html">Экспорт и история</a>
+      <div class="section-label">Эксплуатация</div>
+      <a href="admin.html">Администрирование</a>
+    </nav>
+  </aside>
+
+  <main class="content">
+    <h1>Web-уязвимости</h1>
+    <p class="subtitle">Все детекторы для web-сканирования: XSS, SSRF, XXE, CORS, JWT, GraphQL, SQL Injection, Directory Bruteforce, JS Analysis. В 2.2.0 каждый анализатор расширен новыми техниками.</p>
+
+    <h2 id="xss">XSS Detector</h2>
+    <p>Класс <code>XssDetector</code>. Покрывает reflected, DOM-based и stored XSS.</p>
+    <h3>Reflected (canary-based)</h3>
+    <p>Для каждого query-параметра генерируется canary-строка вида <code>anibus-xss-7f2a</code>, инжектится и ищется в ответе вместе с типичными контекстами.</p>
+    <h3>Context-aware экранирование <span class="tag new">NEW 2.2</span></h3>
+    <p>Рефлексия классифицируется по контексту через enum <code>XssDetector.Context</code>:</p>
+    <ul>
+      <li><strong>SCRIPT_BLOCK / JS_STRING / URL_ATTRIBUTE</strong> — severity <span class="tag crit">CRITICAL</span>.</li>
+      <li><strong>HTML_TEXT / HTML_ATTRIBUTE</strong> — severity <span class="tag warn">HIGH</span>.</li>
+      <li><strong>STYLE_BLOCK / HTML_COMMENT</strong> — severity <span class="tag">MEDIUM</span>.</li>
+    </ul>
+    <p>В <code>XssResult</code> добавлено поле с рекомендацией по экранированию для конкретного контекста.</p>
+
+    <h3>DOM-based sink/source mapping <span class="tag new">NEW</span></h3>
+    <p><code>XssDetector.analyzeDomSinks()</code> сканирует inline-скрипты на пары source→sink: <code>location.hash</code> → <code>innerHTML</code>, <code>document.referrer</code> → <code>eval</code> и т.п. Результат отображается отдельной таблицей в JS Analysis.</p>
+
+    <h3>Stored XSS <span class="tag new">NEW</span></h3>
+    <p><code>XssDetector.scanStored(injectUrl, params, verifyUrl)</code>: инжектится canary через <code>injectUrl</code>, затем выполняется GET <code>verifyUrl</code> и проверяется рефлексия. Если найдена — <code>XssResult.stored=true</code>, риск эскалируется до CRITICAL.</p>
+
+    <h3>Polyglot payload set <span class="tag new">NEW</span></h3>
+    <p>10 техник: SVG/onload, iframe srcdoc, math/mglyph break-out, body onpageshow, details ontoggle, input autofocus, template literal <code>${...}</code>, style break-out, jaVasCript: scheme polyglot.</p>
+
+    <h3>PoC-генерация</h3>
+    <p>Для каждого результата — <code>XssResult.pocCurl()</code> строит готовый <code>curl</code>-сниппет с payload и заголовками, доступен через ПКМ → Copy PoC.</p>
+
+    <h2 id="ssrf">SSRF Detector</h2>
+    <ul>
+      <li>URL-параметры на SSRF + проверка cloud metadata (AWS <code>169.254.169.254</code>, GCP, Azure IMDS).</li>
+      <li><span class="tag new">NEW</span> Поддержка <code>file://</code>, <code>dict://</code>, <code>gopher://</code>, <code>ftp://</code> схем.</li>
+      <li><span class="tag new">NEW</span> IPv6/IPv4-mapped bypass (<code>::ffff:169.254.169.254</code>), октальные/hex/decimal IP-форматы, short-form (<code>127.1</code>), nip.io DNS rebinding.</li>
+    </ul>
+
+    <h2 id="xxe">XXE Detector</h2>
+    <ul>
+      <li>5 базовых payload-ов + детект по сигнатурам в ответе.</li>
+      <li><span class="tag new">NEW</span> <strong>OOB XXE</strong> через встроенный <code>LoopbackCallbackServer</code> на <code>127.0.0.1:random</code> — внешний сервер не нужен.</li>
+      <li><span class="tag new">NEW</span> <strong>scanWithBaseline()</strong> — blind XXE/SSRF через diff длины ответа.</li>
+      <li><span class="tag new">NEW</span> Error-based payload (несуществующий путь / закрытый порт) с индикаторами <code>Connection refused</code>, <code>failed to open stream</code>, <code>DOCTYPE is disallowed</code>.</li>
+    </ul>
+
+    <h2 id="cors">CORS Misconfiguration Checker</h2>
+    <ul>
+      <li>Проверка <code>Access-Control-Allow-Origin</code> + credentials комбинаций.</li>
+      <li><span class="tag new">NEW</span> Детект <code>credentials + *</code> (нарушение спеки).</li>
+      <li><span class="tag new">NEW</span> Per-endpoint sweep — <code>check(baseUrl, endpoints)</code>.</li>
+      <li><span class="tag new">NEW</span> Null-origin probe (<code>Origin: null</code>) и pre-flight headers.</li>
+    </ul>
+
+    <h2 id="jwt">JWT Analyzer</h2>
+    <ul>
+      <li>Декодирование, <code>alg:none</code>, expired, weak HMAC секреты.</li>
+      <li><span class="tag new">NEW</span> <strong>JWK/JWKS</strong> проверка (<code>analyzeJwks</code>), kid injection, alg-confusion.</li>
+      <li><span class="tag new">NEW</span> Kid path traversal (<code>kid: "../../etc/passwd"</code>) + SQLi в kid.</li>
+      <li><span class="tag new">NEW</span> Небезопасное хранение токена — поиск <code>localStorage</code> ключей в JS-бандлах.</li>
+      <li><span class="tag new">NEW</span> <code>compareTokenPair(access, refresh)</code> — TTL-diff advisories.</li>
+      <li><span class="tag new">NEW</span> <code>cloneWithClaim(token, claim, value)</code> — тампер sub/role для probing.</li>
+    </ul>
+
+    <h2 id="graphql">GraphQL Introspection</h2>
+    <ul>
+      <li>10 путей, <code>__schema</code>, извлечение типов/queries/mutations.</li>
+      <li><span class="tag new">NEW</span> Batch query abuse — массив запросов за один HTTP-вызов.</li>
+      <li><span class="tag new">NEW</span> Авто-генерация минимальных query/mutation из схемы.</li>
+      <li><span class="tag new">NEW</span> Depth-limit probe (глубина 12) → флаг <code>depthLimitMissing</code>.</li>
+    </ul>
+
+    <h2 id="sqli">SQL Injection Analyzer</h2>
+    <ul>
+      <li>Загрузка payload-файлов + CMS-профилей.</li>
+      <li><span class="tag new">NEW</span> <strong>Boolean-based blind</strong> через длину ответа и статус-код diff.</li>
+      <li><span class="tag new">NEW</span> 8 explicit time-based payloads (SLEEP/WAITFOR/pg_sleep/BENCHMARK).</li>
+      <li><span class="tag new">NEW</span> <strong>OOB payload generator</strong> <code>buildOobPayloads(callbackUrl)</code> — MSSQL/Oracle/PostgreSQL/MySQL outbound primitives через <code>LoopbackCallbackServer</code>.</li>
+      <li><strong>SQL-to-DB Extraction</strong>: контекстное меню → <code>SqlMetadataExtractor</code> (UNION-based version/columns/tables, ORDER BY probe).</li>
+    </ul>
+
+    <h2 id="dirbruteforce">Directory Bruteforce</h2>
+    <ul>
+      <li>60-entry default wordlist, HEAD-запросы, группировка по статусу.</li>
+      <li><span class="tag new">NEW</span> Кастомные wordlist/расширения + recursion depth — <code>scan(url, words, exts, depth, progress)</code>.</li>
+      <li><span class="tag new">NEW</span> IIS short-name enumeration (<code>probeIisShortNames()</code>).</li>
+      <li><span class="tag new">NEW</span> Detection backup-файлов (<code>.bak</code>, <code>.old</code>, <code>.orig</code>, <code>~</code>, <code>.swp</code>).</li>
+      <li><span class="tag new">NEW</span> Авто-расширения по Content-Type/Server (PHP → <code>.php/.phtml</code>, IIS → <code>.aspx</code>, Tomcat → <code>.jsp</code>).</li>
+      <li><span class="tag new">NEW</span> Отображение HTTP-заголовков (Content-Type, X-Powered-By, Server).</li>
+    </ul>
+
+    <h2 id="subdomain">Subdomain Enumeration &amp; Takeover</h2>
+    <ul>
+      <li>30+ субдоменов на dangling DNS, HTTP-fingerprint.</li>
+      <li><span class="tag new">NEW</span> CNAME chain рекурсия через JNDI DNS (<code>resolveCnameChain</code>).</li>
+      <li><span class="tag new">NEW</span> +24 fingerprints: Vercel, Render, Fly.io, Pantheon, Strikingly, Tumblr, Campaign Monitor, WordPress, Ngrok, Help Scout, Wishpond, Readme.io, AWS EB, Smartling, Acquia, LeadPages, Railway.</li>
+      <li><span class="tag new">NEW</span> DNS wildcard baseline — random субдомен; при совпадении выдаётся одно <code>*.domain</code> предупреждение вместо ложных срабатываний.</li>
+    </ul>
+
+    <h2 id="api">API Security Mode</h2>
+    <ul>
+      <li>Авто-детект OpenAPI/Swagger, тестирование всех endpoints.</li>
+      <li><span class="tag new">NEW</span> Поддержка GraphQL/gRPC/OpenRPC схем (unified report).</li>
+      <li><span class="tag new">NEW</span> Diff authenticated vs anonymous ответов.</li>
+      <li><span class="tag new">NEW</span> Rate-limit probe — серия из 20 запросов, ожидание 429.</li>
+      <li><span class="tag new">NEW</span> Авто-парсинг HAR / Postman v2.x через <code>HarPostmanParser</code>.</li>
+      <li><span class="tag new">NEW</span> Enum-fuzzing query-параметров (<code>role/status/sort/order/filter/debug</code>).</li>
+      <li><span class="tag new">NEW</span> BOLA/IDOR probe — <code>runBolaProbe()</code> сравнивает <code>{id}=1</code> vs <code>{id}=2</code>.</li>
+    </ul>
+
+    <h2 id="js">JavaScript Security Analyzer</h2>
+    <p>Универсальный анализатор JS-бандлов: разбор источников, поиск секретов, схем БД, endpoints. Каждая находка — <code>LeakInfo</code> с полями:</p>
+    <ul>
+      <li><strong>priority</strong> — 1..3, см. <code>inferPriority()</code>.</li>
+      <li><strong>confidence</strong> — HIGH / MEDIUM / LOW.</li>
+      <li><strong>placeholder</strong> — флаг что значение похоже на демо-плейсхолдер.</li>
+      <li><strong>risk score</strong> — Severity × Exploitability × Exposure.</li>
+    </ul>
+    <h3>JS Endpoint Reachability <span class="tag new">NEW</span></h3>
+    <p>Найденные из JS endpoints проверяются на живость, статус и метод. Результат — таблица <em>Reachable / 401 / 403 / 404 / 5xx</em> с <code>curl</code>-сниппетом для каждого живого URL.</p>
+
+    <h3>AI Summary <span class="tag new">NEW</span></h3>
+    <p><code>AiSummaryGenerator</code> формирует EN/RU executive-сводку: severity buckets, top-5 категорий, top-3 risk-scored находки, type-aware рекомендации. Полностью оффлайн, без LLM-API.</p>
+
+    <h2 id="oob">OOB-инфраструктура</h2>
+    <p><code>LoopbackCallbackServer</code> — встроенный HTTP-listener на <code>127.0.0.1:random</code>. Используется в SSRF/XXE/SQLi/Blind XSS payload-ах для подтверждения out-of-band-факта без внешнего интернет-инфра.</p>
+
+    <div class="callout danger">
+      <strong>Внимание</strong>
+      Все детекторы web-уязвимостей выполняют <em>активные</em> запросы. Используйте только на разрешённых целях. Для пассивного аудита — <a href="auth-and-recon.html#passive">Passive Recon</a>.
+    </div>
+
+    <footer class="page-footer">
+      <a href="scanning.html">← Базовые сканы</a>
+      <a href="auth-and-recon.html">Дальше: Auth &amp; Recon →</a>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

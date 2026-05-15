@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Anibus Wiki — Базовые сканы</title>
+<link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+<div class="wiki-shell">
+  <aside class="sidebar">
+    <div class="brand">Anibus Wiki<small>версия 2.2.0 · сетевой security-сканер</small></div>
+    <div class="lang-switch">
+      <a href="../en/scanning.html">EN</a>
+      <a href="../it/scanning.html">IT</a>
+      <a href="../ru/scanning.html" class="active">RU</a>
+    </div>
+    <nav>
+      <div class="section-label">Начало</div>
+      <a href="index.html">Главная</a>
+      <a href="getting-started.html">Установка и запуск</a>
+      <div class="section-label">Сканирование</div>
+      <a href="scanning.html" class="active">Базовые сканы</a>
+      <a href="web-security.html">Web-уязвимости</a>
+      <a href="auth-and-recon.html">Auth &amp; Recon</a>
+      <div class="section-label">Анализ</div>
+      <a href="cve-and-vulns.html">CVE и уязвимости</a>
+      <a href="network.html">Сеть и инфраструктура</a>
+      <a href="proxy.html">Прокси и цепочки</a>
+      <div class="section-label">Отчёты</div>
+      <a href="reports.html">Экспорт и история</a>
+      <div class="section-label">Эксплуатация</div>
+      <a href="admin.html">Администрирование</a>
+    </nav>
+  </aside>
+
+  <main class="content">
+    <h1>Базовые сканы</h1>
+    <p class="subtitle">Стандартный TCP/UDP-скан, service detection, batch-режим и IPv6 — фундамент любого pentest-сеанса в Anibus.</p>
+
+    <h2>Поле Target</h2>
+    <p>Поле принимает:</p>
+    <ul>
+      <li>IPv4: <code>192.168.1.10</code>, диапазон <code>192.168.1.0/24</code>.</li>
+      <li>IPv6: <code>fe80::1</code> или <code>[::1]</code> (скобки strip автоматически).</li>
+      <li>Hostname: <code>example.com</code> (резолвится через <code>HostResolver</code>, поддержка нескольких A/AAAA).</li>
+      <li>URL: <code>https://example.com/app/</code> — для web-сканов используется как baseUrl.</li>
+    </ul>
+
+    <h3>Диапазоны портов</h3>
+    <p>В поле Ports принимаются:</p>
+    <ul>
+      <li>Один порт: <code>443</code> (single-port mode добавлен в 2.2.0).</li>
+      <li>Диапазон: <code>1-1024</code>.</li>
+      <li>Список: <code>22,80,443,8080-8090</code>.</li>
+      <li>Пресеты: «Top 100», «Web», «DB», «Mail» — выбираются в выпадающем списке.</li>
+    </ul>
+
+    <h2>Standard Scan</h2>
+    <p>Кнопка <strong>Scan</strong> запускает стандартный TCP-скан через <code>StandardScanStrategy</code> + <code>ScanCoordinator</code>. На каждый порт выделяется virtual thread, что позволяет работать с диапазонами в тысячи портов без блокировки UI.</p>
+    <pre><code>[12:34:01] [INFO]  Scan started: 192.168.1.10 (1-1024)
+[12:34:02] [OPEN]  22/tcp   SSH       OpenSSH 9.6p1
+[12:34:02] [OPEN]  80/tcp   HTTP      nginx/1.25.3
+[12:34:03] [OPEN]  443/tcp  HTTPS     nginx/1.25.3
+[12:34:05] [INFO]  Scan finished in 4.2s · 3 open / 1021 closed</code></pre>
+
+    <h3>Service Detection</h3>
+    <p>На каждом найденном порту запускается <code>ServiceDetectionTask</code>: HTTP HEAD, TLS handshake, баннер raw-сокета. Результаты пишутся в <code>OPEN</code>-строки и формируют входные данные для CVE/Vulnerability/JS-сканеров.</p>
+
+    <h2>UDP Scan</h2>
+    <p>Кнопка <strong>udpScanButton</strong> запускает <code>UdpScannerService</code>: отправка протокольно-зависимых пробов (DNS query, SNMP get-request, NTP request, NetBIOS name query). Ответ или ICMP-unreachable определяет состояние порта.</p>
+    <div class="callout warn">
+      <strong>ICMP-quota</strong>
+      Большинство ОС троттлит ICMP-unreachable — крупные UDP-сканы выполняются медленнее TCP. Используйте короткие списки портов (DNS/SNMP/NTP/NetBIOS).
+    </div>
+
+    <h2>IPv6 Scan</h2>
+    <p><code>HostResolver</code> в 2.2.0 поддерживает IPv6: распаковка <code>[fe80::1]</code>, fallback IDN. Если хост имеет и A и AAAA, можно выбрать предпочитаемое семейство в <code>Config → Network</code>.</p>
+
+    <h2>Batch / Multi-target</h2>
+    <p>Меню <strong>Discovery → Batch Scan</strong> открывает <code>BatchScanService</code>: на вход — текстовый файл или вставка списка целей. Скан выполняется последовательно с агрегированным отчётом и общим заголовком в Scan Results.</p>
+    <pre><code>192.168.1.0/24
+example.com
+fe80::1%eth0
+https://app.internal/</code></pre>
+
+    <h2>Diff Mode</h2>
+    <p>Кнопка <strong>diffModeButton</strong> запускает <code>ScanDiffService</code>: сравнение двух сохранённых сканов из <code>~/.anibus/history/</code>. Отображаются:</p>
+    <ul>
+      <li><span class="tag ok">NEW</span> — новые открытые порты/находки.</li>
+      <li><span class="tag warn">CHANGED</span> — изменения баннера/версии.</li>
+      <li><span class="tag crit">GONE</span> — исчезнувшие сервисы.</li>
+    </ul>
+
+    <h2>Дополнительные модули запуска</h2>
+    <table>
+      <thead><tr><th>Кнопка</th><th>Сервис</th><th>Назначение</th></tr></thead>
+      <tbody>
+        <tr><td>Subdomain</td><td><code>SubdomainEnumerationService</code></td><td>Bruteforce по словарю + CT-логи, takeover-чек.</td></tr>
+        <tr><td>SourceMap</td><td><code>SourceMapAnalyzer</code></td><td>Восстановление JS-исходников, утечки секретов.</td></tr>
+        <tr><td>ParamMiner</td><td><code>ParamMinerService</code></td><td>Brute force скрытых query/header-параметров.</td></tr>
+        <tr><td>Scheduler Start/Stop</td><td><code>ScanSchedulerService</code></td><td>Cron-расписание drift-сканов.</td></tr>
+        <tr><td>Auth Crawl</td><td><code>AuthCrawler</code></td><td>5 режимов аутентификации, см. <a href="auth-and-recon.html">Auth &amp; Recon</a>.</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Контекстное меню Scan Results</h2>
+    <p>ПКМ по строке результата:</p>
+    <ul>
+      <li><strong>Сохранить в историю</strong> — текущий результат добавляется в <code>ScanHistoryService</code>.</li>
+      <li><strong>Сравнить с…</strong> — открывает diff-мастер.</li>
+      <li><strong>SQL Metadata Extraction</strong> — запускает <code>SqlMetadataExtractor</code> для SQLi-find.</li>
+      <li><strong>Copy as curl</strong> — копирует <code>curl</code>-сниппет (из <code>EndpointInfo</code>).</li>
+      <li><strong>Открыть PoC URL</strong> — для XSS/SSRF результатов с <code>pocCurl()</code>.</li>
+    </ul>
+
+    <h2>Поиск по консоли</h2>
+    <p><kbd>Ctrl</kbd>+<kbd>F</kbd> открывает inline-фильтр Scan Results. Поиск realtime, регистр игнорируется. Дополнительные клавиши см. в <a href="admin.html#shortcuts">Hotkeys</a>.</p>
+
+    <footer class="page-footer">
+      <a href="getting-started.html">← Установка</a>
+      <a href="web-security.html">Дальше: Web-уязвимости →</a>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

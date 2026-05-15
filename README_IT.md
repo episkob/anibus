@@ -9,7 +9,7 @@ Anibus va ben oltre un semplice port scanner: combina fingerprinting dei servizi
 
 ## Indice
 
-- [Novità in 2.2.0](#novità-in-210)
+- [Novità](#novità)
 - [Panoramica Funzionalità](#panoramica-funzionalità)
 - [Architettura](#architettura)
 - [Struttura del Progetto](#struttura-del-progetto)
@@ -25,18 +25,81 @@ Anibus va ben oltre un semplice port scanner: combina fingerprinting dei servizi
 
 ---
 
-## Novità in 2.2.0
+## Novità
 
-| Area | Modifica |
-|------|----------|
-| **Espansione motore Proxy** | Aggiunti controlli avanzati di routing proxy, politiche di rotazione e comportamento catena più ricco |
-| **Selettore Wordlist** | Aggiunta gestione dedicata wordlist per sottodomini, payload SQLi ed endpoint |
-| **SQLi/XSS guidati da endpoint** | I flussi SQLi e XSS ora usano endpoint trovati dall'analisi JavaScript e da wordlist endpoint custom |
-| **UX scansione porte** | Input porte ora supporta modalità porta singola (`443`) e intervallo (`1-1024`) |
-| **Controlli Scheduler** | Aggiunte opzioni scheduler dettagliate (intervallo/unità/ripetizione) con UX operativa migliore |
-| **Log realtime** | Aggiornamenti di stato inviati in console in tempo reale con timestamp |
-| **Visibilità Scan Target** | Aggiunto blocco UI con stato wordlist attive nell'area Scan Target |
-| **Versioning** | Incremento minor da `2.1.0` a `2.2.0` |
+La build attuale è un salto importante oltre il semplice port scanner: Anibus è ora una suite completa di audit web/API/infrastruttura. Di seguito i punti chiave.
+
+### Nuovi analizzatori di sicurezza
+
+| Modulo | Cosa fa |
+|--------|--------|
+| **XSS Detector** | XSS reflected + DOM-based + stored, payload context-aware (HTML/attr/JS/URL/CSS/comment), set polyglot, generazione PoC link e `curl` |
+| **SSRF Detector** | Manipolazione URL-param, accesso a cloud-metadata, schemi `file://`/`dict://`/`gopher://`/`ftp://`, bypass IPv6-mapped, octal/hex/decimal/short-form IP e `nip.io` rebinding |
+| **XXE Detector** | XXE inline + OOB tramite server DTD loopback embedded, blind XXE/SSRF via diff sulla lunghezza della risposta |
+| **CORS Misconfiguration** | Reflection Origin, combo credentials + wildcard, `Origin: null`, header pre-flight, sweep per-endpoint |
+| **JWT Analyzer** | `alg:none`, HMAC debole, expired, JWK/JWKS, `kid` injection / path traversal / SQLi, alg-confusion, TTL-diff coppia access/refresh, claim-tamper helper |
+| **GraphQL Introspection** | 10 path schema, depth-limit probe, batch-query abuse, generazione automatica query/mutation |
+| **Subdomain Takeover** | 50+ fingerprint provider (Vercel/Render/Fly.io/Pantheon/Tumblr/Acquia/Railway/…), ricorsione CNAME, baseline DNS-wildcard contro falsi positivi |
+| **Auth Crawling** | Basic / Bearer / OAuth2 client_credentials / Digest (RFC 7616) / form-login con estrazione CSRF automatica / **NTLM v2** (MD4 + HMAC-MD5 propri, senza librerie esterne) |
+| **Tech Stack Fingerprinter 2.0** | 40+ firme: web server, CMS, framework JS, CDN, analytics, runtime cookie-based — con cattura versione |
+| **Service Misconfiguration** | `.git/config`, `.env`, `/actuator/env`, `/server-status`, `/phpinfo.php`, Docker/K8s/etcd esposti — confidence content-based |
+| **Container Exposure** | Probe API Docker / Kubernetes / etcd (solo GET read-only) |
+| **Weak TLS Policy** | TLS 1.0/1.1, cipher deboli, self-signed, audit OCSP/HSTS/ALPN, trust catena via JVM TrustManager |
+| **Auth Surface Auditor** | Discovery login endpoint, probe rate-limit a burst, detect token captcha e header lockout |
+| **Heartbleed Checker** | TLS heartbeat raw con verifica strutturale della risposta e guard anti-FP |
+| **Passive Recon** | Title/headers/robots/sitemap, fingerprint hash favicon (Jenkins/GitLab/Confluence/JIRA/Grafana/…), `<meta name="generator">`, estrazione origin da CSP, OSINT email harvest, analisi cross-origin (TAO/CORP/COOP/COEP/ACAO) |
+| **Cookie Flags Auditor** | Audit `Set-Cookie` (`Secure`/`HttpOnly`/`SameSite`), severity più alta per cookie di auth |
+| **Secrets Validation** | Validazione formale AWS/GitHub/Stripe/Telegram/Slack/Google/NPM/Docker PAT, GCP service-account JSON, chiavi PEM, dizionario fuzzy, filtro placeholder |
+| **SQLi Boolean-Blind + OOB** | Diff per lunghezza/status-code, primitive OOB MSSQL/Oracle/PostgreSQL/MySQL via loopback callback, 8 payload time-based |
+| **JS Endpoint Reachability** | Probe liveness + metodo/status per ogni endpoint estratto dai bundle JS |
+| **AI Summary** | Executive summary euristico (EN/RU) per JS Analysis — severity bucket, top risk-scored, raccomandazioni type-aware, senza LLM esterno |
+| **SourceMap Exploit Context** | Ogni LeakInfo è annotato con categoria di attacco, narrativa, raccomandazione e link CVE/OWASP |
+
+### Rete e infrastruttura
+
+- **ASN/BGP enrichment** via Team Cymru bulk whois, **mappa GeoIP** con ASCII chart per paese
+- **Multi-target batch scan** con report aggregato (`BatchScanService`)
+- **Banner timeline** — store TSV + diff fra scansioni
+- **Traceroute** in modalità ICMP / TCP / UDP con metriche packet-loss; **Topology Map** con clustering /24 + ASN
+- **WHOIS Lookup** con fallback RDAP, normalizzazione registrar/abuse (IANA root → autoritativo)
+- **SSL/TLS Deep Audit** — protocollo, cipher, catena, SAN, OCSP, HSTS, ALPN
+- **DNS AXFR** zone transfer (raw TCP/53), **HTTP/2 + HTTP/3** via ALPN + `Alt-Svc`, probe **WebSocket**
+- Supporto **IPv6** in `HostResolver`
+
+### CVE intelligence
+
+- **Cache NVD offline** (`CveDbCacheService`, NVD 2.0 API, file flat `.cvecache`)
+- **EPSS + CISA KEV** prioritization (`EpssKevService`)
+- **Exploit maturity** (WEAPONIZED / POC / THEORETICAL) e stima età CVE
+- **PoC link**: NVD, MITRE, Exploit-DB, PacketStorm, vendor advisory
+- Fingerprint estesi: Node.js / Jetty / WildFly / JBoss / OpenSSL / Spring / IIS / GitLab
+
+### Sottosistema Proxy
+
+- **Visual Proxy Chain Manager** — drag-and-drop, card `ACTIVE CHAIN`, dialogo `Build Chain` (localizzato EN/IT/RU)
+- Controlli di routing avanzati, politiche di rotazione, comportamento catena più flessibile
+- Selezione proxy geo-aware, validazione reactive triple-handshake, pool persistente in `~/.anibus/proxy-pool.json`
+
+### UI ed export
+
+- **Storico scansioni** in `~/.anibus/history/` con menu contestuale di confronto e re-run
+- Scheda **Statistic Dashboard** con grafici porte/servizi/rischio
+- **Switch tema chiaro/scuro**, **notifiche tray**, **scorciatoie da tastiera** (F5 / Esc / Ctrl+S / Ctrl+L / Ctrl+F)
+- Export **PDF e HTML stilizzato** (JavaFX PrinterJob), **filtro realtime in console**
+- **Raggruppamento CVE per severity** (CRITICAL / HIGH / MEDIUM / LOW), ordinamento JS Analysis per priorità
+- **Wordlist selector** per Subdomain, payload SQLi ed Endpoint; indicatore wordlist attive in Scan Target
+- Modalità **porta singola e range**, opzioni scheduler avanzate, log di stato realtime con timestamp
+- **Diff View** fra due export XML salvati
+
+### Architettura e qualità
+
+- **Thread virtuali (JEP 444)** in `ScanTask`, `ServiceDetectionTask`, `JavaScriptSecurityAnalyzer`, `ReactiveValidator`, `ReverseDnsExpander` e tutti i percorsi blocking-IO
+- **DI manuale** in `AnibusApplication` (no reflection, JPMS-clean)
+- **Facciata HTTP unificata** `HttpClientFactory.open(url, profile)` con trust-all TLS, retry + exponential backoff + jitter
+- **Registry timeout profile** (FAST 2s / NORMAL 5s / SLOW 10s / VERY_SLOW 20–30s)
+- **Named daemon ThreadFactory** + graceful shutdown con isolamento errori per servizio
+- **Test ArchUnit** sui confini moduli, validazione FXML, parità chiavi Messages_en/it/ru
+- **162 unit test** distribuiti su 50+ classi di test
 
 ---
 
@@ -425,31 +488,21 @@ Entrambe le schede hanno un pulsante **Export** indipendente che apre un dialogo
 
 | Classe di test | Test | Copre |
 |--------------|------|-------|
-| `LeakInfoTest` | 15 | Inferenza priorità, rilevamento placeholder, builder |
+| `LeakInfoTest` | 14 | Inferenza priorità, rilevamento placeholder, builder |
+| `RetryPolicyTest` | 9 | Logica retry HTTP e backoff |
 | `PortScannerServiceTest` | 7 | Parsing range porte, thread safety, input null |
-| `WebSourceAnalyzerTest` | 6 | Parsing sorgenti JS, estrazione endpoint |
-| `WebSourceAnalyzerLeakInfoTest` | 3 | Integrazione LeakInfo |
 | `JavaScriptSecurityAnalyzerServiceInferenceTest` | 7 | Rilevamento engine DB e framework |
-| `ProxyChainServiceTest` | 3 | Catene proxy multi-hop HTTP CONNECT |
-| `UdpScannerServiceTest` | 2 | Comportamento sonde/risposte UDP |
-| `SubdomainEnumerationServiceTest` | 2 | Output discovery sottodomini passivo/attivo |
-| `SourceMapAnalyzerTest` | 2 | Parsing source map e ricostruzione sorgenti |
-| `ParamMinerServiceTest` | 2 | Discovery parametri nascosti riflessi |
-| `ScanDiffServiceTest` | 2 | Confronto tra due export XML di scansione |
-| `ScanSchedulerServiceTest` | 2 | Esecuzione periodica e cancellazione scansioni |
-| **Totale** | **53** | |
-
----
-
-## Formati di Export
-
-### Port Scan — CSV
-```
-Port,Protocol,Service,State,Banner,Version,Latency(ms),CVE,Severity
-22,TCP,SSH,OPEN,OpenSSH 8.9p1,8.9p1,8,CVE-2023-38408,HIGH
-80,TCP,HTTP,OPEN,nginx/1.24.0,,12,,
-```
-
+| `ProxyRoutingServiceTest` | 6 | Routing e selezione proxy |
+| `NtlmMessagesTest` | 6 | Parsing autenticazione NTLM |
+| `FaviconFingerprintDatabaseTest` | 6 | Fingerprinting hash favicon |
+| `ContainerExposureCheckerTest` | 6 | Rilevamento API container esposte |
+| `AuthCrawlerTest` | 6 | Crawling autenticato con gestione sessione |
+| `WebSourceAnalyzerTest` | 5 | Parsing sorgenti JS, estrazione endpoint |
+| `SQLInjectionAnalyzerTest` | 5 | Esecuzione payload SQL injection |
+| `ServiceMisconfigurationCheckerTest` | 5 | Pattern di misconfigurazioni servizi |
+| `ModuleBoundaryTest` | 5 | Verifica confini moduli JPMS |
+| `HarPostmanParserTest` | 5 | Import collezioni HAR/Postman |
+| `
 ### JS Analysis — CSV
 ```
 ## ENDPOINTS
@@ -486,47 +539,6 @@ users,POSTGRESQL,95%,"id|email|password_hash"
   </databaseSchemas>
 </jsAnalysis>
 ```
-
----
-
-## Roadmap
-
-### v2.2.0 — Minor Release
-
-- ✅ Espanso sottosistema proxy con routing, rotazione e gestione catena più flessibili
-- ✅ Aggiunto flusso Wordlist per Sottodomini, payload SQLi ed Endpoint
-- ✅ Integrati endpoint da analisi JS e wordlist endpoint nelle scansioni SQLi/XSS
-- ✅ Aggiunto supporto modalità porta singola nel parser range porte
-- ✅ Aggiunte opzioni scheduler avanzate con impostazioni runtime più chiare
-- ✅ Aggiunto stream log di stato realtime con timestamp in console
-- ✅ Aggiunti indicatori di stato wordlist attive nella UI Scan Target
-- ✅ Aggiornata documentazione e riferimenti artefatti a `2.2.0`
-
-### v2.0.1 — Patch Release
-
-- ✅ Aggiunta card di visualizzazione catena (`ACTIVE CHAIN`) nella scheda Proxy
-- ✅ Aggiunto pulsante `Build Chain` con relativo handler
-- ✅ Aggiunti testi localizzati del dialogo Proxy Chain Builder (EN/IT/RU)
-- ✅ Corrette regressioni FXML e binding che impattavano l'avvio
-- ✅ Aggiornata documentazione e riferimenti artefatti alla versione `2.0.1`
-
-### Pianificato
-
-**P1 — Moduli di crescita principali**
-- 🟡 **Visual Proxy Chain Manager** — editor visuale catena (drag/drop hop), stato live degli hop e preset di catena
-- 🟡 **Web Crawler + Auth Flows** — crawling autenticato con gestione cookie/sessione e copertura delle route protette
-- 🟡 **CVE Intelligence Sync** — sincronizzazione periodica NVD/CISA con prioritizzazione del rischio (EPSS/KEV)
-
-**P2 — Moduli di estensione copertura**
-- 🟡 **API Security Testing** — controlli guidati OpenAPI/Swagger per auth bypass, euristiche IDOR/BOLA e mass assignment
-- 🟡 **Cloud Misconfiguration Scanner** — verifiche su storage esposto, metadata abuse e default cloud insicuri
-- 🟡 **Attack Surface Discovery** — discovery di domini/sottodomini/IP correlati e mappa di esposizione esterna
-- 🟡 **SQL-to-DB Extraction Pipeline** — dopo SQL injection confermata o credenziali scoperte: estrazione metadati DB reali (tabelle, colonne, tipi) e preview righe opzionale; supporto MySQL, PostgreSQL, MongoDB tramite catena proxy
-
-**P3 — Piattaforma e reporting**
-- 🟡 **Headless/API Mode** — modalita CLI e REST per CI/CD e scansioni pianificate senza GUI
-- 🟡 **SIEM/DevSecOps Integrations** — integrazioni con issue tracker, notifiche chat e pipeline verso SIEM
-- 🟡 **Compliance Profiles** — set di controlli pronti per reporting ASVS/CIS/PCI
 
 ---
 

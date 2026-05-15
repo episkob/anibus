@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Anibus Wiki — Installazione e avvio</title>
+<link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+<div class="wiki-shell">
+  <aside class="sidebar">
+    <div class="brand">Anibus Wiki<small>versione 2.2.0 · scanner di sicurezza di rete</small></div>
+    <div class="lang-switch">
+      <a href="../en/getting-started.html">EN</a>
+      <a href="../it/getting-started.html" class="active">IT</a>
+      <a href="../ru/getting-started.html">RU</a>
+    </div>
+    <nav>
+      <div class="section-label">Inizio</div>
+      <a href="index.html">Home</a>
+      <a href="getting-started.html" class="active">Installazione e avvio</a>
+      <div class="section-label">Scansione</div>
+      <a href="scanning.html">Scansioni di base</a>
+      <a href="web-security.html">Vulnerabilità web</a>
+      <a href="auth-and-recon.html">Auth &amp; Recon</a>
+      <div class="section-label">Analisi</div>
+      <a href="cve-and-vulns.html">CVE e vulnerabilità</a>
+      <a href="network.html">Rete e infrastruttura</a>
+      <a href="proxy.html">Proxy e catene</a>
+      <div class="section-label">Report</div>
+      <a href="reports.html">Esportazione e cronologia</a>
+      <div class="section-label">Operazioni</div>
+      <a href="admin.html">Amministrazione</a>
+    </nav>
+  </aside>
+
+  <main class="content">
+    <h1>Installazione e avvio</h1>
+    <p class="subtitle">Il percorso minimo da un sistema pulito alla prima scansione in Anibus 2.2.0.</p>
+
+    <h2>Requisiti di sistema</h2>
+    <table>
+      <thead><tr><th>Componente</th><th>Minimo</th><th>Note</th></tr></thead>
+      <tbody>
+        <tr><td>SO</td><td>Linux x64 / macOS / Windows 10+</td><td>Testato su Linux (Fedora/Ubuntu). Su Wayland — senza particolarità.</td></tr>
+        <tr><td>JDK</td><td>Java 21 (LTS)</td><td>Richiesto il supporto ai virtual thread (JEP 444), nessun flag di preview necessario.</td></tr>
+        <tr><td>JavaFX</td><td>21.0.5</td><td>Inclusa come dipendenza Maven, non serve installarla a parte.</td></tr>
+        <tr><td>Maven</td><td>3.9+</td><td>Nel progetto è presente <code>./mvnw</code>, è possibile usarlo.</td></tr>
+        <tr><td>RAM</td><td>1 GB</td><td>Per scansioni batch di 100+ target sono consigliati 2 GB o più.</td></tr>
+        <tr><td>Permessi</td><td>Utente normale</td><td>Per scansioni UDP di alcuni servizi può servire root/CAP_NET_RAW.</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Build dai sorgenti</h2>
+    <pre><code>git clone &lt;repo&gt; anibus-desktop
+cd anibus-desktop
+./mvnw -B -DskipTests package
+./mvnw -B -Pjavafx javafx:run</code></pre>
+    <p>Gli artefatti dopo la build si trovano in <code>target/</code>. I test (162 in totale, 50+ classi) si avviano con:</p>
+    <pre><code>./mvnw -B test</code></pre>
+    <p>Esecuzione di un singolo test:</p>
+    <pre><code>./mvnw -B test -Dtest=SQLInjectionAnalyzerTest</code></pre>
+
+    <h2>Primo avvio</h2>
+    <ol>
+      <li>La finestra si apre in tema scuro (Bootstrap 5 Dark, CSS personalizzato).</li>
+      <li>Nel titolo della finestra — la versione <strong>Anibus Desktop 2.2.0</strong>.</li>
+      <li>Parte sinistra — campo <code>Target</code> e gruppo dei pulsanti di scansione.</li>
+      <li>Centro — console <strong>Scan Results</strong> con timestamp realtime e filtro (<kbd>Ctrl</kbd>+<kbd>F</kbd>).</li>
+      <li>Menu superiore — configurazione, tema, dizionari, proxy, scheduler, esportazione.</li>
+    </ol>
+
+    <div class="callout">
+      <strong>Suggerimento</strong>
+      Al primo avvio apri <code>Config → Tema</code> e seleziona <em>Scuro</em> o <em>Chiaro</em>. Il tema chiaro è un override CSS <code>anibus-style-light.css</code>.
+    </div>
+
+    <h2>Struttura delle directory utente</h2>
+    <table>
+      <thead><tr><th>Percorso</th><th>Scopo</th></tr></thead>
+      <tbody>
+        <tr><td><code>~/.anibus/history/</code></td><td>Salvataggio automatico dei risultati delle scansioni (vedi <a href="reports.html#history">Cronologia scansioni</a>).</td></tr>
+        <tr><td><code>~/.anibus/cve-cache/</code></td><td>Cache offline CVE/EPSS/KEV (vedi <a href="cve-and-vulns.html#cache">CVE Offline DB</a>).</td></tr>
+        <tr><td><code>~/.anibus/wordlists/</code></td><td>Dizionari utente (Subdomain / SQLi payloads / Endpoints).</td></tr>
+        <tr><td><code>~/.anibus/banner-timeline/</code></td><td>Store TSV per la Port Banner Timeline.</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Panoramica dell'interfaccia</h2>
+    <h3>Finestra principale</h3>
+    <ul>
+      <li><strong>Target</strong> — IPv4/IPv6/hostname/URL; le parentesi quadre in IPv6 vengono rimosse automaticamente.</li>
+      <li><strong>Scan Results</strong> — console con gruppi CRITICAL/HIGH/MEDIUM/LOW. Menu contestuale → cronologia, diff, SQL extraction.</li>
+      <li><strong>Pulsanti a sinistra</strong> — Scan, UDP, Subdomain, Source Map, ParamMiner, Diff Mode, Scheduler Start/Stop, ecc. Dettagli nelle <a href="scanning.html">Scansioni di base</a>.</li>
+      <li><strong>Status bar</strong> — indicatori dei dizionari attivi, della catena proxy e dello stato dello scheduler.</li>
+    </ul>
+
+    <h3>Menu</h3>
+    <ul>
+      <li><strong>Config</strong> — tema, lingua, dizionari, profili di timeout.</li>
+      <li><strong>Discovery</strong> — Auth Crawling, Passive Recon, dialoghi GraphQL/JWT/CORS, import batch.</li>
+      <li><strong>Proxy</strong> — Build Chain, ACTIVE CHAIN, rotazione.</li>
+      <li><strong>Scheduler</strong> — pianificazioni, drift baseline.</li>
+      <li><strong>Export</strong> — PDF, HTML, JSON, TXT.</li>
+    </ul>
+
+    <h2>Localizzazione</h2>
+    <p>Tutte le stringhe UI sono raccolte in tre bundle: <code>Messages_en</code>, <code>Messages_it</code>, <code>Messages_ru</code>. La sincronia delle chiavi è verificata dal test JUnit <code>ResourceBundleValidationTest</code>. Il locale è determinato dal sistema e si può cambiare esplicitamente in <code>Config → Lingua</code>.</p>
+
+    <h2>Cosa fare dopo</h2>
+    <ul>
+      <li><a href="scanning.html">Avvia la prima scansione</a> su un qualsiasi target pubblicamente autorizzato (<code>scanme.nmap.org</code> o un tuo lab).</li>
+      <li>Studia le <a href="proxy.html">catene proxy</a> se scansioni attraverso un gateway aziendale.</li>
+      <li>Abilita la <a href="cve-and-vulns.html#cache">cache offline CVE</a> se lavori in ambienti air-gapped.</li>
+    </ul>
+
+    <footer class="page-footer">
+      <span>Anibus Desktop 2.2.0</span>
+      <a href="scanning.html">Avanti: Scansioni di base →</a>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

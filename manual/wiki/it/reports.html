@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Anibus Wiki — Esportazione e cronologia</title>
+<link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+<div class="wiki-shell">
+  <aside class="sidebar">
+    <div class="brand">Anibus Wiki<small>versione 2.2.0 · scanner di sicurezza di rete</small></div>
+    <div class="lang-switch">
+      <a href="../en/reports.html">EN</a>
+      <a href="../it/reports.html" class="active">IT</a>
+      <a href="../ru/reports.html">RU</a>
+    </div>
+    <nav>
+      <div class="section-label">Inizio</div>
+      <a href="index.html">Home</a>
+      <a href="getting-started.html">Installazione e avvio</a>
+      <div class="section-label">Scansione</div>
+      <a href="scanning.html">Scansioni di base</a>
+      <a href="web-security.html">Vulnerabilità web</a>
+      <a href="auth-and-recon.html">Auth &amp; Recon</a>
+      <div class="section-label">Analisi</div>
+      <a href="cve-and-vulns.html">CVE e vulnerabilità</a>
+      <a href="network.html">Rete e infrastruttura</a>
+      <a href="proxy.html">Proxy e catene</a>
+      <div class="section-label">Report</div>
+      <a href="reports.html" class="active">Esportazione e cronologia</a>
+      <div class="section-label">Operazioni</div>
+      <a href="admin.html">Amministrazione</a>
+    </nav>
+  </aside>
+
+  <main class="content">
+    <h1>Esportazione e cronologia</h1>
+    <p class="subtitle">Salvataggio, esportazione e analisi dei risultati: PDF, HTML, JSON, cronologia, diff e riepilogo AI.</p>
+
+    <h2 id="formats">Formati di esportazione</h2>
+    <table>
+      <thead><tr><th>Formato</th><th>Scopo</th><th>Comando</th></tr></thead>
+      <tbody>
+        <tr><td><strong>PDF</strong></td><td>Report stampabile per management / cliente</td><td>Export → PDF (JavaFX PrinterJob)</td></tr>
+        <tr><td><strong>HTML</strong></td><td>Report interattivo con filtro</td><td>Export → HTML</td></tr>
+        <tr><td><strong>JSON</strong></td><td>Machine-readable, per integrazione SIEM/CI</td><td>Export → JSON</td></tr>
+        <tr><td><strong>TXT</strong></td><td>Log piatto della console</td><td>Export → TXT oppure <kbd>Ctrl</kbd>+<kbd>S</kbd></td></tr>
+      </tbody>
+    </table>
+
+    <h3>Report HTML</h3>
+    <p>HTML stilizzato con tabella dei risultati e filtro JS integrato (ricerca per testo, filtro per severity, collapse delle sezioni). Non richiede un server — si apre direttamente nel browser.</p>
+
+    <h3>PDF</h3>
+    <p><code>PrinterJob</code> di JavaFX renderizza il report DOM pagina per pagina. Intestazione con target, data, versione Anibus; tabella CVE; sezione JS Analysis; appendice con snippet PoC <code>curl</code>.</p>
+
+    <h2 id="history">Cronologia scansioni</h2>
+    <p><code>ScanHistoryService</code> salva automaticamente ogni scansione conclusa in <code>~/.anibus/history/</code> con nome del tipo <code>2026-05-15T12-34-01_example.com.scan.json</code>.</p>
+    <h3>Visualizzazione</h3>
+    <p>Menu <strong>Discovery → Scan History</strong>:</p>
+    <ul>
+      <li>Lista delle scansioni con filtro per data/target.</li>
+      <li>Doppio clic — apre.</li>
+      <li>Tasto destro → <em>Compare with…</em> avvia il diff.</li>
+      <li>Tasto destro → <em>Re-run</em> ripete la scansione con gli stessi parametri.</li>
+    </ul>
+
+    <h2 id="diff">Modalità Diff</h2>
+    <p><code>ScanDiffService</code> confronta due snapshot JSON della cronologia:</p>
+    <ul>
+      <li><span class="tag ok">NEW</span> — nuove porte aperte, nuove CVE, nuovi leak.</li>
+      <li><span class="tag warn">CHANGED</span> — versione/banner cambiati.</li>
+      <li><span class="tag crit">GONE</span> — porta chiusa o vulnerabilità sparita.</li>
+    </ul>
+    <p>Il pulsante <strong>diffModeButton</strong> nella schermata principale apre un wizard con due menu a tendina di scansioni.</p>
+
+    <h2 id="dashboard">Statistic Dashboard</h2>
+    <p>Scheda con grafici di distribuzione:</p>
+    <ul>
+      <li>Porte aperte per top service.</li>
+      <li>Vulnerabilità per severity (CRITICAL/HIGH/MEDIUM/LOW).</li>
+      <li>Top ASN/paesi (tramite <a href="network.html#geoip">GeoIP</a>).</li>
+      <li>Dinamica delle scansioni di drift da <code>ScanHistoryService</code>.</li>
+    </ul>
+
+    <h2 id="aisummary">AI Summary <span class="tag new">NEW</span></h2>
+    <p><code>AiSummaryGenerator</code> produce un riepilogo executive per JS Analysis senza LLM esterni. Algoritmo euristico:</p>
+    <ul>
+      <li>Severity buckets (Critical / High / Medium / Low / Informational).</li>
+      <li>Top-5 categorie di scoperte (Secrets / Endpoints / Configs / Schemas / Cookies / Generators / Other).</li>
+      <li>Top-3 scoperte per risk score (Severity × Exploitability × Exposure).</li>
+      <li>Raccomandazioni type-aware: per chiavi AWS — rotazione + audit di CloudTrail; per GitHub PAT — revoke e revisione della history dei commit, ecc.</li>
+    </ul>
+    <p>Prodotto in due lingue contemporaneamente (EN / RU). Disponibile nella scheda JS Analysis → Summary.</p>
+
+    <h2 id="sourcemap">SourceMap Exploit Context <span class="tag new">NEW</span></h2>
+    <p><code>SourceMapExploitContextAnalyzer</code> arricchisce ogni <code>LeakInfo</code> estratto dalla source map con un'annotazione:</p>
+    <ul>
+      <li><strong>category</strong> — classe di attacco (SSRF / Auth-bypass / Privilege-escalation / Data-exfil / RCE).</li>
+      <li><strong>narrative</strong> — breve descrizione del contesto (da dove proviene la chiave, come è usata).</li>
+      <li><strong>recommendation</strong> — azione concreta (rotazione / rimozione / vault).</li>
+      <li><strong>ref</strong> — link a CVE / categoria OWASP.</li>
+    </ul>
+
+    <h2 id="sortsearch">Ordinamento e filtro</h2>
+    <ul>
+      <li>JS Analysis ordina le scoperte per <code>priority</code> (decrescente) all'interno di ciascun tier di severity.</li>
+      <li><kbd>Ctrl</kbd>+<kbd>F</kbd> — filtro inline di Scan Results.</li>
+      <li>Il report HTML ha un filtro JS indipendente nel browser.</li>
+    </ul>
+
+    <h2 id="notify">Notifiche di sistema</h2>
+    <p><code>NotificationService</code> tramite <code>java.awt.SystemTray</code> mostra notifiche di tray:</p>
+    <ul>
+      <li>«Scan finished» — al termine.</li>
+      <li>«CRITICAL detected» — alla prima scoperta CRITICAL.</li>
+      <li>«Scheduler drift» — variazioni nella drift baseline.</li>
+    </ul>
+
+    <h2 id="batch-export">Esportazione batch</h2>
+    <p>Da <code>BatchScanService</code> il report viene esportato in un unico archivio: <code>batch-YYYYMMDD.zip</code> contiene JSON per-target + un HTML riassuntivo.</p>
+
+    <footer class="page-footer">
+      <a href="proxy.html">← Proxy</a>
+      <a href="admin.html">Avanti: Amministrazione →</a>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

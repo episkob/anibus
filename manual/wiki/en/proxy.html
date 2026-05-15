@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Anibus Wiki — Proxy &amp; chains</title>
+<link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+<div class="wiki-shell">
+  <aside class="sidebar">
+    <div class="brand">Anibus Wiki<small>version 2.2.0 · network security scanner</small></div>
+    <div class="lang-switch">
+      <a href="../en/proxy.html" class="active">EN</a>
+      <a href="../it/proxy.html">IT</a>
+      <a href="../ru/proxy.html">RU</a>
+    </div>
+    <nav>
+      <div class="section-label">Getting started</div>
+      <a href="index.html">Home</a>
+      <a href="getting-started.html">Install &amp; run</a>
+      <div class="section-label">Scanning</div>
+      <a href="scanning.html">Basic scans</a>
+      <a href="web-security.html">Web vulnerabilities</a>
+      <a href="auth-and-recon.html">Auth &amp; Recon</a>
+      <div class="section-label">Analysis</div>
+      <a href="cve-and-vulns.html">CVE &amp; vulnerabilities</a>
+      <a href="network.html">Network &amp; infrastructure</a>
+      <a href="proxy.html" class="active">Proxy &amp; chains</a>
+      <div class="section-label">Reports</div>
+      <a href="reports.html">Export &amp; history</a>
+      <div class="section-label">Operations</div>
+      <a href="admin.html">Administration</a>
+    </nav>
+  </aside>
+
+  <main class="content">
+    <h1>Proxy &amp; chains</h1>
+    <p class="subtitle">Visual Chain Builder, rotation, ACTIVE CHAIN card and multi-protocol chains — the unified proxy subsystem of Anibus 2.2.0.</p>
+
+    <h2 id="overview">Overview</h2>
+    <p>The <code>ProxyChainService</code> + the <strong>Proxy</strong> pane in the main window. All Anibus HTTP requests except explicit loopback probes go through the active chain. Node types:</p>
+    <ul>
+      <li><strong>HTTP / HTTPS</strong> — standard CONNECT tunnel.</li>
+      <li><strong>SOCKS4 / SOCKS5</strong> — supports username/password authentication.</li>
+      <li><strong>TOR</strong> — through the local SOCKS5 port of the TOR daemon.</li>
+    </ul>
+
+    <h2 id="builder">Visual Proxy Chain Manager <span class="tag new">NEW</span></h2>
+    <p>The <strong>Build Chain</strong> button opens a dialog with a drag-and-drop editor:</p>
+    <ol>
+      <li>Left — pool of nodes (imported from a file or entered manually).</li>
+      <li>Centre — the sequential chain. Nodes can be dragged, reordered, removed.</li>
+      <li>Right — parameters for the selected node: host, port, username, password, type.</li>
+      <li>The <strong>Test Chain</strong> button runs a chain probe (HEAD on a test URL).</li>
+    </ol>
+    <p>Once applied, the chain shows up on the <strong>ACTIVE CHAIN</strong> card in the Proxy tab:</p>
+    <pre><code>ACTIVE CHAIN
+[HTTPS] corp-gw.local:8443  →  [SOCKS5] tor-bridge:9050  →  TARGET</code></pre>
+
+    <h2 id="rotation">Rotation and chain modes</h2>
+    <ul>
+      <li><strong>Strict chain</strong> — every node is used in the specified order.</li>
+      <li><strong>Round-robin</strong> — each request goes through the next node in the chain.</li>
+      <li><strong>Random</strong> — a random node per request.</li>
+      <li><strong>Fallback</strong> — the first working node when an upstream one fails.</li>
+    </ul>
+
+    <h2 id="dialog">Localized dialog</h2>
+    <p>The Proxy Chain Builder strings are localized into EN/IT/RU. All keys are validated by <code>ResourceBundleValidationTest</code> — adding a new string requires all three translations at once.</p>
+
+    <h2 id="profiles">Timeout profiles</h2>
+    <p><code>HttpClientFactory.TimeoutProfile</code>:</p>
+    <table>
+      <thead><tr><th>Profile</th><th>Connect / Read</th><th>Where used</th></tr></thead>
+      <tbody>
+        <tr><td>FAST</td><td>2 / 2 s</td><td>Massive port probes, favicon</td></tr>
+        <tr><td>NORMAL</td><td>5 / 5 s</td><td>Standard HTTP probe</td></tr>
+        <tr><td>SLOW</td><td>10 / 10 s</td><td>Auth services, IdP</td></tr>
+        <tr><td>VERY_SLOW</td><td>20–30 s</td><td>OAuth token endpoint, RDAP, AXFR</td></tr>
+      </tbody>
+    </table>
+    <p>Profiles are passed as the second argument to <code>HttpClientFactory.open(url, profile)</code>. All calls through this facade run through the proxy chain.</p>
+
+    <h2 id="retries">Retry policy</h2>
+    <p>Exponential backoff + jitter for transient network errors (timeout, reset, 5xx). Configurable in <code>Config → Network → Retry</code>:</p>
+    <ul>
+      <li>Max attempts (3 by default).</li>
+      <li>Base delay (250 ms) with exponent 2.</li>
+      <li>Jitter ±25% to smear the load.</li>
+    </ul>
+
+    <h2 id="trustall">Trust-all SSL</h2>
+    <p><code>InsecureSsl</code> — a single trust-all <code>SSLSocketFactory</code> + hostname-verifier utility. Used by detectors that must talk to self-signed certificates (KeycloakDetector, IdentityProviderDetector, SqlMetadataExtractor). Applied strictly inside the scanner; it does not override the global JVM TrustManager.</p>
+
+    <div class="callout warn">
+      <strong>Security</strong>
+      The longer the chain, the higher the latency and the more failure points. For critical operations (<code>Build Chain</code> → <code>Test Chain</code>) keep it to 2–3 nodes.
+    </div>
+
+    <footer class="page-footer">
+      <a href="network.html">← Network &amp; infrastructure</a>
+      <a href="reports.html">Next: Export &amp; history →</a>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

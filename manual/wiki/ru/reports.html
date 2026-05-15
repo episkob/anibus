@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Anibus Wiki — Экспорт и история</title>
+<link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+<div class="wiki-shell">
+  <aside class="sidebar">
+    <div class="brand">Anibus Wiki<small>версия 2.2.0 · сетевой security-сканер</small></div>
+    <div class="lang-switch">
+      <a href="../en/reports.html">EN</a>
+      <a href="../it/reports.html">IT</a>
+      <a href="../ru/reports.html" class="active">RU</a>
+    </div>
+    <nav>
+      <div class="section-label">Начало</div>
+      <a href="index.html">Главная</a>
+      <a href="getting-started.html">Установка и запуск</a>
+      <div class="section-label">Сканирование</div>
+      <a href="scanning.html">Базовые сканы</a>
+      <a href="web-security.html">Web-уязвимости</a>
+      <a href="auth-and-recon.html">Auth &amp; Recon</a>
+      <div class="section-label">Анализ</div>
+      <a href="cve-and-vulns.html">CVE и уязвимости</a>
+      <a href="network.html">Сеть и инфраструктура</a>
+      <a href="proxy.html">Прокси и цепочки</a>
+      <div class="section-label">Отчёты</div>
+      <a href="reports.html" class="active">Экспорт и история</a>
+      <div class="section-label">Эксплуатация</div>
+      <a href="admin.html">Администрирование</a>
+    </nav>
+  </aside>
+
+  <main class="content">
+    <h1>Экспорт и история</h1>
+    <p class="subtitle">Сохранение, экспорт и анализ результатов: PDF, HTML, JSON, история, diff и AI-сводка.</p>
+
+    <h2 id="formats">Форматы экспорта</h2>
+    <table>
+      <thead><tr><th>Формат</th><th>Назначение</th><th>Команда</th></tr></thead>
+      <tbody>
+        <tr><td><strong>PDF</strong></td><td>Печатный отчёт для менеджмента / клиента</td><td>Export → PDF (JavaFX PrinterJob)</td></tr>
+        <tr><td><strong>HTML</strong></td><td>Интерактивный отчёт с фильтром</td><td>Export → HTML</td></tr>
+        <tr><td><strong>JSON</strong></td><td>Машиночитаемый, для интеграции в SIEM/CI</td><td>Export → JSON</td></tr>
+        <tr><td><strong>TXT</strong></td><td>Плоский лог консоли</td><td>Export → TXT или <kbd>Ctrl</kbd>+<kbd>S</kbd></td></tr>
+      </tbody>
+    </table>
+
+    <h3>HTML-отчёт</h3>
+    <p>Styled HTML с таблицей результатов и встроенным JS-фильтром (поиск по тексту, фильтр по severity, сворачивание секций). Не требует сервера — открывается напрямую в браузере.</p>
+
+    <h3>PDF</h3>
+    <p>JavaFX <code>PrinterJob</code> рендерит DOM-отчёт постранично. Шапка с целью, датой, версией Anibus; таблица CVE; раздел JS Analysis; appendix с PoC <code>curl</code>-сниппетами.</p>
+
+    <h2 id="history">История сканов</h2>
+    <p><code>ScanHistoryService</code> автосохраняет каждый завершённый скан в <code>~/.anibus/history/</code> с именем вида <code>2026-05-15T12-34-01_example.com.scan.json</code>.</p>
+    <h3>Просмотр</h3>
+    <p>Меню <strong>Discovery → Scan History</strong>:</p>
+    <ul>
+      <li>Список сканов с фильтром по дате/цели.</li>
+      <li>Двойной клик — открыть.</li>
+      <li>ПКМ → <em>Compare with…</em> запускает diff.</li>
+      <li>ПКМ → <em>Re-run</em> повторяет скан с теми же параметрами.</li>
+    </ul>
+
+    <h2 id="diff">Diff-режим</h2>
+    <p><code>ScanDiffService</code> сравнивает два json-снимка истории:</p>
+    <ul>
+      <li><span class="tag ok">NEW</span> — новые открытые порты, новые CVE, новые leaks.</li>
+      <li><span class="tag warn">CHANGED</span> — версия/баннер изменились.</li>
+      <li><span class="tag crit">GONE</span> — закрылся порт или исчезла уязвимость.</li>
+    </ul>
+    <p>Кнопка <strong>diffModeButton</strong> на главной открывает мастер с двумя выпадающими списками сканов.</p>
+
+    <h2 id="dashboard">Statistic Dashboard</h2>
+    <p>Вкладка с графиками распределения:</p>
+    <ul>
+      <li>Открытые порты по топ-сервисам.</li>
+      <li>Уязвимости по severity (CRITICAL/HIGH/MEDIUM/LOW).</li>
+      <li>Топ ASN/стран (через <a href="network.html#geoip">GeoIP</a>).</li>
+      <li>Динамика drift-сканов из <code>ScanHistoryService</code>.</li>
+    </ul>
+
+    <h2 id="aisummary">AI Summary <span class="tag new">NEW</span></h2>
+    <p><code>AiSummaryGenerator</code> формирует executive-сводку для JS Analysis без внешних LLM. Алгоритм эвристический:</p>
+    <ul>
+      <li>Severity buckets (Critical / High / Medium / Low / Informational).</li>
+      <li>Top-5 категорий находок (Secrets / Endpoints / Configs / Schemas / Cookies / Generators / Other).</li>
+      <li>Top-3 risk-scored находки (Severity × Exploitability × Exposure).</li>
+      <li>Type-aware рекомендации: для AWS-ключей — ротация + audit CloudTrail; для GitHub PAT — revoke и проверка истории коммитов и т.д.</li>
+    </ul>
+    <p>Выходит в двух языках одновременно (EN / RU). Доступно в JS Analysis → Summary вкладка.</p>
+
+    <h2 id="sourcemap">SourceMap Exploit Context <span class="tag new">NEW</span></h2>
+    <p><code>SourceMapExploitContextAnalyzer</code> расширяет каждый <code>LeakInfo</code>, извлечённый из source-map, аннотацией:</p>
+    <ul>
+      <li><strong>category</strong> — класс атаки (SSRF / Auth-bypass / Privilege-escalation / Data-exfil / RCE).</li>
+      <li><strong>narrative</strong> — короткое описание контекста (откуда взялся ключ, как используется).</li>
+      <li><strong>recommendation</strong> — конкретное действие (ротация / удаление / vault).</li>
+      <li><strong>ref</strong> — ссылка на CVE / OWASP-категорию.</li>
+    </ul>
+
+    <h2 id="sortsearch">Сортировка и фильтр</h2>
+    <ul>
+      <li>JS Analysis сортирует находки по <code>priority</code> (убывание) внутри каждого тира severity.</li>
+      <li><kbd>Ctrl</kbd>+<kbd>F</kbd> — inline-фильтр Scan Results.</li>
+      <li>HTML-отчёт имеет независимый JS-фильтр в браузере.</li>
+    </ul>
+
+    <h2 id="notify">Системные уведомления</h2>
+    <p><code>NotificationService</code> через <code>java.awt.SystemTray</code> показывает tray-уведомления:</p>
+    <ul>
+      <li>«Scan finished» — после завершения.</li>
+      <li>«CRITICAL detected» — при первой CRITICAL-находке.</li>
+      <li>«Scheduler drift» — изменения в drift-baseline.</li>
+    </ul>
+
+    <h2 id="batch-export">Batch-экспорт</h2>
+    <p>Из <code>BatchScanService</code> отчёт выгружается одним архивом: <code>batch-YYYYMMDD.zip</code> содержит per-target JSON + сводный HTML.</p>
+
+    <footer class="page-footer">
+      <a href="proxy.html">← Прокси</a>
+      <a href="admin.html">Дальше: Администрирование →</a>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

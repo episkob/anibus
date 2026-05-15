@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Anibus Wiki — Сеть и инфраструктура</title>
+<link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+<div class="wiki-shell">
+  <aside class="sidebar">
+    <div class="brand">Anibus Wiki<small>версия 2.2.0 · сетевой security-сканер</small></div>
+    <div class="lang-switch">
+      <a href="../en/network.html">EN</a>
+      <a href="../it/network.html">IT</a>
+      <a href="../ru/network.html" class="active">RU</a>
+    </div>
+    <nav>
+      <div class="section-label">Начало</div>
+      <a href="index.html">Главная</a>
+      <a href="getting-started.html">Установка и запуск</a>
+      <div class="section-label">Сканирование</div>
+      <a href="scanning.html">Базовые сканы</a>
+      <a href="web-security.html">Web-уязвимости</a>
+      <a href="auth-and-recon.html">Auth &amp; Recon</a>
+      <div class="section-label">Анализ</div>
+      <a href="cve-and-vulns.html">CVE и уязвимости</a>
+      <a href="network.html" class="active">Сеть и инфраструктура</a>
+      <a href="proxy.html">Прокси и цепочки</a>
+      <div class="section-label">Отчёты</div>
+      <a href="reports.html">Экспорт и история</a>
+      <div class="section-label">Эксплуатация</div>
+      <a href="admin.html">Администрирование</a>
+    </nav>
+  </aside>
+
+  <main class="content">
+    <h1>Сеть и инфраструктура</h1>
+    <p class="subtitle">ASN/BGP-обогащение, GeoIP-карта, AXFR, HTTP/2 и HTTP/3 ALPN, IPv6, traceroute в трёх режимах, WHOIS с RDAP-fallback.</p>
+
+    <h2 id="asn">ASN / BGP Enrichment <span class="tag new">NEW</span></h2>
+    <p><code>BgpInfo</code> record + Team Cymru whois bulk query:</p>
+    <ul>
+      <li>ASN, owner, country, prefix, route age.</li>
+      <li>Соседние ASN.</li>
+      <li>Запрос пачкой через TCP-whois (без HTTP-API).</li>
+    </ul>
+    <p>Используется в Topology Map (кластеризация hop по /24 + ASN) и в JS Analysis для классификации CDN/cloud-провайдеров.</p>
+
+    <h3>ASN Lookup standalone</h3>
+    <p><code>AsnLookupService</code> — определение AS по IP через парсинг whois/IANA без внешних API. Меню <strong>Discovery → ASN Lookup</strong>.</p>
+
+    <h2 id="geoip">GeoIP Map View <span class="tag new">NEW</span></h2>
+    <p><code>GeoIpService</code> + ASCII bar-chart по странам. Выводит:</p>
+    <pre><code>US ████████████████████  42
+DE ███████              14
+NL ████                  9
+RU ██                    4
+CN █                     2</code></pre>
+    <p>Локальный GeoIP-источник (без обращения к MaxMind в runtime).</p>
+
+    <h2 id="topology">Network Topology Map</h2>
+    <p>Отдельная вкладка визуализирует <code>traceroute</code> как граф hop→hop:</p>
+    <ul>
+      <li><span class="tag new">NEW</span> Кластеризация hop по <code>/24</code>-префиксу + ASN.</li>
+      <li><span class="tag new">NEW</span> Zoom-to-fit, ручной zoom колесом, drag-pan мышью.</li>
+      <li>Подсветка точек отказа (большой ICMP-loss).</li>
+    </ul>
+
+    <h2 id="traceroute">Traceroute (3 режима)</h2>
+    <p><code>TracerouteService.Mode</code> enum:</p>
+    <table>
+      <thead><tr><th>Режим</th><th>Когда применять</th></tr></thead>
+      <tbody>
+        <tr><td><strong>ICMP</strong></td><td>Классический Linux <code>traceroute</code>, может фильтроваться firewall-ом.</td></tr>
+        <tr><td><strong>UDP</strong></td><td>UDP-пакет на высокий порт; обходит часть ICMP-фильтров.</td></tr>
+        <tr><td><strong>TCP</strong></td><td>SYN на конкретный порт (80/443) — проходит через большинство NAT/SPI.</td></tr>
+      </tbody>
+    </table>
+    <p>Метрики: hop, ASN, RTT min/avg/max, packet-loss %, owner.</p>
+
+    <h2 id="whois">WHOIS Lookup + RDAP</h2>
+    <p><code>WhoisService</code>:</p>
+    <ul>
+      <li>Двухэтапный запрос: IANA root → авторитативный сервер.</li>
+      <li><span class="tag new">NEW</span> RDAP fallback для современных регистратур (.io, .dev, .app).</li>
+      <li><span class="tag new">NEW</span> Нормализация полей <code>registrar</code> / <code>abuse contact</code> между разными форматами.</li>
+    </ul>
+
+    <h2 id="dns">DNS Zone Transfer (AXFR)</h2>
+    <p>Raw TCP/53 AXFR без сторонних библиотек. Парсятся записи <strong>A / AAAA / NS / MX / CNAME</strong>, выводится в виде дерева. Если AXFR запрещён — graceful fallback без шума в консоль.</p>
+
+    <h2 id="http">HTTP/2 + HTTP/3 детектор</h2>
+    <ul>
+      <li><strong>HTTP/2</strong> — ALPN negotiation (<code>h2</code>) на 443/TLS.</li>
+      <li><strong>HTTP/3</strong> — <code>Alt-Svc: h3=":443"</code> header + UDP/443 проба.</li>
+    </ul>
+
+    <h2 id="websocket">WebSocket Detector</h2>
+    <p>HTTP <code>Upgrade: websocket</code> probe по 17 типичным путям (<code>/ws</code>, <code>/socket.io/</code>, <code>/cable</code>, <code>/api/ws</code>, ...). При успехе фиксируется протокол (Sec-WebSocket-Protocol).</p>
+
+    <h2 id="ipv6">IPv6</h2>
+    <p><code>HostResolver</code> поддерживает IPv6:</p>
+    <ul>
+      <li>Strip квадратных скобок: <code>[::1]</code> → <code>::1</code>.</li>
+      <li>Skip IDN на raw-IPv6.</li>
+      <li>Multi-resolution: A + AAAA одновременно.</li>
+      <li>Zone-ID для link-local: <code>fe80::1%eth0</code>.</li>
+    </ul>
+
+    <h2 id="ssl">SSL/TLS Deep Audit</h2>
+    <p><code>SslTlsAuditor</code> формирует <code>AuditResult</code>:</p>
+    <ul>
+      <li>Протокол, cipher suite, цепочка сертификатов, SAN-список, expiry.</li>
+      <li><span class="tag new">NEW</span> OCSP URL, HSTS header, ALPN-список.</li>
+      <li><span class="tag new">NEW</span> Chain trust через default JVM TrustManager.</li>
+    </ul>
+    <p>Результат подаётся в <a href="cve-and-vulns.html#weaktls">Weak TLS Policy Alerts</a>.</p>
+
+    <h2 id="banner">Port Banner Timeline <span class="tag new">NEW</span></h2>
+    <p><code>BannerTimelineService</code> хранит TSV-store в <code>~/.anibus/banner-timeline/</code>. На каждый порт ведётся история (timestamp + banner). Diff между двумя точками показывает обновление сервиса (например, OpenSSH 9.0p1 → 9.6p1).</p>
+
+    <h2 id="reversedns">Reverse DNS Expander</h2>
+    <p><code>ReverseDnsExpander</code> — для CIDR-блока расширяет PTR-записи через virtual threads. Полезно для inventory корпоративного диапазона.</p>
+
+    <footer class="page-footer">
+      <a href="cve-and-vulns.html">← CVE и уязвимости</a>
+      <a href="proxy.html">Дальше: Прокси и цепочки →</a>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

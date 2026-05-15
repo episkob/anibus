@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Anibus Wiki — Прокси и цепочки</title>
+<link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+<div class="wiki-shell">
+  <aside class="sidebar">
+    <div class="brand">Anibus Wiki<small>версия 2.2.0 · сетевой security-сканер</small></div>
+    <div class="lang-switch">
+      <a href="../en/proxy.html">EN</a>
+      <a href="../it/proxy.html">IT</a>
+      <a href="../ru/proxy.html" class="active">RU</a>
+    </div>
+    <nav>
+      <div class="section-label">Начало</div>
+      <a href="index.html">Главная</a>
+      <a href="getting-started.html">Установка и запуск</a>
+      <div class="section-label">Сканирование</div>
+      <a href="scanning.html">Базовые сканы</a>
+      <a href="web-security.html">Web-уязвимости</a>
+      <a href="auth-and-recon.html">Auth &amp; Recon</a>
+      <div class="section-label">Анализ</div>
+      <a href="cve-and-vulns.html">CVE и уязвимости</a>
+      <a href="network.html">Сеть и инфраструктура</a>
+      <a href="proxy.html" class="active">Прокси и цепочки</a>
+      <div class="section-label">Отчёты</div>
+      <a href="reports.html">Экспорт и история</a>
+      <div class="section-label">Эксплуатация</div>
+      <a href="admin.html">Администрирование</a>
+    </nav>
+  </aside>
+
+  <main class="content">
+    <h1>Прокси и цепочки</h1>
+    <p class="subtitle">Visual Chain Builder, ротация, ACTIVE CHAIN-карта и multi-protocol chain — единая прокси-подсистема Anibus 2.2.0.</p>
+
+    <h2 id="overview">Обзор</h2>
+    <p>Сервис <code>ProxyChainService</code> + панель <strong>Proxy</strong> в главном окне. Все HTTP-запросы Anibus, кроме явных loopback-проб, проходят через установленную цепочку. Тип каждого узла:</p>
+    <ul>
+      <li><strong>HTTP / HTTPS</strong> — стандартный CONNECT-tunnel.</li>
+      <li><strong>SOCKS4 / SOCKS5</strong> — поддерживается аутентификация username/password.</li>
+      <li><strong>TOR</strong> — через локальный SOCKS5 порт TOR-демона.</li>
+    </ul>
+
+    <h2 id="builder">Visual Proxy Chain Manager <span class="tag new">NEW</span></h2>
+    <p>Кнопка <strong>Build Chain</strong> открывает диалог с drag-and-drop редактором:</p>
+    <ol>
+      <li>Слева — пул узлов (импортируется из файла или вводится вручную).</li>
+      <li>В центре — последовательная цепочка. Узлы можно тянуть/менять местами/удалять.</li>
+      <li>Справа — параметры выбранного узла: host, port, username, password, тип.</li>
+      <li>Кнопка <strong>Test Chain</strong> запускает probe-цепочку (HEAD на тестовый URL).</li>
+    </ol>
+    <p>После применения цепочка отображается в карточке <strong>ACTIVE CHAIN</strong> на вкладке Proxy:</p>
+    <pre><code>ACTIVE CHAIN
+[HTTPS] corp-gw.local:8443  →  [SOCKS5] tor-bridge:9050  →  TARGET</code></pre>
+
+    <h2 id="rotation">Ротация и chain-режимы</h2>
+    <ul>
+      <li><strong>Strict chain</strong> — все узлы используются в указанном порядке.</li>
+      <li><strong>Round-robin</strong> — каждый запрос идёт через следующий узел в цепочке.</li>
+      <li><strong>Random</strong> — случайный узел на каждый запрос.</li>
+      <li><strong>Fallback</strong> — первый рабочий узел при ошибке вышестоящего.</li>
+    </ul>
+
+    <h2 id="dialog">Локализованный диалог</h2>
+    <p>Тексты Proxy Chain Builder локализованы на EN/IT/RU. Все ключи валидируются <code>ResourceBundleValidationTest</code> — добавление новой строки требует трёх переводов одновременно.</p>
+
+    <h2 id="profiles">Timeout-профили</h2>
+    <p><code>HttpClientFactory.TimeoutProfile</code>:</p>
+    <table>
+      <thead><tr><th>Профиль</th><th>Connect / Read</th><th>Где применяется</th></tr></thead>
+      <tbody>
+        <tr><td>FAST</td><td>2 / 2 с</td><td>Massive port probes, favicon</td></tr>
+        <tr><td>NORMAL</td><td>5 / 5 с</td><td>Standard HTTP проба</td></tr>
+        <tr><td>SLOW</td><td>10 / 10 с</td><td>Auth-сервисы, IdP</td></tr>
+        <tr><td>VERY_SLOW</td><td>20–30 с</td><td>OAuth token-endpoint, RDAP, AXFR</td></tr>
+      </tbody>
+    </table>
+    <p>Профили подаются вторым аргументом в <code>HttpClientFactory.open(url, profile)</code>. Через прокси-цепочку проходят все вызовы этого фасада.</p>
+
+    <h2 id="retries">Retry-политика</h2>
+    <p>Экспоненциальный backoff + jitter для временных сетевых ошибок (timeout, reset, 5xx). Конфигурируется в <code>Config → Network → Retry</code>:</p>
+    <ul>
+      <li>Max attempts (по умолчанию 3).</li>
+      <li>Base delay (250 ms) с экспонентой 2.</li>
+      <li>Jitter ±25% для размазывания нагрузки.</li>
+    </ul>
+
+    <h2 id="trustall">Trust-all SSL</h2>
+    <p><code>InsecureSsl</code> — единая утилита trust-all <code>SSLSocketFactory</code> + hostname-verifier. Используется детекторами, которым нужно работать с самоподписанными сертификатами (KeycloakDetector, IdentityProviderDetector, SqlMetadataExtractor). Применяется только внутри сканера, не подменяет глобальный TrustManager JVM.</p>
+
+    <div class="callout warn">
+      <strong>Безопасность</strong>
+      Чем длиннее цепочка, тем больше latency и точек отказа. Для критичных операций (<code>Build Chain</code> → <code>Test Chain</code>) используйте 2–3 узла.
+    </div>
+
+    <footer class="page-footer">
+      <a href="network.html">← Сеть и инфраструктура</a>
+      <a href="reports.html">Дальше: Экспорт и история →</a>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

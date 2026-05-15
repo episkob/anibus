@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Anibus Wiki — Basic scans</title>
+<link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+<div class="wiki-shell">
+  <aside class="sidebar">
+    <div class="brand">Anibus Wiki<small>version 2.2.0 · network security scanner</small></div>
+    <div class="lang-switch">
+      <a href="../en/scanning.html" class="active">EN</a>
+      <a href="../it/scanning.html">IT</a>
+      <a href="../ru/scanning.html">RU</a>
+    </div>
+    <nav>
+      <div class="section-label">Getting started</div>
+      <a href="index.html">Home</a>
+      <a href="getting-started.html">Install &amp; run</a>
+      <div class="section-label">Scanning</div>
+      <a href="scanning.html" class="active">Basic scans</a>
+      <a href="web-security.html">Web vulnerabilities</a>
+      <a href="auth-and-recon.html">Auth &amp; Recon</a>
+      <div class="section-label">Analysis</div>
+      <a href="cve-and-vulns.html">CVE &amp; vulnerabilities</a>
+      <a href="network.html">Network &amp; infrastructure</a>
+      <a href="proxy.html">Proxy &amp; chains</a>
+      <div class="section-label">Reports</div>
+      <a href="reports.html">Export &amp; history</a>
+      <div class="section-label">Operations</div>
+      <a href="admin.html">Administration</a>
+    </nav>
+  </aside>
+
+  <main class="content">
+    <h1>Basic scans</h1>
+    <p class="subtitle">Standard TCP/UDP scanning, service detection, batch mode and IPv6 — the foundation of every pentest session in Anibus.</p>
+
+    <h2>Target field</h2>
+    <p>The field accepts:</p>
+    <ul>
+      <li>IPv4: <code>192.168.1.10</code>, ranges <code>192.168.1.0/24</code>.</li>
+      <li>IPv6: <code>fe80::1</code> or <code>[::1]</code> (brackets are stripped automatically).</li>
+      <li>Hostname: <code>example.com</code> (resolved through <code>HostResolver</code>, multiple A/AAAA records supported).</li>
+      <li>URL: <code>https://example.com/app/</code> — used as the baseUrl for web scans.</li>
+    </ul>
+
+    <h3>Port ranges</h3>
+    <p>The Ports field accepts:</p>
+    <ul>
+      <li>A single port: <code>443</code> (single-port mode added in 2.2.0).</li>
+      <li>A range: <code>1-1024</code>.</li>
+      <li>A list: <code>22,80,443,8080-8090</code>.</li>
+      <li>Presets: "Top 100", "Web", "DB", "Mail" — picked from the dropdown.</li>
+    </ul>
+
+    <h2>Standard Scan</h2>
+    <p>The <strong>Scan</strong> button runs a standard TCP scan via <code>StandardScanStrategy</code> + <code>ScanCoordinator</code>. Each port gets its own virtual thread, allowing ranges of thousands of ports without blocking the UI.</p>
+    <pre><code>[12:34:01] [INFO]  Scan started: 192.168.1.10 (1-1024)
+[12:34:02] [OPEN]  22/tcp   SSH       OpenSSH 9.6p1
+[12:34:02] [OPEN]  80/tcp   HTTP      nginx/1.25.3
+[12:34:03] [OPEN]  443/tcp  HTTPS     nginx/1.25.3
+[12:34:05] [INFO]  Scan finished in 4.2s · 3 open / 1021 closed</code></pre>
+
+    <h3>Service Detection</h3>
+    <p>For each open port a <code>ServiceDetectionTask</code> is launched: HTTP HEAD, TLS handshake, raw-socket banner grab. The results feed the <code>OPEN</code> lines and serve as input for the CVE / Vulnerability / JS scanners.</p>
+
+    <h2>UDP Scan</h2>
+    <p>The <strong>udpScanButton</strong> button starts <code>UdpScannerService</code>: it sends protocol-aware probes (DNS query, SNMP get-request, NTP request, NetBIOS name query). The response — or an ICMP-unreachable — determines port state.</p>
+    <div class="callout warn">
+      <strong>ICMP quota</strong>
+      Most operating systems throttle ICMP-unreachable, so large UDP scans run slower than TCP. Use short port lists (DNS/SNMP/NTP/NetBIOS).
+    </div>
+
+    <h2>IPv6 Scan</h2>
+    <p>In 2.2.0, <code>HostResolver</code> supports IPv6: unwrapping of <code>[fe80::1]</code>, IDN fallback. If a host has both A and AAAA records, you can pick the preferred family in <code>Config → Network</code>.</p>
+
+    <h2>Batch / Multi-target</h2>
+    <p>The <strong>Discovery → Batch Scan</strong> menu opens <code>BatchScanService</code>: input is a text file or a pasted target list. Scans run sequentially with an aggregated report and a single header in Scan Results.</p>
+    <pre><code>192.168.1.0/24
+example.com
+fe80::1%eth0
+https://app.internal/</code></pre>
+
+    <h2>Diff Mode</h2>
+    <p>The <strong>diffModeButton</strong> button runs <code>ScanDiffService</code>: it compares two saved scans from <code>~/.anibus/history/</code>. It shows:</p>
+    <ul>
+      <li><span class="tag ok">NEW</span> — newly opened ports / findings.</li>
+      <li><span class="tag warn">CHANGED</span> — banner or version changes.</li>
+      <li><span class="tag crit">GONE</span> — services that disappeared.</li>
+    </ul>
+
+    <h2>Additional launch modules</h2>
+    <table>
+      <thead><tr><th>Button</th><th>Service</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td>Subdomain</td><td><code>SubdomainEnumerationService</code></td><td>Wordlist bruteforce + CT logs, takeover check.</td></tr>
+        <tr><td>SourceMap</td><td><code>SourceMapAnalyzer</code></td><td>Reconstruction of JS sources, secret leaks.</td></tr>
+        <tr><td>ParamMiner</td><td><code>ParamMinerService</code></td><td>Bruteforces hidden query/header parameters.</td></tr>
+        <tr><td>Scheduler Start/Stop</td><td><code>ScanSchedulerService</code></td><td>Cron schedule for drift scans.</td></tr>
+        <tr><td>Auth Crawl</td><td><code>AuthCrawler</code></td><td>5 authentication modes, see <a href="auth-and-recon.html">Auth &amp; Recon</a>.</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Scan Results context menu</h2>
+    <p>Right-click on a result row:</p>
+    <ul>
+      <li><strong>Save to history</strong> — the current result is added to <code>ScanHistoryService</code>.</li>
+      <li><strong>Compare with…</strong> — opens the diff wizard.</li>
+      <li><strong>SQL Metadata Extraction</strong> — runs <code>SqlMetadataExtractor</code> against an SQLi finding.</li>
+      <li><strong>Copy as curl</strong> — copies a <code>curl</code> snippet (from <code>EndpointInfo</code>).</li>
+      <li><strong>Open PoC URL</strong> — for XSS / SSRF results that expose <code>pocCurl()</code>.</li>
+    </ul>
+
+    <h2>Console search</h2>
+    <p><kbd>Ctrl</kbd>+<kbd>F</kbd> opens the inline Scan Results filter. Search is realtime and case-insensitive. See the rest of the bindings in <a href="admin.html#shortcuts">Hotkeys</a>.</p>
+
+    <footer class="page-footer">
+      <a href="getting-started.html">← Install</a>
+      <a href="web-security.html">Next: Web vulnerabilities →</a>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

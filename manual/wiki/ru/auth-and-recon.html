@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Anibus Wiki — Auth &amp; Recon</title>
+<link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+<div class="wiki-shell">
+  <aside class="sidebar">
+    <div class="brand">Anibus Wiki<small>версия 2.2.0 · сетевой security-сканер</small></div>
+    <div class="lang-switch">
+      <a href="../en/auth-and-recon.html">EN</a>
+      <a href="../it/auth-and-recon.html">IT</a>
+      <a href="../ru/auth-and-recon.html" class="active">RU</a>
+    </div>
+    <nav>
+      <div class="section-label">Начало</div>
+      <a href="index.html">Главная</a>
+      <a href="getting-started.html">Установка и запуск</a>
+      <div class="section-label">Сканирование</div>
+      <a href="scanning.html">Базовые сканы</a>
+      <a href="web-security.html">Web-уязвимости</a>
+      <a href="auth-and-recon.html" class="active">Auth &amp; Recon</a>
+      <div class="section-label">Анализ</div>
+      <a href="cve-and-vulns.html">CVE и уязвимости</a>
+      <a href="network.html">Сеть и инфраструктура</a>
+      <a href="proxy.html">Прокси и цепочки</a>
+      <div class="section-label">Отчёты</div>
+      <a href="reports.html">Экспорт и история</a>
+      <div class="section-label">Эксплуатация</div>
+      <a href="admin.html">Администрирование</a>
+    </nav>
+  </aside>
+
+  <main class="content">
+    <h1>Authenticated Crawling &amp; Recon</h1>
+    <p class="subtitle">Аутентифицированный обход, пассивная разведка и валидация секретов — для скрытного аудита без активной нагрузки.</p>
+
+    <h2 id="authcrawler">Auth Crawler</h2>
+    <p>Модуль <code>AuthCrawler</code> + UI-диалог <strong>Discovery → Auth Crawl</strong>. Поддерживает пять режимов аутентификации без внешних библиотек.</p>
+
+    <h3>Режимы</h3>
+    <table>
+      <thead><tr><th>Режим</th><th>Что делает</th><th>Поля диалога</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Basic</strong></td><td>HTTP Basic <code>Authorization: Basic base64(user:pass)</code></td><td>Username, Password</td></tr>
+        <tr><td><strong>Bearer</strong></td><td>Готовый JWT/OAuth токен в <code>Authorization: Bearer …</code></td><td>Token</td></tr>
+        <tr><td><strong>OAuth2 client_credentials</strong></td><td>Полный grant flow с автообновлением токена</td><td>Token URL, client_id, client_secret, scope</td></tr>
+        <tr><td><strong>Digest RFC 7616</strong></td><td>WWW-Authenticate challenge, MD5/SHA-256, qop=auth</td><td>Username, Password (cnonce/nc — авто)</td></tr>
+        <tr><td><strong>Form login</strong></td><td>POST формы + автоизвлечение CSRF</td><td>Login URL, поля username/password, имя CSRF-поля (опц.)</td></tr>
+      </tbody>
+    </table>
+
+    <h3>NTLMv2 <span class="tag new">NEW</span></h3>
+    <p>Встроенный <code>NtlmMessages</code> реализует NTLMv2 Type-1 / Type-3 на собственных <strong>MD4 + HMAC-MD5</strong> — никаких внешних JCE-провайдеров. Включается через диалог «NTLM credentials» в Auth Crawl.</p>
+
+    <h3>CSRF auto-extract <span class="tag new">NEW</span></h3>
+    <p><code>CsrfTokenExtractor</code> читает токен из:</p>
+    <ul>
+      <li><code>&lt;meta name="csrf-token"&gt;</code> (Rails, Laravel, Spring).</li>
+      <li><code>&lt;input type="hidden"&gt;</code> с типовыми именами: <code>_token</code>, <code>__RequestVerificationToken</code>, <code>authenticity_token</code>, <code>csrfmiddlewaretoken</code>.</li>
+    </ul>
+    <p>Значение маскируется в отчёте (видно префикс/суффикс, ядро — звёздочки).</p>
+
+    <h3>Cookie Flags Auditor</h3>
+    <p><code>CookieFlagsAuditor</code> парсит <code>Set-Cookie</code> и проверяет:</p>
+    <ul>
+      <li><code>Secure</code> на HTTPS.</li>
+      <li><code>HttpOnly</code> для session/auth/jwt/token-куки → severity повышен.</li>
+      <li><code>SameSite</code> (Strict/Lax/None+Secure).</li>
+    </ul>
+    <p>Интегрирован в <code>PassiveReconService</code>.</p>
+
+    <h2 id="passive">Passive Recon Mode</h2>
+    <p>Сервис <code>PassiveReconService</code> собирает данные без активных payload-ов — пригодно для разведки без алертов WAF/IDS.</p>
+
+    <h3>Что собирается</h3>
+    <ul>
+      <li>HTML <code>&lt;title&gt;</code>, security-заголовки, <code>robots.txt</code>, <code>sitemap.xml</code>.</li>
+      <li><strong>Favicon MD5</strong> + сверка с <code>FaviconFingerprintDatabase</code> (Jenkins, GitLab, Confluence, JIRA, Grafana и др.).</li>
+      <li><span class="tag new">NEW</span> Все внешние origin из CSP-заголовка (<code>connect-src</code>, <code>script-src</code>, <code>img-src</code>).</li>
+      <li><span class="tag new">NEW</span> <code>&lt;meta name="generator"&gt;</code> — детект CMS/framework и версии.</li>
+      <li><span class="tag new">NEW</span> Email-адреса из HTML (с фильтром ложных по расширениям файлов).</li>
+      <li><span class="tag new">NEW</span> Cross-Origin headers (TAO, CORP, COOP, COEP, ACAO + wildcard/credentials/null-origin).</li>
+    </ul>
+
+    <h2 id="techstack">Tech Stack Fingerprint 2.0 <span class="tag new">NEW</span></h2>
+    <p><code>TechStackFingerprinter</code> — 40+ сигнатур в 6 категориях:</p>
+    <table>
+      <thead><tr><th>Категория</th><th>Примеры</th></tr></thead>
+      <tbody>
+        <tr><td>Web-серверы</td><td>nginx, Apache, IIS, Caddy, OpenResty, Lighttpd</td></tr>
+        <tr><td>CMS</td><td>WordPress, Drupal, Joomla, Ghost, Magento</td></tr>
+        <tr><td>JS-фреймворки</td><td>React, Vue, Angular, Next.js, Nuxt, Svelte</td></tr>
+        <tr><td>CDN</td><td>Cloudflare, Akamai, Fastly, CloudFront, BunnyCDN</td></tr>
+        <tr><td>Аналитика</td><td>GA4, GTM, Matomo, Plausible, Yandex.Metrika</td></tr>
+        <tr><td>Cookie-runtimes</td><td>PHP, ASP.NET, JSP/Tomcat, Rails, Django, Express</td></tr>
+      </tbody>
+    </table>
+    <p>Версия — из regex-группы. Отчёт категоризован, отображается в JS Analysis как «Tech Stack».</p>
+
+    <h2 id="secrets">Secrets Validation</h2>
+    <p>Проверка утечек ключей <strong>без</strong> отправки наружу. <code>SecretsValidator</code> валидирует формат:</p>
+    <ul>
+      <li>AWS (<code>AKIA…</code>, <code>ASIA…</code>), GitHub PAT (<code>ghp_*</code>, <code>github_pat_*</code>), Stripe, Telegram, Slack (<code>xox*</code>), Google API.</li>
+      <li><span class="tag new">NEW</span> NPM token (<code>npm_*</code>), Docker Hub PAT (<code>dckr_pat_*</code>).</li>
+      <li><span class="tag new">NEW</span> Private key блоки PEM (<code>BEGIN PRIVATE KEY</code>, <code>BEGIN RSA PRIVATE KEY</code>).</li>
+      <li><span class="tag new">NEW</span> GCP Service Account JSON, Google OAuth Client Secret (<code>GOCSPX-</code>).</li>
+      <li><span class="tag new">NEW</span> Fuzzy-словарь (<code>secret/password/token/apikey/access_key/auth/bearer</code>) с фильтром placeholder-значений (<code>scanFuzzy()</code>).</li>
+    </ul>
+
+    <h2 id="confidence">Confidence &amp; Risk Score</h2>
+    <p>Каждое <code>LeakInfo</code> расширено:</p>
+    <ul>
+      <li><strong>confidence</strong> — HIGH / MEDIUM / LOW.</li>
+      <li><strong>priority</strong> 1..3 — <code>inferPriority()</code>.</li>
+      <li><strong>placeholder</strong> — <code>isPlaceholderValue()</code> отсекает <code>XXXXXX</code>, <code>your-key-here</code> и т.п.</li>
+      <li><strong>risk score</strong> = Severity × Exploitability × Exposure.</li>
+    </ul>
+
+    <h2 id="curl">curl-сниппеты</h2>
+    <p><code>EndpointInfo.toCurl()</code> формирует готовую команду:</p>
+    <pre><code>curl -X POST 'https://api.example.com/v1/users' \
+  -H 'Authorization: Bearer eyJhbG...' \
+  -H 'Content-Type: application/json' \
+  --data-raw '{"role":"admin"}'</code></pre>
+    <p>Доступно через ПКМ → Copy as curl на любом endpoint в JS Analysis.</p>
+
+    <footer class="page-footer">
+      <a href="web-security.html">← Web-уязвимости</a>
+      <a href="cve-and-vulns.html">Дальше: CVE и уязвимости →</a>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

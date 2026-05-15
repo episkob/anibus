@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Anibus Wiki — Scansioni di base</title>
+<link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+<div class="wiki-shell">
+  <aside class="sidebar">
+    <div class="brand">Anibus Wiki<small>versione 2.2.0 · scanner di sicurezza di rete</small></div>
+    <div class="lang-switch">
+      <a href="../en/scanning.html">EN</a>
+      <a href="../it/scanning.html" class="active">IT</a>
+      <a href="../ru/scanning.html">RU</a>
+    </div>
+    <nav>
+      <div class="section-label">Inizio</div>
+      <a href="index.html">Home</a>
+      <a href="getting-started.html">Installazione e avvio</a>
+      <div class="section-label">Scansione</div>
+      <a href="scanning.html" class="active">Scansioni di base</a>
+      <a href="web-security.html">Vulnerabilità web</a>
+      <a href="auth-and-recon.html">Auth &amp; Recon</a>
+      <div class="section-label">Analisi</div>
+      <a href="cve-and-vulns.html">CVE e vulnerabilità</a>
+      <a href="network.html">Rete e infrastruttura</a>
+      <a href="proxy.html">Proxy e catene</a>
+      <div class="section-label">Report</div>
+      <a href="reports.html">Esportazione e cronologia</a>
+      <div class="section-label">Operazioni</div>
+      <a href="admin.html">Amministrazione</a>
+    </nav>
+  </aside>
+
+  <main class="content">
+    <h1>Scansioni di base</h1>
+    <p class="subtitle">Scansione TCP/UDP standard, service detection, modalità batch e IPv6 — il fondamento di qualsiasi sessione di pentest in Anibus.</p>
+
+    <h2>Campo Target</h2>
+    <p>Il campo accetta:</p>
+    <ul>
+      <li>IPv4: <code>192.168.1.10</code>, range <code>192.168.1.0/24</code>.</li>
+      <li>IPv6: <code>fe80::1</code> oppure <code>[::1]</code> (le parentesi vengono rimosse automaticamente).</li>
+      <li>Hostname: <code>example.com</code> (risolto tramite <code>HostResolver</code>, supporto a più A/AAAA).</li>
+      <li>URL: <code>https://example.com/app/</code> — usato come baseUrl per le scansioni web.</li>
+    </ul>
+
+    <h3>Range di porte</h3>
+    <p>Nel campo Ports si accettano:</p>
+    <ul>
+      <li>Porta singola: <code>443</code> (single-port mode aggiunto in 2.2.0).</li>
+      <li>Range: <code>1-1024</code>.</li>
+      <li>Elenco: <code>22,80,443,8080-8090</code>.</li>
+      <li>Preset: «Top 100», «Web», «DB», «Mail» — selezionabili dal menu a tendina.</li>
+    </ul>
+
+    <h2>Standard Scan</h2>
+    <p>Il pulsante <strong>Scan</strong> avvia una scansione TCP standard tramite <code>StandardScanStrategy</code> + <code>ScanCoordinator</code>. Per ogni porta viene allocato un virtual thread, il che permette di lavorare con range di migliaia di porte senza bloccare la UI.</p>
+    <pre><code>[12:34:01] [INFO]  Scan started: 192.168.1.10 (1-1024)
+[12:34:02] [OPEN]  22/tcp   SSH       OpenSSH 9.6p1
+[12:34:02] [OPEN]  80/tcp   HTTP      nginx/1.25.3
+[12:34:03] [OPEN]  443/tcp  HTTPS     nginx/1.25.3
+[12:34:05] [INFO]  Scan finished in 4.2s · 3 open / 1021 closed</code></pre>
+
+    <h3>Service Detection</h3>
+    <p>Su ogni porta trovata viene avviato <code>ServiceDetectionTask</code>: HTTP HEAD, TLS handshake, banner del raw socket. I risultati vengono scritti nelle righe <code>OPEN</code> e diventano l'input per gli scanner CVE/Vulnerability/JS.</p>
+
+    <h2>UDP Scan</h2>
+    <p>Il pulsante <strong>udpScanButton</strong> avvia <code>UdpScannerService</code>: invio di probe protocollo-dipendenti (DNS query, SNMP get-request, NTP request, NetBIOS name query). La risposta o l'ICMP unreachable determina lo stato della porta.</p>
+    <div class="callout warn">
+      <strong>Quota ICMP</strong>
+      La maggior parte dei SO limita gli ICMP unreachable — le scansioni UDP estese risultano più lente del TCP. Usa elenchi brevi di porte (DNS/SNMP/NTP/NetBIOS).
+    </div>
+
+    <h2>Scansione IPv6</h2>
+    <p>In 2.2.0 <code>HostResolver</code> supporta IPv6: rimozione delle parentesi quadre <code>[fe80::1]</code>, fallback IDN. Se l'host ha sia A che AAAA, è possibile scegliere la famiglia preferita in <code>Config → Network</code>.</p>
+
+    <h2>Batch / Multi-target</h2>
+    <p>Il menu <strong>Discovery → Batch Scan</strong> apre <code>BatchScanService</code>: in input un file di testo o un elenco di target incollato. La scansione viene eseguita in sequenza con un report aggregato e un'intestazione comune in Scan Results.</p>
+    <pre><code>192.168.1.0/24
+example.com
+fe80::1%eth0
+https://app.internal/</code></pre>
+
+    <h2>Diff Mode</h2>
+    <p>Il pulsante <strong>diffModeButton</strong> avvia <code>ScanDiffService</code>: confronto di due scansioni salvate in <code>~/.anibus/history/</code>. Vengono mostrate:</p>
+    <ul>
+      <li><span class="tag ok">NEW</span> — nuove porte aperte / nuove scoperte.</li>
+      <li><span class="tag warn">CHANGED</span> — variazioni di banner/versione.</li>
+      <li><span class="tag crit">GONE</span> — servizi scomparsi.</li>
+    </ul>
+
+    <h2>Moduli di avvio aggiuntivi</h2>
+    <table>
+      <thead><tr><th>Pulsante</th><th>Servizio</th><th>Scopo</th></tr></thead>
+      <tbody>
+        <tr><td>Subdomain</td><td><code>SubdomainEnumerationService</code></td><td>Bruteforce su dizionario + log CT, check di takeover.</td></tr>
+        <tr><td>SourceMap</td><td><code>SourceMapAnalyzer</code></td><td>Ricostruzione dei sorgenti JS, leak di segreti.</td></tr>
+        <tr><td>ParamMiner</td><td><code>ParamMinerService</code></td><td>Brute force di parametri query/header nascosti.</td></tr>
+        <tr><td>Scheduler Start/Stop</td><td><code>ScanSchedulerService</code></td><td>Pianificazione cron delle scansioni di drift.</td></tr>
+        <tr><td>Auth Crawl</td><td><code>AuthCrawler</code></td><td>5 modalità di autenticazione, vedi <a href="auth-and-recon.html">Auth &amp; Recon</a>.</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Menu contestuale di Scan Results</h2>
+    <p>Tasto destro su una riga di risultato:</p>
+    <ul>
+      <li><strong>Salva nella cronologia</strong> — il risultato attuale viene aggiunto a <code>ScanHistoryService</code>.</li>
+      <li><strong>Confronta con…</strong> — apre il wizard di diff.</li>
+      <li><strong>SQL Metadata Extraction</strong> — avvia <code>SqlMetadataExtractor</code> per i find SQLi.</li>
+      <li><strong>Copy as curl</strong> — copia uno snippet <code>curl</code> (da <code>EndpointInfo</code>).</li>
+      <li><strong>Apri PoC URL</strong> — per i risultati XSS/SSRF con <code>pocCurl()</code>.</li>
+    </ul>
+
+    <h2>Ricerca nella console</h2>
+    <p><kbd>Ctrl</kbd>+<kbd>F</kbd> apre il filtro inline di Scan Results. Ricerca in realtime, case-insensitive. Per altre combinazioni di tasti vedi <a href="admin.html#shortcuts">Hotkeys</a>.</p>
+
+    <footer class="page-footer">
+      <a href="getting-started.html">← Installazione</a>
+      <a href="web-security.html">Avanti: Vulnerabilità web →</a>
+    </footer>
+  </main>
+</div>
+</body>
+</html>
