@@ -1,0 +1,25 @@
+# Maven
+target/
+
+# Java / build artifacts
+*.class
+*.log
+hs_err_pid*
+replay_pid*
+
+# Package outputs (do not commit packaged artifacts)
+/anibus-*.jar
+/rel/
+.mvn/wrapper/maven-wrapper.jar
+
+# IDEs
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db

@@ -20,6 +20,7 @@ module it.r2u.anibus {
     exports it.r2u.anibus.service.analysis;
     exports it.r2u.anibus.service.core;
     exports it.r2u.anibus.service.detection;
+    exports it.r2u.anibus.service.iot;
     exports it.r2u.anibus.service.network;
     exports it.r2u.anibus.service.network.proxy;
     exports it.r2u.anibus.service.geo;

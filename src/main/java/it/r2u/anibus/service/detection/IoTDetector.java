@@ -11,6 +11,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
+import it.r2u.anibus.service.iot.AdbProbeService;
+import it.r2u.anibus.service.iot.RtspProbeService;
+
 /**
  * IoT and IP Camera Detection Service
  * Detects IP cameras, RTSP streams, ONVIF services, and various IoT devices
@@ -19,6 +22,8 @@ public class IoTDetector {
     
     private static final int TIMEOUT = 3000;
     private static final int MAX_RESPONSE_SIZE = 10 * 1024; // 10KB
+    private static final RtspProbeService RTSP_PROBE = new RtspProbeService(TIMEOUT);
+    private static final AdbProbeService ADB_PROBE = new AdbProbeService(TIMEOUT);
     
     public static class IoTDevice {
         private String deviceType;
@@ -93,7 +98,7 @@ public class IoTDetector {
             }
             
             if (hasONVIF) {
-                sb.append("  🔌 ONVIF Supported\n");
+                sb.append("  [ONVIF] Supported\n");
             }
             
             if (hasDefaultCredentials) {
@@ -132,6 +137,7 @@ public class IoTDetector {
             case 8443, 443 -> device = detectWebCamera(host, port);
             case 23, 2323 -> device = detectTelnetIoT(port, banner);
             case 1883, 8883 -> device = detectMQTTDevice(port);
+            case 5555 -> device = detectAdb(host, port);
             default -> { }
         }
         
@@ -150,71 +156,43 @@ public class IoTDetector {
         IoTDevice device = new IoTDevice();
         device.setDeviceType("IP Camera (RTSP)");
         device.setHasRTSPStream(true);
-        
-        // Try RTSP handshake
-        try (Socket socket = new Socket()) {
-            socket.setSoTimeout(TIMEOUT);
-            socket.connect(new java.net.InetSocketAddress(host, port), TIMEOUT);
-            
-            // Send RTSP OPTIONS request
-            String request = "OPTIONS rtsp://" + host + ":" + port + "/ RTSP/1.0\r\n" +
-                           "CSeq: 1\r\n" +
-                           "User-Agent: Anibus/1.0\r\n\r\n";
-            
-            OutputStream out = socket.getOutputStream();
-            out.write(request.getBytes(StandardCharsets.UTF_8));
-            out.flush();
-            
-            BufferedReader reader = new BufferedReader(
-                new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
-            
-            StringBuilder response = new StringBuilder();
-            String line;
-            int lineCount = 0;
-            while ((line = reader.readLine()) != null && lineCount < 20) {
-                response.append(line).append("\n");
-                lineCount++;
-                if (line.isEmpty()) break;
-            }
-            
-            String rtspResponse = response.toString().toLowerCase();
-            
-            // Detect manufacturer from RTSP response
-            if (rtspResponse.contains("hikvision") || rtspResponse.contains("ds-")) {
-                device.setManufacturer("Hikvision");
-                device.setRtspUrl("rtsp://" + host + ":554/Streaming/Channels/101");
-                device.getVulnerabilities().add("Multiple CVEs - firmware hardcoded credentials");
-            } else if (rtspResponse.contains("dahua")) {
-                device.setManufacturer("Dahua");
-                device.setRtspUrl("rtsp://" + host + ":554/cam/realmonitor?channel=1&subtype=0");
-                device.getVulnerabilities().add("CVE-2021-33044 - Authentication bypass");
-            } else if (rtspResponse.contains("axis")) {
-                device.setManufacturer("Axis Communications");
-                device.setRtspUrl("rtsp://" + host + ":554/axis-media/media.amp");
-            } else if (rtspResponse.contains("vivotek")) {
-                device.setManufacturer("Vivotek");
-                device.setRtspUrl("rtsp://" + host + ":554/live.sdp");
-            } else if (rtspResponse.contains("foscam")) {
-                device.setManufacturer("Foscam");
-                device.setRtspUrl("rtsp://" + host + ":554/videoMain");
-                device.setHasDefaultCredentials(true);
-            } else if (rtspResponse.contains("tp-link") || rtspResponse.contains("tapo")) {
-                device.setManufacturer("TP-Link");
-                device.setRtspUrl("rtsp://" + host + ":554/stream1");
-            } else {
-                device.setRtspUrl("rtsp://" + host + ":554/");
-            }
-            
-            // Check ONVIF support
-            if (rtspResponse.contains("onvif")) {
-                device.setHasONVIF(true);
-            }
-            
-        } catch (IOException e) {
-            // Still return partial info
-            device.setRtspUrl("rtsp://" + host + ":554/");
+
+        RtspProbeService.RtspProbeResult probe = RTSP_PROBE.probe(host, port);
+        device.setRtspUrl(probe.suggestedRtspUrl());
+        if (probe.manufacturerGuess() != null) {
+            device.setManufacturer(probe.manufacturerGuess());
         }
-        
+
+        String rawLower = probe.rawResponse() == null ? "" : probe.rawResponse().toLowerCase();
+        if (rawLower.contains("onvif")) {
+            device.setHasONVIF(true);
+        }
+
+        if ("Foscam".equals(device.getManufacturer())) {
+            device.setHasDefaultCredentials(true);
+        }
+        if ("Hikvision".equals(device.getManufacturer())) {
+            device.getVulnerabilities().add("Multiple CVEs - firmware hardcoded credentials");
+        } else if ("Dahua".equals(device.getManufacturer())) {
+            device.getVulnerabilities().add("CVE-2021-33044 - Authentication bypass");
+        }
+
+        return device;
+    }
+
+    /**
+     * Detect exposed Android Debug Bridge (ADB), typically on port 5555.
+     */
+    private static IoTDevice detectAdb(String host, int port) {
+        AdbProbeService.AdbProbeResult res = ADB_PROBE.probe(host, port);
+        if (!res.ok()) {
+            return null;
+        }
+        IoTDevice device = new IoTDevice();
+        device.setDeviceType("Android Debug Bridge (ADB)");
+        device.setAdditionalInfo("ADB service responded on port " + port + (res.version() != null ? (" (version=" + res.version() + ")") : ""));
+        device.getVulnerabilities().add("ADB over TCP exposed — remote debugging interface accessible");
+        device.setHasDefaultCredentials(true);
         return device;
     }
     
@@ -597,6 +575,7 @@ public class IoTDetector {
                lower.contains("hikvision") || lower.contains("dahua") ||
                lower.contains("axis") || lower.contains("foscam") ||
                lower.contains("vivotek") || lower.contains("mqtt") ||
-               lower.contains("onvif") || lower.contains("rtsp");
+               lower.contains("onvif") || lower.contains("rtsp") ||
+               lower.contains("android debug bridge") || lower.contains("adb");
     }
 }

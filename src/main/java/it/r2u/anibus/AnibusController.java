@@ -13,6 +13,7 @@ import it.r2u.anibus.coordinator.StandardScanStrategy;
 import it.r2u.anibus.handlers.ClipboardActionHandler;
 import it.r2u.anibus.handlers.ExportActionHandler;
 import it.r2u.anibus.handlers.ExtraScanHandler;
+import it.r2u.anibus.handlers.IotToolsHandler;
 import it.r2u.anibus.handlers.JsAnalysisHandler;
 import it.r2u.anibus.handlers.ProxyTabHandler;
 import it.r2u.anibus.handlers.ScanActionHandler;
@@ -319,6 +320,7 @@ public class AnibusController {
     private TopologyHandler         topologyHandler;
     private JsAnalysisHandler       jsAnalysisHandler;
     private ExtraScanHandler        extraScanHandler;
+    private IotToolsHandler         iotToolsHandler;
     private ProxyTabHandler         proxyTabHandler;
 
     public AnibusController() {
@@ -499,6 +501,10 @@ public class AnibusController {
             udpScannerService, subdomainEnumerationService, sourceMapAnalyzer,
             paramMinerService, scanDiffService, scanSchedulerService,
             scanHistoryService, scanner);
+
+        iotToolsHandler = new IotToolsHandler(
+            hostTextField, portsTextField, progressBar, consoleTextArea,
+            consoleViewManager, this::setStatus);
 
         proxyTabHandler = new ProxyTabHandler(
             proxyLogArea, activeProxyLabel, proxyStatusDot,
@@ -704,6 +710,7 @@ public class AnibusController {
 
         actionsMenuButton.getItems().setAll(
             buildDiscoveryMenu(),
+            buildIoTMenu(),
             buildSecurityMenu(),
             buildNetworkMenu(),
             buildWordlistsMenu(),
@@ -713,6 +720,17 @@ public class AnibusController {
             createMenuItem("Stop Scheduled Scan", this::stopScheduledScan),
             createMenuItem("Show Scan History", this::runShowScanHistory)
         );
+    }
+
+    private Menu buildIoTMenu() {
+        Menu menu = createMenu("IoT / Devices");
+        menu.getItems().addAll(
+            createMenuItem("IoT Quick-Scan (common ports)", this::runIotQuickScan),
+            createMenuItem("RTSP Probe (OPTIONS)", this::runRtspProbe),
+            createMenuItem("ONVIF Probe (heuristic)", this::runOnvifProbe),
+            createMenuItem("ADB Probe (host:version)", this::runAdbProbe)
+        );
+        return menu;
     }
 
     private Menu buildDiscoveryMenu() {
@@ -837,6 +855,14 @@ public class AnibusController {
     private void runUdpScan() { extraScanHandler.runUdpScan(); }
 
     private void runSubdomainEnumeration() { extraScanHandler.runSubdomainEnumeration(); }
+
+    private void runIotQuickScan() { if (iotToolsHandler != null) iotToolsHandler.runIotQuickScan(); }
+
+    private void runRtspProbe() { if (iotToolsHandler != null) iotToolsHandler.runRtspProbe(); }
+
+    private void runOnvifProbe() { if (iotToolsHandler != null) iotToolsHandler.runOnvifProbe(); }
+
+    private void runAdbProbe() { if (iotToolsHandler != null) iotToolsHandler.runAdbProbe(); }
 
     private void runAuthCrawl() {
         javafx.scene.control.Dialog<java.util.Map<String, String>> dialog = new javafx.scene.control.Dialog<>();

@@ -218,26 +218,26 @@
                                 <exclude>META-INF/substrate/**</exclude>
                             </excludes>
                         </filter>
-                        <!-- Windows JavaFX JARs: keep only native .dll libs, drop duplicate .class files -->
+                        <!-- Windows JavaFX JARs: keep native .dll libs AND Windows-only classes -->
                         <filter>
                             <artifact>org.openjfx:*:jar:win</artifact>
                             <excludes>
-                                <exclude>**/*.class</exclude>
+                                <!-- keep .class so WinPlatformFactory is available at runtime -->
                                 <exclude>META-INF/**</exclude>
                             </excludes>
                         </filter>
-                        <!-- macOS JavaFX JARs: keep only native .dylib libs, drop duplicate .class files -->
+                        <!-- macOS JavaFX JARs: keep native .dylib libs AND macOS-only classes -->
                         <filter>
                             <artifact>org.openjfx:*:jar:mac</artifact>
                             <excludes>
-                                <exclude>**/*.class</exclude>
+                                <!-- keep .class so MacPlatformFactory is available at runtime -->
                                 <exclude>META-INF/**</exclude>
                             </excludes>
                         </filter>
                         <filter>
                             <artifact>org.openjfx:*:jar:mac-aarch64</artifact>
                             <excludes>
-                                <exclude>**/*.class</exclude>
+                                <!-- keep .class so MacPlatformFactory is available at runtime -->
                                 <exclude>META-INF/**</exclude>
                             </excludes>
                         </filter>

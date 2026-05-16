@@ -440,10 +440,15 @@ public class ExtraScanHandler {
     }
 
     private static String buildDriftMessage(String host, Set<Integer> opened, Set<Integer> closed) {
-        StringBuilder sb = new StringBuilder("\n⚠ SECURITY DRIFT DETECTED on ").append(host).append("\n");
-        if (!opened.isEmpty()) sb.append("  [OPENED] ports: ").append(opened).append("\n");
-        if (!closed.isEmpty()) sb.append("  [CLOSED] ports: ").append(closed).append("\n");
+        StringBuilder sb = new StringBuilder("\n[WARN] SECURITY DRIFT DETECTED on ").append(host).append("\n");
+        if (!opened.isEmpty()) sb.append("  [OPENED] ports: ").append(sortPorts(opened)).append("\n");
+        if (!closed.isEmpty()) sb.append("  [CLOSED] ports: ").append(sortPorts(closed)).append("\n");
         return sb.toString();
+    }
+
+    private static java.util.List<Integer> sortPorts(Set<Integer> ports) {
+        if (ports == null || ports.isEmpty()) return java.util.List.of();
+        return ports.stream().sorted().toList();
     }
 
     private static String normalizeRootDomain(String host) {
