@@ -64,6 +64,7 @@ Anibus — это не просто сканер портов: он объеди
 - **WHOIS Lookup** с RDAP fallback, нормализация registrar/abuse (IANA root → авторитативный)
 - **SSL/TLS Deep Audit** — протокол, ciphers, chain, SANs, OCSP, HSTS, ALPN
 - **DNS AXFR** zone transfer (raw TCP/53), **HTTP/2 + HTTP/3** через ALPN + `Alt-Svc`, **WebSocket** probe
+- **IoT / Devices tools (ручной запуск из GUI)**: RTSP (OPTIONS), ONVIF (heuristic), ADB (host:version) + быстрый IoT quick-scan по common ports (меню **Actions → IoT / Devices**)
 - Поддержка **IPv6** в `HostResolver`
 
 ### CVE-интеллект
@@ -193,6 +194,9 @@ Anibus — это не просто сканер портов: он объеди
 │  VulnScanner          KeycloakDetector      │
 │                       SoftwareStackDet.     │
 │                       ContainerDetector     │
+│                                             │
+│  service/iot/                                │
+│  RtspProbeService · OnvifProbeService · AdbProbeService │
 │                                             │
 │  service/analysis/    service/network/      │
 │  JSSecurityAnalyzer   SubnetScanner         │
@@ -421,6 +425,17 @@ java -jar anibus-2.2.0.jar
 ```
 
 Исполняемый shaded JAR создается в корне проекта как `anibus-2.2.0.jar`.
+
+**Windows:**
+
+```cmd
+REM Нужен JDK 21. Убедитесь, что JAVA_HOME указывает на него, например:
+REM setx JAVA_HOME "C:\\Program Files\\Java\\jdk-21"
+
+mvnw.cmd test
+mvnw.cmd clean package
+java -jar anibus-2.2.0.jar
+```
 
 **Linux — Wayland / XWayland:**
 

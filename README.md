@@ -64,6 +64,7 @@ The current build is a major step beyond a TCP port scanner — Anibus now ships
 - **WHOIS Lookup** with RDAP fallback, normalized registrar/abuse contacts (IANA root → authoritative)
 - **SSL/TLS Deep Audit** — protocol, ciphers, chain, SANs, OCSP, HSTS, ALPN
 - **DNS AXFR** zone transfer (raw TCP/53), **HTTP/2 + HTTP/3** detector via ALPN + `Alt-Svc`, **WebSocket** probe
+- **IoT / Devices tools (manual in GUI)**: RTSP (OPTIONS), ONVIF (heuristic), ADB (host:version) + IoT quick-scan on common ports (menu **Actions → IoT / Devices**)
 - **IPv6** support in `HostResolver`
 
 ### CVE intelligence
@@ -193,6 +194,9 @@ Results are shown as an expandable **TreeView** categorised by finding type.
 │  VulnScanner          KeycloakDetector      │
 │                       SoftwareStackDet.     │
 │                       ContainerDetector     │
+│                                             │
+│  service/iot/                                │
+│  RtspProbeService · OnvifProbeService · AdbProbeService │
 │                                             │
 │  service/analysis/    service/network/      │
 │  JSSecurityAnalyzer   SubnetScanner         │
@@ -435,7 +439,11 @@ Executable shaded JAR is generated in the project root as `anibus-2.2.0.jar`.
 **Windows:**
 
 ```cmd
-mvnw.cmd clean package -DskipTests
+REM JDK 21 is required. Ensure JAVA_HOME points to it, e.g.:
+REM setx JAVA_HOME "C:\Program Files\Java\jdk-21"
+
+mvnw.cmd test
+mvnw.cmd clean package
 java -jar anibus-2.2.0.jar
 ```
 
